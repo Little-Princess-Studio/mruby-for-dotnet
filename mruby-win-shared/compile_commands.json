@@ -1,0 +1,6 @@
+[
+{
+  "directory": "E:\\Projects\\mruby-costumized\\mruby-wrapper",
+  "arguments": ["C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.40.33807\\bin\\HostX64\\x64\\cl.exe", "/c", "/nologo", "/O2", "/MD", "/I..\\mruby\\build\\host\\include", "/DMRB_BUILD_AS_DLL", "/DMRB_CORE", "/DMRB_LIB", "/EHsc", "/DNDEBUG", "/Fobuild\\.objs\\mruby\\windows\\x64\\release\\src\\main.cpp.obj", "src\\main.cpp"],
+  "file": "src\\main.cpp"
+}]
