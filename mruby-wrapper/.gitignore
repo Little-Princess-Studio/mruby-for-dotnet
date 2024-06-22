@@ -1,0 +1,7 @@
+﻿.idea/
+
+MRubyWrapper.Library/bin/
+MRubyWrapper.Library/obj/
+
+MRubyWrapper.Test/bin/
+MRubyWrapper.Test/obj/
