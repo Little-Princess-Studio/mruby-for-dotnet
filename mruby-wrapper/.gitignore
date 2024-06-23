@@ -1,7 +1,11 @@
 ﻿.idea/
+.vscode/*
+.vs/
 
 MRubyWrapper.Library/bin/
 MRubyWrapper.Library/obj/
 
 MRubyWrapper.Test/bin/
 MRubyWrapper.Test/obj/
+
+Properties/

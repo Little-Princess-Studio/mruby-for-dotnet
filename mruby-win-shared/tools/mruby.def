@@ -335,3 +335,10 @@ EXPORTS
 	mrb_cv_set
 	mrb_cv_defined
 	mrb_iv_foreach
+	mrb_float_value_boxing
+	mrb_int_value_boxing
+	mrb_symbol_value_boxing
+	mrb_nil_value_boxing
+	mrb_true_value_boxing
+	mrb_false_value_boxing
+	mrb_undef_value_boxing
