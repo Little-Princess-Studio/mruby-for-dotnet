@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MRubyWrapper.Library", "MRu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MRubyWrapper.Test", "MRubyWrapper.Test\MRubyWrapper.Test.csproj", "{88620E0B-9A37-4C5E-9D06-52C623792E6E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MRubyWrapper.UnitTest", "MRubyWrapper.UnitTest\MRubyWrapper.UnitTest.csproj", "{220C8263-8BA1-4FBA-B445-DFA953589C93}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{88620E0B-9A37-4C5E-9D06-52C623792E6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{88620E0B-9A37-4C5E-9D06-52C623792E6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{88620E0B-9A37-4C5E-9D06-52C623792E6E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{220C8263-8BA1-4FBA-B445-DFA953589C93}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{220C8263-8BA1-4FBA-B445-DFA953589C93}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{220C8263-8BA1-4FBA-B445-DFA953589C93}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{220C8263-8BA1-4FBA-B445-DFA953589C93}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

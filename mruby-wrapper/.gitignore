@@ -1,9 +1,9 @@
 ﻿.idea/
-.vscode/*
+.vscode/
 .vs/
 
-MRubyWrapper.Library/bin/
-MRubyWrapper.Library/obj/
+bin/
+obj/
 
 MRubyWrapper.Test/bin/
 MRubyWrapper.Test/obj/

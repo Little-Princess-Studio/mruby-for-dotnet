@@ -30,32 +30,47 @@
         private static extern UInt32 mrb_intern_cstr(
             IntPtr state,
             [MarshalAs(UnmanagedType.LPStr)] string name);
-        
+
         // MRB_API mrb_bool mrb_block_given_p(mrb_state *mrb);
         [DllImport("mruby.dll", CharSet = CharSet.Ansi)]
         private static extern bool mrb_block_given_p(IntPtr mrb);
-        
+
         public static UInt64 GetInternSymbol(RbState state, string str) => mrb_intern_cstr(state.MrbState, str);
 
         public static RbValue CallMethod(RbState state, RbValue value, string name, params RbValue[] args)
         {
             int length = args.Length;
 
-            unsafe
+            UInt64 resVal;
+            var sym = mrb_intern_cstr(state.MrbState, name);
+
+            if (length == 0)
+            { 
+                resVal = mrb_funcall_argv(
+                    state.MrbState,
+                    value.NativeValue.Value,
+                    sym,
+                    length,
+                    IntPtr.Zero);
+            }
+            else
             {
-                var fixedArgs = args.Select(v => v.NativeValue).ToArray();
-                fixed (RbValue.RbNativeValue* p = &fixedArgs[0])
+                unsafe
                 {
-                    var sym = mrb_intern_cstr(state.MrbState, name);
-                    var resVal = mrb_funcall_argv(
-                        state.MrbState,
-                        value.NativeValue.Value,
-                        sym,
-                        length,
-                        new IntPtr(p));
-                    return new RbValue(state, resVal);
+                    var fixedArgs = args.Select(v => v.NativeValue).ToArray();
+                    fixed (RbValue.RbNativeValue* p = &fixedArgs[0])
+                    {
+                        resVal = mrb_funcall_argv(
+                            state.MrbState,
+                            value.NativeValue.Value,
+                            sym,
+                            length,
+                            new IntPtr(p));
+                    }
                 }
             }
+
+            return new RbValue(state, resVal);
         }
 
         public static bool BlockGivenP(RbState state) => mrb_block_given_p(state.MrbState);
@@ -64,6 +79,5 @@
         {
             RbValue.Init(state);
         }
-        
     }
 }
