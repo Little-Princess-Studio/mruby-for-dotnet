@@ -1,74 +1,50 @@
 ﻿namespace MRubyWrapper.Library.Language
 {
     using System;
-    using System.Runtime.InteropServices;
+    using System.Linq;
 
-    public struct RbState
+    public partial struct RbState
     {
-        public IntPtr MrbState { get; set; }
+        public IntPtr MrbState { get; set; } = 0;
 
-        // MRB_API struct RClass *mrb_define_class(mrb_state *mrb, const char *name, struct RClass *super);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_define_class(
-            IntPtr mrb,
-            [MarshalAs(UnmanagedType.LPStr)] string name,
-            IntPtr @class);
+        public RbValue RbTrue { get; private set; } = null!;
+        public RbValue RbFalse { get; private set; } = null!;
+        public RbValue RbNil { get; private set; } = null!;
+        public RbValue RbUndef { get; private set; } = null!;
 
-        // MRB_API struct RClass *mrb_define_module(mrb_state *mrb, const char *name);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_define_module(
-            IntPtr state,
-            [MarshalAs(UnmanagedType.LPStr)] string name);
+        public RbState()
+        {
+            this.Init();
+        }
 
-        // MRB_API mrb_bool mrb_class_defined(mrb_state *mrb, const char *name);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern bool mrb_class_defined(
-            IntPtr mrb,
-            [MarshalAs(UnmanagedType.LPStr)] string name);
+        private void Init()
+        {
+            RbTrue = new RbValue(this, mrb_true_value_boxing());
+            RbFalse = new RbValue(this, mrb_false_value_boxing());
+            RbNil = new RbValue(this, mrb_nil_value_boxing());
+            RbUndef = new RbValue(this, mrb_undef_value_boxing());
+        }
 
-        // MRB_API struct RClass* mrb_class_get(mrb_state *mrb, const char *name);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_class_get(
-            IntPtr mrb,
-            [MarshalAs(UnmanagedType.LPStr)] string name);
+        // Wrapper for mrb_float_value_boxing
+        public RbValue BoxFloat(float value)
+        {
+            var result = mrb_float_value_boxing(this.MrbState, value);
+            return new RbValue(this, result);
+        }
 
-        // MRB_API struct RClass* mrb_exc_get_id(mrb_state *mrb, mrb_sym name);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_exc_get_id(
-            IntPtr mrb,
-            UInt64 sym);
+        // Wrapper for mrb_int_value_boxing
+        public RbValue BoxInt(int value)
+        {
+            var result = mrb_int_value_boxing(this.MrbState, value);
+            return new RbValue(this, result);
+        }
 
-        // MRB_API mrb_bool mrb_class_defined_under(mrb_state *mrb, struct RClass *outer, const char *name);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern bool mrb_class_defined_under(
-            IntPtr mrb,
-            IntPtr outer,
-            [MarshalAs(UnmanagedType.LPStr)] string name);
-
-        // MRB_API struct RClass * mrb_class_get_under(mrb_state *mrb, struct RClass *outer, const char *name);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_class_get_under(
-            IntPtr mrb,
-            IntPtr outer,
-            [MarshalAs(UnmanagedType.LPStr)] string name);
-
-        // MRB_API struct RClass * mrb_module_get(mrb_state *mrb, const char *name);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_module_get(
-            IntPtr mrb,
-            [MarshalAs(UnmanagedType.LPStr)] string name);
-
-        // MRB_API void mrb_notimplement(mrb_state*);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern void mrb_notimplement(IntPtr mrb);
-
-        // MRB_API mrb_value mrb_notimplement_m(mrb_state*, mrb_value);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_notimplement_m(IntPtr mrb, UInt64 value);
-
-        // MRB_API mrb_value mrb_obj_itself(mrb_state*, mrb_value);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_obj_itself(IntPtr mrb, UInt64 value);
+        // Wrapper for mrb_symbol_value_boxing
+        public RbValue BoxSymbol(UInt64 value)
+        {
+            var result = mrb_symbol_value_boxing(value);
+            return new RbValue(this, result);
+        }
 
         public RbClass DefineClass(string name, RbClass? @class)
         {
@@ -112,6 +88,8 @@
             };
         }
 
+        public RbValue GetTopSelf() => new RbValue(this, mrb_top_self(this.MrbState));
+
         public bool ClassDefinedUnder(RbClass outer, string name) => mrb_class_defined_under(this.MrbState, outer.NativeHandler, name);
 
         public RbClass GetClassUnder(RbClass outer, string name)
@@ -133,7 +111,7 @@
                 RbState = this,
             };
         }
-        
+
         public void NotImplement() => mrb_notimplement(this.MrbState);
 
         public RbValue NotImplementM(RbValue value)
@@ -145,6 +123,66 @@
         public RbValue ObjItself(RbValue value)
         {
             var result = mrb_obj_itself(this.MrbState, value.NativeValue.Value);
+            return new RbValue(this, result);
+        }
+
+        public void FullGc() => mrb_full_gc(this.MrbState);
+
+        public void IncrementalGc() => mrb_incremental_gc(this.MrbState);
+
+        public void GcProtect(RbValue value)
+        {
+            mrb_gc_protect(this.MrbState, value.NativeValue.Value);
+        }
+
+        public void GcRegister(RbValue value)
+        {
+            mrb_gc_register(this.MrbState, value.NativeValue.Value);
+        }
+
+        public void GcUnregister(RbValue value)
+        {
+            mrb_gc_unregister(this.MrbState, value.NativeValue.Value);
+        }
+
+        public void DefineGlobalConst(string name, RbValue value)
+        {
+            mrb_define_global_const(this.MrbState, name, value.NativeValue.Value);
+        }
+
+        public RbValue FiberNew(RbProc proc)
+        {
+            var result = mrb_fiber_new(this.MrbState, proc.NativeHandler);
+            return new RbValue(this, result);
+        }
+
+        public RbValue FiberResume(RbValue fib, params RbValue[] argv)
+        {
+            var result = mrb_fiber_resume(this.MrbState, fib.NativeValue.Value, argv.Length, argv.Select(a => a.NativeValue.Value).ToArray());
+            return new RbValue(this, result);
+        }
+
+        public RbValue FiberYield(params RbValue[] argv)
+        {
+            var result = mrb_fiber_yield(this.MrbState, argv.Length, argv.Select(a => a.NativeValue.Value).ToArray());
+            return new RbValue(this, result);
+        }
+
+        public RbValue FiberAliveP(RbValue fib)
+        {
+            var result = mrb_fiber_alive_p(this.MrbState, fib.NativeValue.Value);
+            return new RbValue(this, result);
+        }
+
+        public RbValue Yield(RbValue b, RbValue arg)
+        {
+            var result = mrb_yield(this.MrbState, b.NativeValue.Value, arg.NativeValue.Value);
+            return new RbValue(this, result);
+        }
+
+        public RbValue YieldArgv(RbValue b, params RbValue[] argv)
+        {
+            var result = mrb_yield_argv(this.MrbState, b.NativeValue.Value, argv.Length, argv.Select(a => a.NativeValue.Value).ToArray());
             return new RbValue(this, result);
         }
     }

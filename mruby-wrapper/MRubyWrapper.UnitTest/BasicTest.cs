@@ -9,7 +9,6 @@ public class BasicTest
     public void TestCreateClassAndCallInstanceMethod()
     {
         var state = Ruby.Open();
-        RbHelper.Init(state);
 
         var rbClass = state.DefineClass("MyClass", null);
 
@@ -17,7 +16,7 @@ public class BasicTest
         rbClass.DefineMethod(rbClass, "test", (self, argv) =>
         {
             setVal = true;
-            return RbValue.RbNil;
+            return state.RbNil;
         }, RbHelper.MRB_ARGS_NONE());
 
         var obj = rbClass.NewObject();

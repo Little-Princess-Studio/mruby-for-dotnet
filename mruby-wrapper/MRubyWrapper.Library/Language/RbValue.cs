@@ -4,7 +4,7 @@
     using System.Linq;
     using System.Runtime.InteropServices;
 
-    public class RbValue
+    public partial class RbValue
     {
         [StructLayout(LayoutKind.Sequential, Pack = 8)]
         internal struct RbNativeValue
@@ -12,61 +12,12 @@
             public UInt64 Value;
         }
 
-        public RbState RbState { get; private set; }
-        internal RbNativeValue NativeValue { get; private set; }
-
-        // MRB_API struct RClass *mrb_singleton_class_ptr(mrb_state *mrb, mrb_value val);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_singleton_class_ptr(IntPtr state, UInt64 val);
-
-        // MRB_API mrb_value mrb_obj_dup(mrb_state *mrb, mrb_value obj);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_obj_dup(IntPtr state, UInt64 obj);
-
-        // MRB_API mrb_value mrb_float_value_boxing(struct mrb_state *mrb, mrb_float f);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_float_value_boxing(IntPtr mrb, double f);
-
-        // MRB_API mrb_value mrb_int_value_boxing(struct mrb_state *mrb, mrb_int i);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_int_value_boxing(IntPtr mrb, int i);
-
-        // MRB_API mrb_value mrb_symbol_value_boxing(mrb_sym i);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_symbol_value_boxing(UInt64 i);
-
-        // MRB_API mrb_value mrb_nil_value_boxing();
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_nil_value_boxing();
-
-        // MRB_API mrb_value mrb_true_value_boxing();
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_true_value_boxing();
-
-        // MRB_API mrb_value mrb_false_value_boxing();
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_false_value_boxing();
-
-        // MRB_API mrb_value mrb_undef_value_boxing();
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_undef_value_boxing();
-
-        public static RbValue RbTrue { get; private set; } = null!;
-        public static RbValue RbFalse { get; private set; } = null!;
-        public static RbValue RbNil { get; private set; } = null!;
-        public static RbValue RbUndef { get; private set; } = null!;
-
-        public static void Init(RbState state)
-        {
-            RbTrue = new RbValue(state, mrb_true_value_boxing());
-            RbFalse = new RbValue(state, mrb_false_value_boxing());
-            RbNil = new RbValue(state, mrb_nil_value_boxing());
-            RbUndef = new RbValue(state, mrb_undef_value_boxing());
-        }
+        private readonly RbState rbState;
+        internal readonly RbNativeValue NativeValue;
 
         public RbValue(RbState rbState, UInt64 nativeValue)
         {
-            this.RbState = rbState;
+            this.rbState = rbState;
             this.NativeValue = new RbNativeValue
             {
                 Value = nativeValue,
@@ -74,44 +25,101 @@
         }
 
         public RbValue CallMethod(string name, params RbValue[] args)
-            => RbHelper.CallMethod(this.RbState, this, name, args);
+            => RbHelper.CallMethod(this.rbState, this, name, args);
 
         public RbClass SingletonClass()
         {
-            var classPtr = mrb_singleton_class_ptr(this.RbState.MrbState, this.NativeValue.Value);
+            var classPtr = mrb_singleton_class_ptr(this.rbState.MrbState, this.NativeValue.Value);
             return new RbClass
             {
                 NativeHandler = classPtr,
-                RbState = this.RbState,
+                RbState = this.rbState,
             };
         }
-        
+
         // Wrapper for mrb_obj_dup
         public RbValue Duplicate()
         {
-            var result = mrb_obj_dup(this.RbState.MrbState, this.NativeValue.Value);
-            return new RbValue(this.RbState, result);
+            var result = mrb_obj_dup(this.rbState.MrbState, this.NativeValue.Value);
+            return new RbValue(this.rbState, result);
         }
 
-        // Wrapper for mrb_float_value_boxing
-        public RbValue BoxFloat(float value)
+        public RbValue Freeze()
         {
-            var result = mrb_float_value_boxing(this.RbState.MrbState, value);
-            return new RbValue(this.RbState, result);
+            var result = mrb_obj_freeze(this.rbState.MrbState, this.NativeValue.Value);
+            return new RbValue(this.rbState, result);
         }
 
-        // Wrapper for mrb_int_value_boxing
-        public RbValue BoxInt(int value)
+        public Int64 ObjectId() => mrb_obj_id(this.NativeValue.Value);
+
+        public bool DeepEquals(RbValue rbValue) => mrb_equal(this.rbState.MrbState, this.NativeValue.Value, rbValue.NativeValue.Value);
+
+        public Int64 Compare(RbValue rbValue) => mrb_cmp(this.rbState.MrbState, this.NativeValue.Value, rbValue.NativeValue.Value);
+
+        public RbValue ToRbString()
         {
-            var result = mrb_int_value_boxing(this.RbState.MrbState, value);
-            return new RbValue(this.RbState, result);
+            var result = mrb_any_to_s(this.rbState.MrbState, this.NativeValue.Value);
+            return new RbValue(this.rbState, result);
         }
 
-        // Wrapper for mrb_symbol_value_boxing
-        public RbValue BoxSymbol(UInt64 value)
+        public string? GetClassName()
         {
-            var result = mrb_symbol_value_boxing(value);
-            return new RbValue(this.RbState, result);
+            var result = mrb_obj_classname(this.rbState.MrbState, this.NativeValue.Value);
+            return Marshal.PtrToStringAnsi(result);
         }
+
+        public RbClass GetClass()
+        {
+            var classPtr = mrb_obj_class(this.rbState.MrbState, this.NativeValue.Value);
+            return new RbClass
+            {
+                NativeHandler = classPtr,
+                RbState = this.rbState,
+            };
+        }
+
+        public RbValue GetClassPath(RbClass @class)
+        {
+            var result = mrb_class_path(this.rbState.MrbState, @class.NativeHandler);
+            return new RbValue(this.rbState, result);
+        }
+
+        public bool IsKindOf(RbClass @class)
+        {
+            return mrb_obj_is_kind_of(this.rbState.MrbState, this.NativeValue.Value, @class.NativeHandler);
+        }
+
+        public RbValue Inspect()
+        {
+            var result = mrb_obj_inspect(this.rbState.MrbState, this.NativeValue.Value);
+            return new RbValue(this.rbState, result);
+        }
+
+        public RbValue Clone()
+        {
+            var result = mrb_obj_clone(this.rbState.MrbState, this.NativeValue.Value);
+            return new RbValue(this.rbState, result);
+        }
+        
+        public RbValue GetAttribute(string name)
+        {
+            var symId = RbHelper.GetInternSymbol(this.rbState, name);
+            var result = mrb_attr_get(this.rbState.MrbState, this.NativeValue.Value, symId);
+            return new RbValue(this.rbState, result);
+        }
+        
+        // override object.Equals
+        public override bool Equals(object? obj)
+        {
+            if (obj is RbValue rbValue)
+            {
+                return mrb_obj_eq(this.rbState.MrbState, this.NativeValue.Value, rbValue.NativeValue.Value);
+            }
+
+            return false;
+        }
+
+        // override object.GetHashCode
+        public override int GetHashCode() => this.NativeValue.Value.GetHashCode();
     }
 }

@@ -4,7 +4,7 @@
     using System.Linq;
     using System.Runtime.InteropServices;
 
-    public static class RbHelper
+    public static partial class RbHelper
     {
         public static uint MRB_ARGS_REQ(uint n) => (n & 0x1fU) << 18;
         public static uint MRB_ARGS_OPT(uint n) => (n & 0x1fU) << 13;
@@ -15,25 +15,6 @@
         public static uint MRB_ARGS_BLOCK() => 1U;
         public static uint MRB_ARGS_ANY() => MRB_ARGS_REST();
         public static uint MRB_ARGS_NONE() => 0U;
-
-        // MRB_API mrb_value mrb_funcall_argv(mrb_state *mrb, mrb_value val, mrb_sym name, mrb_int argc, const mrb_value *argv);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi)]
-        private static extern uint mrb_funcall_argv(
-            IntPtr state,
-            UInt64 val,
-            UInt64 sym,
-            Int64 argc,
-            IntPtr argv);
-
-        // MRB_API mrb_sym mrb_intern_cstr(mrb_state *mrb, const char* str);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi)]
-        private static extern UInt32 mrb_intern_cstr(
-            IntPtr state,
-            [MarshalAs(UnmanagedType.LPStr)] string name);
-
-        // MRB_API mrb_bool mrb_block_given_p(mrb_state *mrb);
-        [DllImport("mruby.dll", CharSet = CharSet.Ansi)]
-        private static extern bool mrb_block_given_p(IntPtr mrb);
 
         public static UInt64 GetInternSymbol(RbState state, string str) => mrb_intern_cstr(state.MrbState, str);
 
@@ -51,33 +32,76 @@
                     value.NativeValue.Value,
                     sym,
                     length,
-                    IntPtr.Zero);
+                    null);
             }
             else
             {
-                unsafe
-                {
-                    var fixedArgs = args.Select(v => v.NativeValue).ToArray();
-                    fixed (RbValue.RbNativeValue* p = &fixedArgs[0])
-                    {
-                        resVal = mrb_funcall_argv(
-                            state.MrbState,
-                            value.NativeValue.Value,
-                            sym,
-                            length,
-                            new IntPtr(p));
-                    }
-                }
+                resVal = mrb_funcall_argv(
+                    state.MrbState,
+                    value.NativeValue.Value,
+                    sym,
+                    length,
+                    args.Select(v => v.NativeValue.Value).ToArray());
             }
 
             return new RbValue(state, resVal);
         }
 
+        public static RbValue CallMethodWithBlock(RbState state, RbValue value, string name, RbValue block, params RbValue[] args)
+        {
+            int length = args.Length;
+
+            UInt64 resVal;
+            var sym = mrb_intern_cstr(state.MrbState, name);
+
+            if (length == 0)
+            {
+                resVal = mrb_funcall_with_block(
+                    state.MrbState,
+                    value.NativeValue.Value,
+                    sym,
+                    length,
+                    null,
+                    block.NativeValue.Value);
+            }
+            else
+            {
+                resVal = mrb_funcall_with_block(
+                    state.MrbState,
+                    value.NativeValue.Value,
+                    sym,
+                    length,
+                    args.Select(v => v.NativeValue.Value).ToArray(),
+                    block.NativeValue.Value);
+            }
+
+            return new RbValue(state, resVal);
+        }
+        
         public static bool BlockGivenP(RbState state) => mrb_block_given_p(state.MrbState);
 
-        public static void Init(RbState state)
+        public static string? GetSymbolName(RbState state, UInt64 sym)
         {
-            RbValue.Init(state);
+            var ptr = mrb_sym_name(state.MrbState, sym);
+            return Marshal.PtrToStringAnsi(ptr);
+        }
+
+        public static string? GetSymbolDump(RbState state, UInt64 sym)
+        {
+            var ptr = mrb_sym_dump(state.MrbState, sym);
+            return Marshal.PtrToStringAnsi(ptr);
+        }
+        
+        public static RbValue GetSymbolStr(RbState state, UInt64 sym)
+        {
+            var result = mrb_sym_str(state.MrbState, sym);
+            return new RbValue(state, result);
+        }
+        
+        public static RbValue NewRubyString(RbState state, string str)
+        {
+            var result = mrb_str_new_cstr(state.MrbState, str);
+            return new RbValue(state, result);
         }
     }
 }

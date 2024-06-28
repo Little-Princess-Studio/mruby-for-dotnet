@@ -10,16 +10,15 @@ internal static class Program
     {
         var state = Ruby.Open();
         
-        RbHelper.Init(state);
-        
         var rbClass = state.DefineClass("MyClass", null);
         rbClass.DefineMethod(rbClass, "echo", (self, argv) =>
         {
             Console.Out.WriteLine("Callback from Ruby!");
-            return RbValue.RbNil;
+            return state.RbNil;
         }, RbHelper.MRB_ARGS_NONE());
         var obj = rbClass.NewObject();
         obj.CallMethod("echo");
+
         Ruby.Close(state);
     }
 }
