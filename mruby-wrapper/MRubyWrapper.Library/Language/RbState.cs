@@ -2,53 +2,56 @@
 {
     using System;
     using System.Linq;
+    using System.Runtime.InteropServices;
 
-    public partial struct RbState
+    public partial class RbState
     {
-        public IntPtr MrbState { get; set; } = 0;
+        public IntPtr NativeHandler { get; set; } = IntPtr.Zero;
 
-        public RbValue RbTrue { get; private set; } = null!;
-        public RbValue RbFalse { get; private set; } = null!;
-        public RbValue RbNil { get; private set; } = null!;
-        public RbValue RbUndef { get; private set; } = null!;
+        public RbValue RbTrue { get; private set; }
+        public RbValue RbFalse { get; private set; }
+        public RbValue RbNil { get; private set; }
+        public RbValue RbUndef { get; private set; }
 
         public RbState()
         {
-            this.Init();
+            this.RbTrue = new RbValue(this, mrb_true_value_boxing());
+            this.RbFalse = new RbValue(this, mrb_false_value_boxing());
+            this.RbNil = new RbValue(this, mrb_nil_value_boxing());
+            this.RbUndef = new RbValue(this, mrb_undef_value_boxing());
         }
 
-        private void Init()
-        {
-            RbTrue = new RbValue(this, mrb_true_value_boxing());
-            RbFalse = new RbValue(this, mrb_false_value_boxing());
-            RbNil = new RbValue(this, mrb_nil_value_boxing());
-            RbUndef = new RbValue(this, mrb_undef_value_boxing());
-        }
-
-        // Wrapper for mrb_float_value_boxing
         public RbValue BoxFloat(float value)
         {
-            var result = mrb_float_value_boxing(this.MrbState, value);
+            var result = mrb_float_value_boxing(this.NativeHandler, value);
             return new RbValue(this, result);
         }
 
-        // Wrapper for mrb_int_value_boxing
-        public RbValue BoxInt(int value)
+        public RbValue BoxInt(Int64 value)
         {
-            var result = mrb_int_value_boxing(this.MrbState, value);
+            var result = mrb_int_value_boxing(value);
             return new RbValue(this, result);
         }
 
-        // Wrapper for mrb_symbol_value_boxing
         public RbValue BoxSymbol(UInt64 value)
         {
             var result = mrb_symbol_value_boxing(value);
             return new RbValue(this, result);
         }
 
+        public RbValue BoxString(string str)
+        {
+            var result = RbHelper.NewRubyString(this, str);
+            return result;
+        }
+
+        public string? GetSymbolName(UInt64 sym) => RbHelper.GetSymbolName(this, sym);
+        
+        public RbValue GetSymbolStr(UInt64 sym) => RbHelper.GetSymbolStr(this, sym);
+
         public RbClass DefineClass(string name, RbClass? @class)
         {
-            var classPtr = mrb_define_class(this.MrbState, name, @class?.NativeHandler ?? IntPtr.Zero);
+            var classPtr = mrb_define_class(this.NativeHandler, name, @class?.NativeHandler ?? IntPtr.Zero);
             return new RbClass
             {
                 NativeHandler = classPtr,
@@ -58,7 +61,7 @@
 
         public RbClass DefineModule(string name)
         {
-            var modulePtr = mrb_define_module(this.MrbState, name);
+            var modulePtr = mrb_define_module(this.NativeHandler, name);
             return new RbClass
             {
                 NativeHandler = modulePtr,
@@ -66,11 +69,11 @@
             };
         }
 
-        public bool ClassDefined(string name) => mrb_class_defined(this.MrbState, name);
+        public bool ClassDefined(string name) => mrb_class_defined(this.NativeHandler, name);
 
         public RbClass GetClass(string name)
         {
-            var classPtr = mrb_class_get(this.MrbState, name);
+            var classPtr = mrb_class_get(this.NativeHandler, name);
             return new RbClass
             {
                 NativeHandler = classPtr,
@@ -80,7 +83,7 @@
 
         public RbClass GetExceptionClass(string name)
         {
-            var classPtr = mrb_exc_get_id(this.MrbState, RbHelper.GetInternSymbol(this, name));
+            var classPtr = mrb_exc_get_id(this.NativeHandler, RbHelper.GetInternSymbol(this, name));
             return new RbClass
             {
                 NativeHandler = classPtr,
@@ -88,13 +91,13 @@
             };
         }
 
-        public RbValue GetTopSelf() => new RbValue(this, mrb_top_self(this.MrbState));
+        public RbValue GetTopSelf() => new RbValue(this, mrb_top_self(this.NativeHandler));
 
-        public bool ClassDefinedUnder(RbClass outer, string name) => mrb_class_defined_under(this.MrbState, outer.NativeHandler, name);
+        public bool ClassDefinedUnder(RbClass outer, string name) => mrb_class_defined_under(this.NativeHandler, outer.NativeHandler, name);
 
         public RbClass GetClassUnder(RbClass outer, string name)
         {
-            var classPtr = mrb_class_get_under(this.MrbState, outer.NativeHandler, name);
+            var classPtr = mrb_class_get_under(this.NativeHandler, outer.NativeHandler, name);
             return new RbClass
             {
                 NativeHandler = classPtr,
@@ -104,7 +107,7 @@
 
         public RbClass GetModule(string name)
         {
-            var modulePtr = mrb_module_get(this.MrbState, name);
+            var modulePtr = mrb_module_get(this.NativeHandler, name);
             return new RbClass
             {
                 NativeHandler = modulePtr,
@@ -112,78 +115,108 @@
             };
         }
 
-        public void NotImplement() => mrb_notimplement(this.MrbState);
+        public void NotImplement() => mrb_notimplement(this.NativeHandler);
 
         public RbValue NotImplementM(RbValue value)
         {
-            var result = mrb_notimplement_m(this.MrbState, value.NativeValue.Value);
+            var result = mrb_notimplement_m(this.NativeHandler, value.NativeValue.Value);
             return new RbValue(this, result);
         }
 
         public RbValue ObjItself(RbValue value)
         {
-            var result = mrb_obj_itself(this.MrbState, value.NativeValue.Value);
+            var result = mrb_obj_itself(this.NativeHandler, value.NativeValue.Value);
             return new RbValue(this, result);
         }
 
-        public void FullGc() => mrb_full_gc(this.MrbState);
+        public void FullGc() => mrb_full_gc(this.NativeHandler);
 
-        public void IncrementalGc() => mrb_incremental_gc(this.MrbState);
+        public void IncrementalGc() => mrb_incremental_gc(this.NativeHandler);
 
         public void GcProtect(RbValue value)
         {
-            mrb_gc_protect(this.MrbState, value.NativeValue.Value);
+            mrb_gc_protect(this.NativeHandler, value.NativeValue.Value);
         }
 
         public void GcRegister(RbValue value)
         {
-            mrb_gc_register(this.MrbState, value.NativeValue.Value);
+            mrb_gc_register(this.NativeHandler, value.NativeValue.Value);
         }
 
         public void GcUnregister(RbValue value)
         {
-            mrb_gc_unregister(this.MrbState, value.NativeValue.Value);
+            mrb_gc_unregister(this.NativeHandler, value.NativeValue.Value);
         }
 
         public void DefineGlobalConst(string name, RbValue value)
         {
-            mrb_define_global_const(this.MrbState, name, value.NativeValue.Value);
+            mrb_define_global_const(this.NativeHandler, name, value.NativeValue.Value);
         }
 
         public RbValue FiberNew(RbProc proc)
         {
-            var result = mrb_fiber_new(this.MrbState, proc.NativeHandler);
+            var result = mrb_fiber_new(this.NativeHandler, proc.NativeHandler);
             return new RbValue(this, result);
         }
 
         public RbValue FiberResume(RbValue fib, params RbValue[] argv)
         {
-            var result = mrb_fiber_resume(this.MrbState, fib.NativeValue.Value, argv.Length, argv.Select(a => a.NativeValue.Value).ToArray());
+            var result = mrb_fiber_resume(this.NativeHandler, fib.NativeValue.Value, argv.Length, argv.Select(a => a.NativeValue.Value).ToArray());
             return new RbValue(this, result);
         }
 
         public RbValue FiberYield(params RbValue[] argv)
         {
-            var result = mrb_fiber_yield(this.MrbState, argv.Length, argv.Select(a => a.NativeValue.Value).ToArray());
+            var result = mrb_fiber_yield(this.NativeHandler, argv.Length, argv.Select(a => a.NativeValue.Value).ToArray());
             return new RbValue(this, result);
         }
 
         public RbValue FiberAliveP(RbValue fib)
         {
-            var result = mrb_fiber_alive_p(this.MrbState, fib.NativeValue.Value);
+            var result = mrb_fiber_alive_p(this.NativeHandler, fib.NativeValue.Value);
             return new RbValue(this, result);
         }
 
         public RbValue Yield(RbValue b, RbValue arg)
         {
-            var result = mrb_yield(this.MrbState, b.NativeValue.Value, arg.NativeValue.Value);
+            var result = mrb_yield(this.NativeHandler, b.NativeValue.Value, arg.NativeValue.Value);
             return new RbValue(this, result);
         }
 
         public RbValue YieldArgv(RbValue b, params RbValue[] argv)
         {
-            var result = mrb_yield_argv(this.MrbState, b.NativeValue.Value, argv.Length, argv.Select(a => a.NativeValue.Value).ToArray());
+            var result = mrb_yield_argv(this.NativeHandler, b.NativeValue.Value, argv.Length, argv.Select(a => a.NativeValue.Value).ToArray());
             return new RbValue(this, result);
         }
+        
+        public RbValue P(RbValue value)
+        {
+            mrb_p(this.NativeHandler, value.NativeValue.Value);
+            return value;
+        }
+        
+        public RbValue YieldWithClass(RbValue b, RbValue c, RbValue[] args, RbValue self, RbClass @class)
+        {
+            var result = mrb_yield_with_class(
+                this.NativeHandler,
+                b.NativeValue.Value,
+                args.Length,
+                args.Select(a => a.NativeValue.Value).ToArray(),
+                self.NativeValue.Value, @class.NativeHandler);
+            return new RbValue(this, result);
+        }
+        
+        public UInt64 YieldCont(RbValue b, RbValue self, params RbValue[] args)
+        {
+            return mrb_yield_cont(this.NativeHandler, b.NativeValue.Value, self.NativeValue.Value, args.Length, args.Select(a => a.NativeValue.Value).ToArray());
+        }
+        
+        public Int64 UnboxInt(RbValue value) => mrb_int_value_unboxing(value.NativeValue.Value);
+        
+        public double UnboxFloat(RbValue value) => mrb_float_value_unboxing(value.NativeValue.Value);
+        
+        public UInt64 UnboxSymbol(RbValue value) => mrb_symbol_value_unboxing(value.NativeValue.Value);
+        
+        public string? UnboxString(RbValue value) => Marshal.PtrToStringAnsi(mrb_string_value_unboxing(this.NativeHandler, value.NativeValue.Value));
     }
 }

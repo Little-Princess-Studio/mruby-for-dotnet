@@ -7,7 +7,7 @@
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate UInt64 NativeMethodSignature(IntPtr state, UInt64 self);
 
-    public delegate RbValue CSharpMethodSignature(RbValue self, params RbValue[] args);
+    public delegate RbValue CSharpMethodSignature(RbState state, RbValue self, params RbValue[] args);
 
     public partial struct RbClass
     {
@@ -20,10 +20,10 @@
             this.RbState = rbState;
         }
         
-        public void DefineMethod(RbClass @class, string name, CSharpMethodSignature callback, uint parameterAspect)
+        public void DefineMethod(string name, CSharpMethodSignature callback, uint parameterAspect)
         {
             var lambda = BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
-            mrb_define_method(this.RbState.MrbState, @class.NativeHandler, name, lambda, parameterAspect);
+            mrb_define_method(this.RbState.NativeHandler, this.NativeHandler, name, lambda, parameterAspect);
         }
 
         private static unsafe NativeMethodSignature BuildCSharpCallbackToNativeCallbackBridgeMethod(CSharpMethodSignature callback)
@@ -32,18 +32,17 @@
             {
                 var argc = mrb_get_argc(state);
                 var argv = mrb_get_argv(state);
-                unsafe
+                var args = new RbValue[(int)argc];
+                for (int i = 0; i < argc; i++)
                 {
-                    var args = new RbValue[(int)argc];
-                    for (int i = 0; i < argc; i++)
-                    {
-                        args[i] = new RbValue(new RbState() { MrbState = state}, *(UInt64*)(argv + i));
-                    }
-
-                    var csharpSelf = new RbValue(new RbState() { MrbState = state }, self);
-                    var csharpRes = callback(csharpSelf, args);
-                    return csharpRes.NativeValue.Value;
+                    var arg = *(((UInt64*)argv)+ i);
+                    args[i] = new RbValue(new RbState { NativeHandler = state }, arg);
                 }
+
+                var csharpState = new RbState { NativeHandler = state };
+                var csharpSelf = new RbValue(csharpState, self);
+                var csharpRes = callback(csharpState, csharpSelf, args);
+                return csharpRes.NativeValue.Value;
             });
             return lambda;
         }
@@ -51,29 +50,29 @@
         public void DefineClassMethod(RbClass @class, string name, CSharpMethodSignature callback, uint parameterAspect)
         {
             var lambda = BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
-            mrb_define_class_method(this.RbState.MrbState, @class.NativeHandler, name, lambda, parameterAspect);
+            mrb_define_class_method(this.RbState.NativeHandler, @class.NativeHandler, name, lambda, parameterAspect);
         }
 
         public void DefineSingletonMethod(string name, CSharpMethodSignature callback, uint parameterAspect)
         {
             var lambda = BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
-            mrb_define_singleton_method(this.RbState.MrbState, this.NativeHandler, name, lambda, parameterAspect);
+            mrb_define_singleton_method(this.RbState.NativeHandler, this.NativeHandler, name, lambda, parameterAspect);
         }
 
         public void DefineModuleMethod(string name, CSharpMethodSignature callback, uint parameterAspect)
         {
             var lambda = BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
-            mrb_define_module_function(this.RbState.MrbState, this.NativeHandler, name, lambda, parameterAspect);
+            mrb_define_module_function(this.RbState.NativeHandler, this.NativeHandler, name, lambda, parameterAspect);
         }
 
         public void DefineConstant(string name, RbValue value)
-            => mrb_define_const(this.RbState.MrbState, this.NativeHandler, name, value.NativeValue.Value);
+            => mrb_define_const(this.RbState.NativeHandler, this.NativeHandler, name, value.NativeValue.Value);
 
         public void UndefMethod(string name)
-            => mrb_undef_method(this.RbState.MrbState, this.NativeHandler, name);
+            => mrb_undef_method(this.RbState.NativeHandler, this.NativeHandler, name);
 
         public void UndefClassMethod(string name)
-            => mrb_undef_class_method(this.RbState.MrbState, this.NativeHandler, name);
+            => mrb_undef_class_method(this.RbState.NativeHandler, this.NativeHandler, name);
 
         public RbValue NewObject(params RbValue[] args)
         {
@@ -88,27 +87,27 @@
 
                     fixed (RbValue.RbNativeValue* p = &fixedArgs[0])
                     {
-                        value = mrb_obj_new(this.RbState.MrbState, this.NativeHandler, length, new IntPtr(p));
+                        value = mrb_obj_new(this.RbState.NativeHandler, this.NativeHandler, length, new IntPtr(p));
                     }
                 }
             }
             else
             {
-                value = mrb_obj_new(this.RbState.MrbState, this.NativeHandler, length, IntPtr.Zero);
+                value = mrb_obj_new(this.RbState.NativeHandler, this.NativeHandler, length, IntPtr.Zero);
             }
 
             return new RbValue(this.RbState, value);
         }
 
         public void IncludeModule(RbClass included)
-            => mrb_include_module(this.RbState.MrbState, this.NativeHandler, included.NativeHandler);
+            => mrb_include_module(this.RbState.NativeHandler, this.NativeHandler, included.NativeHandler);
 
         public void PrependModule(RbClass prepended)
-            => mrb_prepend_module(this.RbState.MrbState, this.NativeHandler, prepended.NativeHandler);
+            => mrb_prepend_module(this.RbState.NativeHandler, this.NativeHandler, prepended.NativeHandler);
 
         public RbClass ClassNew(RbClass super)
         {
-            var classPtr = mrb_class_new(this.RbState.MrbState, super.NativeHandler);
+            var classPtr = mrb_class_new(this.RbState.NativeHandler, super.NativeHandler);
             return new RbClass
             {
                 NativeHandler = classPtr,
@@ -118,7 +117,7 @@
 
         public RbClass ModuleNew()
         {
-            var modulePtr = mrb_module_new(this.RbState.MrbState);
+            var modulePtr = mrb_module_new(this.RbState.NativeHandler);
             return new RbClass
             {
                 NativeHandler = modulePtr,
@@ -126,11 +125,11 @@
             };
         }
 
-        public bool ObjRespondTo(string name) => mrb_obj_respond_to(this.RbState.MrbState, this.NativeHandler, RbHelper.GetInternSymbol(this.RbState, name));
+        public bool ObjRespondTo(string name) => mrb_obj_respond_to(this.RbState.NativeHandler, this.NativeHandler, RbHelper.GetInternSymbol(this.RbState, name));
 
         public RbClass DefineClassUnder(RbClass outer, string name, RbClass super)
         {
-            var classPtr = mrb_define_class_under(this.RbState.MrbState, outer.NativeHandler, name, super.NativeHandler);
+            var classPtr = mrb_define_class_under(this.RbState.NativeHandler, outer.NativeHandler, name, super.NativeHandler);
             return new RbClass
             {
                 NativeHandler = classPtr,
@@ -140,7 +139,7 @@
 
         public RbClass DefineModuleUnder(RbClass outer, string name)
         {
-            var modulePtr = mrb_define_module_under(this.RbState.MrbState, outer.NativeHandler, name);
+            var modulePtr = mrb_define_module_under(this.RbState.NativeHandler, outer.NativeHandler, name);
             return new RbClass
             {
                 NativeHandler = modulePtr,
@@ -150,17 +149,17 @@
 
         public void DefineAlias(string a, string b)
         {
-            mrb_define_alias(this.RbState.MrbState, this.NativeHandler, a, b);
+            mrb_define_alias(this.RbState.NativeHandler, this.NativeHandler, a, b);
         }
 
         public void DefineAliasId(UInt64 a, UInt64 b)
         {
-            mrb_define_alias_id(this.RbState.MrbState, this.NativeHandler, a, b);
+            mrb_define_alias_id(this.RbState.NativeHandler, this.NativeHandler, a, b);
         }
 
         public string? GetClassName()
         {
-            var result = mrb_class_name(this.RbState.MrbState, this.NativeHandler);
+            var result = mrb_class_name(this.RbState.NativeHandler, this.NativeHandler);
             return Marshal.PtrToStringAnsi(result);
         }
     }

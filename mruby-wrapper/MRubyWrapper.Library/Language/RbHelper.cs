@@ -16,19 +16,19 @@
         public static uint MRB_ARGS_ANY() => MRB_ARGS_REST();
         public static uint MRB_ARGS_NONE() => 0U;
 
-        public static UInt64 GetInternSymbol(RbState state, string str) => mrb_intern_cstr(state.MrbState, str);
+        public static UInt64 GetInternSymbol(RbState state, string str) => mrb_intern_cstr(state.NativeHandler, str);
 
         public static RbValue CallMethod(RbState state, RbValue value, string name, params RbValue[] args)
         {
             int length = args.Length;
 
             UInt64 resVal;
-            var sym = mrb_intern_cstr(state.MrbState, name);
+            var sym = mrb_intern_cstr(state.NativeHandler, name);
 
             if (length == 0)
             { 
                 resVal = mrb_funcall_argv(
-                    state.MrbState,
+                    state.NativeHandler,
                     value.NativeValue.Value,
                     sym,
                     length,
@@ -37,7 +37,7 @@
             else
             {
                 resVal = mrb_funcall_argv(
-                    state.MrbState,
+                    state.NativeHandler,
                     value.NativeValue.Value,
                     sym,
                     length,
@@ -52,12 +52,12 @@
             int length = args.Length;
 
             UInt64 resVal;
-            var sym = mrb_intern_cstr(state.MrbState, name);
+            var sym = mrb_intern_cstr(state.NativeHandler, name);
 
             if (length == 0)
             {
                 resVal = mrb_funcall_with_block(
-                    state.MrbState,
+                    state.NativeHandler,
                     value.NativeValue.Value,
                     sym,
                     length,
@@ -67,7 +67,7 @@
             else
             {
                 resVal = mrb_funcall_with_block(
-                    state.MrbState,
+                    state.NativeHandler,
                     value.NativeValue.Value,
                     sym,
                     length,
@@ -78,29 +78,29 @@
             return new RbValue(state, resVal);
         }
         
-        public static bool BlockGivenP(RbState state) => mrb_block_given_p(state.MrbState);
+        public static bool BlockGivenP(RbState state) => mrb_block_given_p(state.NativeHandler);
 
         public static string? GetSymbolName(RbState state, UInt64 sym)
         {
-            var ptr = mrb_sym_name(state.MrbState, sym);
+            var ptr = mrb_sym_name(state.NativeHandler, sym);
             return Marshal.PtrToStringAnsi(ptr);
         }
 
         public static string? GetSymbolDump(RbState state, UInt64 sym)
         {
-            var ptr = mrb_sym_dump(state.MrbState, sym);
+            var ptr = mrb_sym_dump(state.NativeHandler, sym);
             return Marshal.PtrToStringAnsi(ptr);
         }
         
         public static RbValue GetSymbolStr(RbState state, UInt64 sym)
         {
-            var result = mrb_sym_str(state.MrbState, sym);
+            var result = mrb_sym_str(state.NativeHandler, sym);
             return new RbValue(state, result);
         }
         
         public static RbValue NewRubyString(RbState state, string str)
         {
-            var result = mrb_str_new_cstr(state.MrbState, str);
+            var result = mrb_str_new_cstr(state.NativeHandler, str);
             return new RbValue(state, result);
         }
     }

@@ -25,13 +25,13 @@
         
         public static RbCompiler ParseString(RbState mrb, string code, IntPtr ccontext)
         {
-            var state = mrb_parse_string(mrb.MrbState, code, ccontext);
+            var state = mrb_parse_string(mrb.NativeHandler, code, ccontext);
             return new RbCompiler(mrb, state);
         }
         
         public static RbCompiler ParserNew(RbState mrb)
         {
-            var state = mrb_parser_new(mrb.MrbState);
+            var state = mrb_parser_new(mrb.NativeHandler);
             return new RbCompiler(mrb, state);
         }
         
@@ -57,31 +57,31 @@
         
         public RbProc GenerateCode()
         {
-            var nativeProc = mrb_generate_code(this.rbState.MrbState, this.nativeHandler);
+            var nativeProc = mrb_generate_code(this.rbState.NativeHandler, this.nativeHandler);
             return new RbProc(nativeProc);
         }
 
         public RbValue LoadExec(IntPtr ccontext)
         {
-            var nativeVal = mrb_load_exec(this.rbState.MrbState, this.nativeHandler, ccontext);
+            var nativeVal = mrb_load_exec(this.rbState.NativeHandler, this.nativeHandler, ccontext);
             return new RbValue(this.rbState, nativeVal);
         }
 
         public RbValue LoadString(string code)
         {
-            var nativeVal = mrb_load_string(this.rbState.MrbState, code);
+            var nativeVal = mrb_load_string(this.rbState.NativeHandler, code);
             return new RbValue(this.rbState, nativeVal);
         }
 
         public RbValue LoadStringCxt(string code, IntPtr ccontext)
         {
-            var nativeVal = mrb_load_string_cxt(this.rbState.MrbState, code, ccontext);
+            var nativeVal = mrb_load_string_cxt(this.rbState.NativeHandler, code, ccontext);
             return new RbValue(this.rbState, nativeVal);
         }
 
         public RbValue TopRun(RbProc proc, RbValue self, Int64 stackKeep)
         {
-            var nativeVal = mrb_top_run(this.rbState.MrbState, proc.NativeHandler, self.NativeValue.Value, stackKeep);
+            var nativeVal = mrb_top_run(this.rbState.NativeHandler, proc.NativeHandler, self.NativeValue.Value, stackKeep);
             return new RbValue(this.rbState, nativeVal);
         }
 

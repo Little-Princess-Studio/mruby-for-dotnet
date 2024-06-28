@@ -5,8 +5,6 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MRubyWrapper.Library", "MRubyWrapper.Library\MRubyWrapper.Library.csproj", "{A8553012-5AC0-4FA8-8C4C-630372F74C57}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MRubyWrapper.Test", "MRubyWrapper.Test\MRubyWrapper.Test.csproj", "{88620E0B-9A37-4C5E-9D06-52C623792E6E}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MRubyWrapper.UnitTest", "MRubyWrapper.UnitTest\MRubyWrapper.UnitTest.csproj", "{220C8263-8BA1-4FBA-B445-DFA953589C93}"
 EndProject
 Global
@@ -22,10 +20,6 @@ Global
 		{A8553012-5AC0-4FA8-8C4C-630372F74C57}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A8553012-5AC0-4FA8-8C4C-630372F74C57}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A8553012-5AC0-4FA8-8C4C-630372F74C57}.Release|Any CPU.Build.0 = Release|Any CPU
-		{88620E0B-9A37-4C5E-9D06-52C623792E6E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{88620E0B-9A37-4C5E-9D06-52C623792E6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{88620E0B-9A37-4C5E-9D06-52C623792E6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{88620E0B-9A37-4C5E-9D06-52C623792E6E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{220C8263-8BA1-4FBA-B445-DFA953589C93}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{220C8263-8BA1-4FBA-B445-DFA953589C93}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{220C8263-8BA1-4FBA-B445-DFA953589C93}.Release|Any CPU.ActiveCfg = Release|Any CPU
