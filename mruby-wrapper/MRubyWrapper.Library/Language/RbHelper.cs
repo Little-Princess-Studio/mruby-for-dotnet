@@ -1,9 +1,24 @@
 ﻿namespace MRubyWrapper.Library.Language
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.InteropServices;
 
+    public struct RbDataClassType
+    {
+        [MarshalAs(UnmanagedType.LPStr)]
+        public readonly string Name;
+        [MarshalAs(UnmanagedType.FunctionPtr)]
+        public readonly NativeDataObjectFreeFunc FreeFunc;
+
+        public RbDataClassType(string name, NativeDataObjectFreeFunc freeFunc)
+        {
+            this.Name = name;
+            this.FreeFunc = freeFunc;
+        }
+    }
+    
     public static partial class RbHelper
     {
         public static uint MRB_ARGS_REQ(uint n) => (n & 0x1fU) << 18;
@@ -15,6 +30,37 @@
         public static uint MRB_ARGS_BLOCK() => 1U;
         public static uint MRB_ARGS_ANY() => MRB_ARGS_REST();
         public static uint MRB_ARGS_NONE() => 0U;
+        
+        private static Dictionary<string, IntPtr> RbDataClassMapping { get; } = new Dictionary<string, IntPtr>();
+
+        private static bool RbDataStructExist(string name) => RbDataClassMapping.ContainsKey(name);
+
+        private static void RbDataStructAdd(string name)  {
+            var typeStruct = Marshal.AllocHGlobal(Marshal.SizeOf<RbDataClassType>());
+            var type = new RbDataClassType(name, NativeDataObjectFreeFunc);
+            Marshal.StructureToPtr(type, typeStruct, false);
+            RbDataClassMapping.Add(name, typeStruct);
+        }
+        
+        public static IntPtr GetOrCreateNewRbDataStructPtr(string name) {
+            if (RbDataStructExist(name))
+            {
+                return RbDataClassMapping[name];
+            }
+            
+            RbDataStructAdd(name);
+            return RbDataClassMapping[name];
+        }
+
+        public static IntPtr GetIntPtrOfCSharpObject(object obj) => GCHandle.ToIntPtr(GCHandle.Alloc(obj, GCHandleType.Pinned));
+
+        public static object? GetObjectFromIntPtr(IntPtr ptr) => GCHandle.FromIntPtr(ptr).Target;
+        
+        private static void NativeDataObjectFreeFunc(IntPtr state, IntPtr data)
+        {
+            GCHandle handle = GCHandle.FromIntPtr(data);
+            handle.Free();
+        }
 
         public static UInt64 GetInternSymbol(RbState state, string str) => mrb_intern_cstr(state.NativeHandler, str);
 
@@ -32,7 +78,7 @@
                     value.NativeValue.Value,
                     sym,
                     length,
-                    null);
+                    null!);
             }
             else
             {
@@ -61,7 +107,7 @@
                     value.NativeValue.Value,
                     sym,
                     length,
-                    null,
+                    null!,
                     block.NativeValue.Value);
             }
             else
@@ -101,6 +147,12 @@
         public static RbValue NewRubyString(RbState state, string str)
         {
             var result = mrb_str_new_cstr(state.NativeHandler, str);
+            return new RbValue(state, result);
+        }
+
+        public static RbValue PtrToRbValue(RbState state, IntPtr p)
+        {
+            var result = mrb_ptr_to_mrb_value(p);
             return new RbValue(state, result);
         }
     }

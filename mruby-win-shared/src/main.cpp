@@ -47,6 +47,22 @@ mrb_float mrb_float_value_unboxing(mrb_value value) { return mrb_float(value); }
 
 mrb_sym mrb_symbol_value_unboxing(mrb_value value) { return mrb_symbol(value); }
 
-const char* mrb_string_value_unboxing(struct mrb_state* mrb, mrb_value value) {
+const char *mrb_string_value_unboxing(struct mrb_state* mrb, mrb_value value) {
   return mrb_str_to_cstr(mrb, value);
+}
+
+mrb_value mrb_ptr_to_mrb_value(void *p) { return mrb_obj_value(p); }
+
+mrb_value mrb_new_data_object(mrb_state *mrb, RClass *klass, void *datap, mrb_data_type *type) {
+  return mrb_obj_value(Data_Wrap_Struct(mrb, klass, type, datap));
+}
+
+void *mrb_data_object_get_ptr(mrb_state *mrb, mrb_value obj, mrb_data_type *type) {
+  void *p;
+  Data_Get_Struct(mrb, obj, type, p);
+  return p;
+}
+
+void *mrb_data_object_get_type(mrb_value obj) {
+    return DATA_PTR(obj);
 }

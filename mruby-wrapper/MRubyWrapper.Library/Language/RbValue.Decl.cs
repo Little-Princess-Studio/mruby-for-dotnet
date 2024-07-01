@@ -64,5 +64,37 @@
         // MRB_API mrb_value mrb_attr_get(mrb_state *mrb, mrb_value obj, mrb_sym id);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern UInt64 mrb_attr_get(IntPtr mrb, UInt64 obj, UInt64 id);
+        
+        // MRB_API mrb_value mrb_iv_get(mrb_state *mrb, mrb_value obj, mrb_sym sym);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern UInt64 mrb_iv_get(IntPtr mrb, UInt64 obj, UInt64 sym);
+
+        // MRB_API void mrb_iv_set(mrb_state *mrb, mrb_value obj, mrb_sym sym, mrb_value v);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern void mrb_iv_set(IntPtr mrb, UInt64 obj, UInt64 sym, UInt64 v);
+
+        // MRB_API mrb_bool mrb_iv_defined(mrb_state*, mrb_value, mrb_sym);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern bool mrb_iv_defined(IntPtr mrb, UInt64 obj, UInt64 sym);
+
+        // MRB_API mrb_value mrb_iv_remove(mrb_state *mrb, mrb_value obj, mrb_sym sym);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern UInt64 mrb_iv_remove(IntPtr mrb, UInt64 obj, UInt64 sym);
+
+        // MRB_API void mrb_iv_copy(mrb_state *mrb, mrb_value dst, mrb_value src);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern void mrb_iv_copy(IntPtr mrb, UInt64 dst, UInt64 src);
+        
+        // MRB_API void mrb_iv_foreach(mrb_state *mrb, mrb_value obj, mrb_iv_foreach_func *func, void *p);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern void mrb_iv_foreach(IntPtr mrb, UInt64 obj, IvForeachFunc func, IntPtr p);
+       
+        // MRB_API void *mrb_data_object_get_ptr(mrb_state *mrb, mrb_value obj, mrb_data_type *type);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern IntPtr mrb_data_object_get_ptr(IntPtr mrb, UInt64 obj, IntPtr type);
+
+        // void *mrb_data_object_get_type(mrb_value obj);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern IntPtr mrb_data_object_get_type(UInt64 obj);
     }
 }

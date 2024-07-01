@@ -9,6 +9,9 @@
 
     public delegate RbValue CSharpMethodSignature(RbState state, RbValue self, params RbValue[] args);
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void NativeDataObjectFreeFunc(IntPtr mrb, IntPtr data);
+    
     public partial struct RbClass
     {
         public IntPtr NativeHandler { get; set; }
@@ -99,6 +102,16 @@
             return new RbValue(this.RbState, value);
         }
 
+        public RbValue NewObjectWithCSharpDataObject(string dataName, object data, params RbValue[] args)
+        {
+            var dataType = RbHelper.GetOrCreateNewRbDataStructPtr(dataName);
+            var dataPtr = RbHelper.GetIntPtrOfCSharpObject(data);
+            var obj = mrb_new_data_object(this.RbState.NativeHandler, this.NativeHandler, dataPtr, dataType);
+            var ret = new RbValue(this.RbState, obj);
+            ret.CallMethod("initialize", args);
+            return ret;
+        }
+        
         public void IncludeModule(RbClass included)
             => mrb_include_module(this.RbState.NativeHandler, this.NativeHandler, included.NativeHandler);
 
@@ -162,5 +175,34 @@
             var result = mrb_class_name(this.RbState.NativeHandler, this.NativeHandler);
             return Marshal.PtrToStringAnsi(result);
         }
+
+        public RbValue CvGet(UInt64 sym)
+        {
+            var mod = RbHelper.PtrToRbValue(this.RbState, this.NativeHandler);
+            var result = mrb_cv_get(this.NativeHandler, mod.NativeValue.Value, sym);
+            return new RbValue(this.RbState, result);
+        }
+
+        public void CvSet(string cvName, RbValue val)
+        {
+            var mod = RbHelper.PtrToRbValue(this.RbState, this.NativeHandler);
+            var sym = RbHelper.GetInternSymbol(this.RbState, cvName);
+            mrb_cv_set(this.NativeHandler, mod.NativeValue.Value, sym, val.NativeValue.Value);
+        }
+
+        public bool CvDefined(string cvName)
+        {
+            var mod = RbHelper.PtrToRbValue(this.RbState, this.NativeHandler);
+            var sym = RbHelper.GetInternSymbol(this.RbState, cvName);
+            return mrb_cv_defined(this.NativeHandler, mod.NativeValue.Value, sym);
+        }
+
+        public bool IsConstantDefinedAt(string constName)
+        {
+            var mod = RbHelper.PtrToRbValue(this.RbState, this.NativeHandler);
+            var sym = RbHelper.GetInternSymbol(this.RbState, constName);
+            return mrb_const_defined_at(this.RbState.NativeHandler, mod.NativeValue.Value, sym);
+        }
+
     }
 }

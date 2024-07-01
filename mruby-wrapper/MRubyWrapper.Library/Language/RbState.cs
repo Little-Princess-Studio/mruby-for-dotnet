@@ -218,5 +218,32 @@
         public UInt64 UnboxSymbol(RbValue value) => mrb_symbol_value_unboxing(value.NativeValue.Value);
         
         public string? UnboxString(RbValue value) => Marshal.PtrToStringAnsi(mrb_string_value_unboxing(this.NativeHandler, value.NativeValue.Value));
+        
+        public RbValue ConstGet(UInt64 mod, UInt64 sym)
+        {
+            var result = mrb_const_get(this.NativeHandler, mod, sym);
+            return new RbValue(this, result);
+        }
+
+        public void ConstSet(UInt64 mod, UInt64 sym, RbValue val)
+            => mrb_const_set(this.NativeHandler, mod, sym, val.NativeValue.Value);
+
+        public bool ConstDefined(UInt64 mod, UInt64 sym) => mrb_const_defined(this.NativeHandler, mod, sym);
+
+        public void ConstRemove(UInt64 mod, UInt64 sym) => mrb_const_remove(this.NativeHandler, mod, sym);
+
+        public bool IvNameSymP(UInt64 sym) => mrb_iv_name_sym_p(this.NativeHandler, sym);
+
+        public void IvNameSymCheck(UInt64 sym) => mrb_iv_name_sym_check(this.NativeHandler, sym);
+
+        public RbValue GvGet(UInt64 sym)
+        {
+            var result = mrb_gv_get(this.NativeHandler, sym);
+            return new RbValue(this, result);
+        }
+
+        public void GvSet(UInt64 sym, RbValue val) => mrb_gv_set(this.NativeHandler, sym, val.NativeValue.Value);
+
+        public void GvRemove(UInt64 sym) => mrb_gv_remove(this.NativeHandler, sym);
     }
 }

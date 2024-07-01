@@ -3,6 +3,11 @@
     using System;
     using System.Runtime.InteropServices;
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate UInt64 IvForeachFunc(IntPtr state, UInt64 sym, UInt64 val, IntPtr data);
+    
+    public delegate RbValue CSharpIvForeachFunc(RbState state, string name, RbValue self, IntPtr data);
+    
     public partial class RbValue
     {
         [StructLayout(LayoutKind.Sequential, Pack = 8)]
@@ -138,5 +143,59 @@
         }
 
         public override int GetHashCode() => this.NativeValue.Value.GetHashCode();
+
+        // Wrapper methods
+        public RbValue GetInstanceVariable(string ivName)
+        {
+            var sym = RbHelper.GetInternSymbol(this.rbState, ivName);
+            var result = mrb_iv_get(this.rbState.NativeHandler, this.NativeValue.Value, sym);
+            return new RbValue(this.rbState, result);
+        }
+
+        public void SetInstanceVariable(string ivName, RbValue val)
+        {
+            var sym = RbHelper.GetInternSymbol(this.rbState, ivName);
+            mrb_iv_set(this.rbState.NativeHandler, this.NativeValue.Value, sym, val.NativeValue.Value);
+        }
+
+        public bool IsInstanceVariableDefined(string ivName)
+        {
+            var sym = RbHelper.GetInternSymbol(this.rbState, ivName);
+            return mrb_iv_defined(this.rbState.NativeHandler, this.NativeValue.Value, sym);
+        }
+
+        public RbValue RemoveInstanceVariable(string ivName)
+        {
+            var sym = RbHelper.GetInternSymbol(this.rbState, ivName);
+            var result = mrb_iv_remove(this.rbState.NativeHandler, this.NativeValue.Value, sym);
+            return new RbValue(this.rbState, result);
+        }
+
+        public void CopyInstanceVariables(RbValue dst) => mrb_iv_copy(this.rbState.NativeHandler, dst.NativeValue.Value, this.NativeValue.Value);
+        
+        public void IvForeach(CSharpIvForeachFunc func, IntPtr data)
+        {
+            var nativeFunc = new IvForeachFunc((state, sym, val, nativeData) =>
+            {
+                var nativeState = new RbState() { NativeHandler = state };
+                var name = RbHelper.GetSymbolName(nativeState, sym);
+                var self = new RbValue(this.rbState, val);
+                return func(this.rbState, name!, self, nativeData).NativeValue.Value;
+            });
+            mrb_iv_foreach(this.rbState.NativeHandler, this.NativeValue.Value, nativeFunc, data);
+        }
+        
+        public T? GetDataObject<T>(string typeName) where T : class
+        {
+            var type = RbHelper.GetOrCreateNewRbDataStructPtr(typeName);
+            var ptr = mrb_data_object_get_ptr(this.rbState.NativeHandler, this.NativeValue.Value, type);
+            return (T?)RbHelper.GetObjectFromIntPtr(ptr);
+        }
+        
+        public RbDataClassType GetDataObjectType()
+        {
+            var ptr = mrb_data_object_get_type(this.NativeValue.Value);
+            return Marshal.PtrToStructure<RbDataClassType>(ptr);
+        }
     }
 }

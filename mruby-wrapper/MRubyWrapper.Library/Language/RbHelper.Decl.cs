@@ -49,5 +49,9 @@
         // MRB_API mrb_value mrb_str_new_cstr(mrb_state*, const char*);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
         private static extern UInt64 mrb_str_new_cstr(IntPtr mrb, [MarshalAs(UnmanagedType.LPStr)] string str);
+        
+        // MRB_API mrb_value mrb_ptr_to_mrb_value(void *p);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
+        private static extern UInt64 mrb_ptr_to_mrb_value(IntPtr p);
     }
 }

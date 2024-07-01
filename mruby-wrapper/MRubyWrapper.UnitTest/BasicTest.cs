@@ -11,7 +11,9 @@ public class BasicTest
         var state = Ruby.Open();
 
         var rbClass = state.DefineClass("MyClass", null);
+        var rbClass2 = state.DefineClass("MyClass2", rbClass);
 
+        // test for rbClass2
         var setVal = false;
         rbClass.DefineMethod("test", (_, self, argv) =>
         {
@@ -43,12 +45,30 @@ public class BasicTest
         var respondTo = rbClass.ObjRespondTo("test");
         Assert.True(respondTo);
 
-        Ruby.Close(state);
-    }
+        // test for rbClass2
+        rbClass2.DefineMethod("initialize", (_, self, args) =>
+        {
+            self.SetInstanceVariable("@a", args[0]);
+            self.SetInstanceVariable("@b", args[1]);
+            return self;
+        }, RbHelper.MRB_ARGS_REQ(2));
 
-    [Fact]
-    public void TestClassMethod()
-    {
+        rbClass2.DefineMethod("plus_new", (state, self, args) =>
+        {
+            // add @a and @b
+            var a = self.GetInstanceVariable("@a");
+            var b = self.GetInstanceVariable("@b");
+            var sum = state.UnboxInt(a) + state.UnboxInt(b);
+            var boxedRes = state.BoxInt(sum);
+            return boxedRes;
+        }, RbHelper.MRB_ARGS_NONE());
+
+        var obj2 = rbClass2.NewObject(state.BoxInt(3), state.BoxInt(4)); 
+        var res3 = obj2.CallMethod("plus", state.BoxInt(1), state.BoxInt(2));
+        Assert.True(res3 == boxed);
+        var res4 = obj2.CallMethod("plus_new");
+        Assert.True(res4 == state.BoxInt(7));
         
+        Ruby.Close(state);
     }
 }
