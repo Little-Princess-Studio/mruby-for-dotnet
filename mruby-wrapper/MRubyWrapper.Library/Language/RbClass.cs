@@ -14,8 +14,8 @@
     
     public partial struct RbClass
     {
-        public IntPtr NativeHandler { get; set; }
-        public RbState RbState { get; set; }
+        public readonly IntPtr NativeHandler;
+        public readonly RbState RbState;
 
         public RbClass(IntPtr nativeHandler, RbState rbState)
         {
@@ -45,7 +45,7 @@
                 var csharpState = new RbState { NativeHandler = state };
                 var csharpSelf = new RbValue(csharpState, self);
                 var csharpRes = callback(csharpState, csharpSelf, args);
-                return csharpRes.NativeValue.Value;
+                return csharpRes.NativeValue;
             });
             return lambda;
         }
@@ -69,7 +69,7 @@
         }
 
         public void DefineConstant(string name, RbValue value)
-            => mrb_define_const(this.RbState.NativeHandler, this.NativeHandler, name, value.NativeValue.Value);
+            => mrb_define_const(this.RbState.NativeHandler, this.NativeHandler, name, value.NativeValue);
 
         public void UndefMethod(string name)
             => mrb_undef_method(this.RbState.NativeHandler, this.NativeHandler, name);
@@ -88,7 +88,7 @@
                 {
                     var fixedArgs = args.Select(v => v.NativeValue).ToArray();
 
-                    fixed (RbValue.RbNativeValue* p = &fixedArgs[0])
+                    fixed (UInt64* p = &fixedArgs[0])
                     {
                         value = mrb_obj_new(this.RbState.NativeHandler, this.NativeHandler, length, new IntPtr(p));
                     }
@@ -121,21 +121,13 @@
         public RbClass ClassNew(RbClass super)
         {
             var classPtr = mrb_class_new(this.RbState.NativeHandler, super.NativeHandler);
-            return new RbClass
-            {
-                NativeHandler = classPtr,
-                RbState = this.RbState,
-            };
+            return new RbClass(classPtr, this.RbState);
         }
 
         public RbClass ModuleNew()
         {
             var modulePtr = mrb_module_new(this.RbState.NativeHandler);
-            return new RbClass
-            {
-                NativeHandler = modulePtr,
-                RbState = this.RbState,
-            };
+            return new RbClass(modulePtr, this.RbState);
         }
 
         public bool ObjRespondTo(string name) => mrb_obj_respond_to(this.RbState.NativeHandler, this.NativeHandler, RbHelper.GetInternSymbol(this.RbState, name));
@@ -143,21 +135,13 @@
         public RbClass DefineClassUnder(RbClass outer, string name, RbClass super)
         {
             var classPtr = mrb_define_class_under(this.RbState.NativeHandler, outer.NativeHandler, name, super.NativeHandler);
-            return new RbClass
-            {
-                NativeHandler = classPtr,
-                RbState = this.RbState,
-            };
+            return new RbClass(classPtr, this.RbState);
         }
 
         public RbClass DefineModuleUnder(RbClass outer, string name)
         {
             var modulePtr = mrb_define_module_under(this.RbState.NativeHandler, outer.NativeHandler, name);
-            return new RbClass
-            {
-                NativeHandler = modulePtr,
-                RbState = this.RbState,
-            };
+            return new RbClass(modulePtr, this.RbState);
         }
 
         public void DefineAlias(string a, string b)
@@ -179,7 +163,7 @@
         public RbValue CvGet(UInt64 sym)
         {
             var mod = RbHelper.PtrToRbValue(this.RbState, this.NativeHandler);
-            var result = mrb_cv_get(this.NativeHandler, mod.NativeValue.Value, sym);
+            var result = mrb_cv_get(this.NativeHandler, mod.NativeValue, sym);
             return new RbValue(this.RbState, result);
         }
 
@@ -187,21 +171,21 @@
         {
             var mod = RbHelper.PtrToRbValue(this.RbState, this.NativeHandler);
             var sym = RbHelper.GetInternSymbol(this.RbState, cvName);
-            mrb_cv_set(this.NativeHandler, mod.NativeValue.Value, sym, val.NativeValue.Value);
+            mrb_cv_set(this.NativeHandler, mod.NativeValue, sym, val.NativeValue);
         }
 
         public bool CvDefined(string cvName)
         {
             var mod = RbHelper.PtrToRbValue(this.RbState, this.NativeHandler);
             var sym = RbHelper.GetInternSymbol(this.RbState, cvName);
-            return mrb_cv_defined(this.NativeHandler, mod.NativeValue.Value, sym);
+            return mrb_cv_defined(this.NativeHandler, mod.NativeValue, sym);
         }
 
         public bool IsConstantDefinedAt(string constName)
         {
             var mod = RbHelper.PtrToRbValue(this.RbState, this.NativeHandler);
             var sym = RbHelper.GetInternSymbol(this.RbState, constName);
-            return mrb_const_defined_at(this.RbState.NativeHandler, mod.NativeValue.Value, sym);
+            return mrb_const_defined_at(this.RbState.NativeHandler, mod.NativeValue, sym);
         }
 
     }

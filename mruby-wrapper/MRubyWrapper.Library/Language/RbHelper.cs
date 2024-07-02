@@ -75,7 +75,7 @@
             { 
                 resVal = mrb_funcall_argv(
                     state.NativeHandler,
-                    value.NativeValue.Value,
+                    value.NativeValue,
                     sym,
                     length,
                     null!);
@@ -84,10 +84,10 @@
             {
                 resVal = mrb_funcall_argv(
                     state.NativeHandler,
-                    value.NativeValue.Value,
+                    value.NativeValue,
                     sym,
                     length,
-                    args.Select(v => v.NativeValue.Value).ToArray());
+                    args.Select(v => v.NativeValue).ToArray());
             }
 
             return new RbValue(state, resVal);
@@ -104,21 +104,21 @@
             {
                 resVal = mrb_funcall_with_block(
                     state.NativeHandler,
-                    value.NativeValue.Value,
+                    value.NativeValue,
                     sym,
                     length,
                     null!,
-                    block.NativeValue.Value);
+                    block.NativeValue);
             }
             else
             {
                 resVal = mrb_funcall_with_block(
                     state.NativeHandler,
-                    value.NativeValue.Value,
+                    value.NativeValue,
                     sym,
                     length,
-                    args.Select(v => v.NativeValue.Value).ToArray(),
-                    block.NativeValue.Value);
+                    args.Select(v => v.NativeValue).ToArray(),
+                    block.NativeValue);
             }
 
             return new RbValue(state, resVal);

@@ -81,7 +81,7 @@
 
         public RbValue TopRun(RbProc proc, RbValue self, Int64 stackKeep)
         {
-            var nativeVal = mrb_top_run(this.rbState.NativeHandler, proc.NativeHandler, self.NativeValue.Value, stackKeep);
+            var nativeVal = mrb_top_run(this.rbState.NativeHandler, proc.NativeHandler, self.NativeValue, stackKeep);
             return new RbValue(this.rbState, nativeVal);
         }
 

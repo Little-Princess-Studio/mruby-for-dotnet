@@ -17,12 +17,14 @@
         }
 
         private readonly RbState rbState;
-        internal readonly RbNativeValue NativeValue;
+        private readonly RbNativeValue nativeValue;
+
+        public UInt64 NativeValue => this.nativeValue.Value;
 
         public RbValue(RbState rbState, UInt64 nativeValue)
         {
             this.rbState = rbState;
-            this.NativeValue = new RbNativeValue
+            this.nativeValue = new RbNativeValue
             {
                 Value = nativeValue,
             };
@@ -33,57 +35,49 @@
 
         public RbClass SingletonClass()
         {
-            var classPtr = mrb_singleton_class_ptr(this.rbState.NativeHandler, this.NativeValue.Value);
-            return new RbClass
-            {
-                NativeHandler = classPtr,
-                RbState = this.rbState,
-            };
+            var classPtr = mrb_singleton_class_ptr(this.rbState.NativeHandler, this.nativeValue.Value);
+            return new RbClass(classPtr, this.rbState);
         }
 
         // Wrapper for mrb_obj_dup
         public RbValue Duplicate()
         {
-            var result = mrb_obj_dup(this.rbState.NativeHandler, this.NativeValue.Value);
+            var result = mrb_obj_dup(this.rbState.NativeHandler, this.nativeValue.Value);
             return new RbValue(this.rbState, result);
         }
 
         public RbValue Freeze()
         {
-            var result = mrb_obj_freeze(this.rbState.NativeHandler, this.NativeValue.Value);
+            var result = mrb_obj_freeze(this.rbState.NativeHandler, this.nativeValue.Value);
             return new RbValue(this.rbState, result);
         }
 
-        public Int64 ObjectId() => mrb_obj_id(this.NativeValue.Value);
+        public Int64 ObjectId() => mrb_obj_id(this.nativeValue.Value);
 
         public bool StrictEquals(RbValue rbValue)
         {
-            var res = mrb_obj_eq(this.rbState.NativeHandler, this.NativeValue.Value, rbValue.NativeValue.Value);
+            var res = mrb_obj_eq(this.rbState.NativeHandler, this.nativeValue.Value, rbValue.nativeValue.Value);
             return res;
         }
 
-        public Int64 Compare(RbValue rbValue) => mrb_cmp(this.rbState.NativeHandler, this.NativeValue.Value, rbValue.NativeValue.Value);
+        public Int64 Compare(RbValue rbValue) => mrb_cmp(this.rbState.NativeHandler, this.nativeValue.Value, rbValue.nativeValue.Value);
 
         public RbValue ToRbString()
         {
-            var result = mrb_any_to_s(this.rbState.NativeHandler, this.NativeValue.Value);
+            var result = mrb_any_to_s(this.rbState.NativeHandler, this.nativeValue.Value);
             return new RbValue(this.rbState, result);
         }
 
         public string? GetClassName()
         {
-            var result = mrb_obj_classname(this.rbState.NativeHandler, this.NativeValue.Value);
+            var result = mrb_obj_classname(this.rbState.NativeHandler, this.nativeValue.Value);
             return Marshal.PtrToStringAnsi(result);
         }
 
         public RbClass GetClass()
         {
-            var classPtr = mrb_obj_class(this.rbState.NativeHandler, this.NativeValue.Value);
-            return new RbClass
-            {
-                NativeHandler = classPtr,
-                RbState = this.rbState,
-            };
+            var classPtr = mrb_obj_class(this.rbState.NativeHandler, this.nativeValue.Value);
+            return new RbClass(classPtr, this.rbState);
         }
 
         public RbValue GetClassPath(RbClass @class)
@@ -94,25 +88,25 @@
 
         public bool IsKindOf(RbClass @class)
         {
-            return mrb_obj_is_kind_of(this.rbState.NativeHandler, this.NativeValue.Value, @class.NativeHandler);
+            return mrb_obj_is_kind_of(this.rbState.NativeHandler, this.nativeValue.Value, @class.NativeHandler);
         }
 
         public RbValue Inspect()
         {
-            var result = mrb_obj_inspect(this.rbState.NativeHandler, this.NativeValue.Value);
+            var result = mrb_obj_inspect(this.rbState.NativeHandler, this.nativeValue.Value);
             return new RbValue(this.rbState, result);
         }
 
         public RbValue Clone()
         {
-            var result = mrb_obj_clone(this.rbState.NativeHandler, this.NativeValue.Value);
+            var result = mrb_obj_clone(this.rbState.NativeHandler, this.nativeValue.Value);
             return new RbValue(this.rbState, result);
         }
         
         public RbValue GetAttribute(string name)
         {
             var symId = RbHelper.GetInternSymbol(this.rbState, name);
-            var result = mrb_attr_get(this.rbState.NativeHandler, this.NativeValue.Value, symId);
+            var result = mrb_attr_get(this.rbState.NativeHandler, this.nativeValue.Value, symId);
             return new RbValue(this.rbState, result);
         }
         
@@ -135,43 +129,43 @@
         {
             if (obj is RbValue rbValue)
             {
-                var res = mrb_eql(this.rbState.NativeHandler, this.NativeValue.Value, rbValue.NativeValue.Value);
+                var res = mrb_eql(this.rbState.NativeHandler, this.nativeValue.Value, rbValue.nativeValue.Value);
                 return res;
             }
 
             return false;
         }
 
-        public override int GetHashCode() => this.NativeValue.Value.GetHashCode();
+        public override int GetHashCode() => this.nativeValue.Value.GetHashCode();
 
         // Wrapper methods
         public RbValue GetInstanceVariable(string ivName)
         {
             var sym = RbHelper.GetInternSymbol(this.rbState, ivName);
-            var result = mrb_iv_get(this.rbState.NativeHandler, this.NativeValue.Value, sym);
+            var result = mrb_iv_get(this.rbState.NativeHandler, this.nativeValue.Value, sym);
             return new RbValue(this.rbState, result);
         }
 
         public void SetInstanceVariable(string ivName, RbValue val)
         {
             var sym = RbHelper.GetInternSymbol(this.rbState, ivName);
-            mrb_iv_set(this.rbState.NativeHandler, this.NativeValue.Value, sym, val.NativeValue.Value);
+            mrb_iv_set(this.rbState.NativeHandler, this.nativeValue.Value, sym, val.nativeValue.Value);
         }
 
         public bool IsInstanceVariableDefined(string ivName)
         {
             var sym = RbHelper.GetInternSymbol(this.rbState, ivName);
-            return mrb_iv_defined(this.rbState.NativeHandler, this.NativeValue.Value, sym);
+            return mrb_iv_defined(this.rbState.NativeHandler, this.nativeValue.Value, sym);
         }
 
         public RbValue RemoveInstanceVariable(string ivName)
         {
             var sym = RbHelper.GetInternSymbol(this.rbState, ivName);
-            var result = mrb_iv_remove(this.rbState.NativeHandler, this.NativeValue.Value, sym);
+            var result = mrb_iv_remove(this.rbState.NativeHandler, this.nativeValue.Value, sym);
             return new RbValue(this.rbState, result);
         }
 
-        public void CopyInstanceVariables(RbValue dst) => mrb_iv_copy(this.rbState.NativeHandler, dst.NativeValue.Value, this.NativeValue.Value);
+        public void CopyInstanceVariables(RbValue dst) => mrb_iv_copy(this.rbState.NativeHandler, dst.nativeValue.Value, this.nativeValue.Value);
         
         public void IvForeach(CSharpIvForeachFunc func, IntPtr data)
         {
@@ -180,21 +174,21 @@
                 var nativeState = new RbState() { NativeHandler = state };
                 var name = RbHelper.GetSymbolName(nativeState, sym);
                 var self = new RbValue(this.rbState, val);
-                return func(this.rbState, name!, self, nativeData).NativeValue.Value;
+                return func(this.rbState, name!, self, nativeData).nativeValue.Value;
             });
-            mrb_iv_foreach(this.rbState.NativeHandler, this.NativeValue.Value, nativeFunc, data);
+            mrb_iv_foreach(this.rbState.NativeHandler, this.nativeValue.Value, nativeFunc, data);
         }
         
         public T? GetDataObject<T>(string typeName) where T : class
         {
             var type = RbHelper.GetOrCreateNewRbDataStructPtr(typeName);
-            var ptr = mrb_data_object_get_ptr(this.rbState.NativeHandler, this.NativeValue.Value, type);
+            var ptr = mrb_data_object_get_ptr(this.rbState.NativeHandler, this.nativeValue.Value, type);
             return (T?)RbHelper.GetObjectFromIntPtr(ptr);
         }
         
         public RbDataClassType GetDataObjectType()
         {
-            var ptr = mrb_data_object_get_type(this.NativeValue.Value);
+            var ptr = mrb_data_object_get_type(this.nativeValue.Value);
             return Marshal.PtrToStructure<RbDataClassType>(ptr);
         }
     }
