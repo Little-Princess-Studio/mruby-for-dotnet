@@ -21,7 +21,7 @@
             this.RbUndef = new RbValue(this, mrb_undef_value_boxing());
         }
 
-        public RbValue BoxFloat(float value)
+        public RbValue BoxFloat(double value)
         {
             var result = mrb_float_value_boxing(this.NativeHandler, value);
             return new RbValue(this, result);

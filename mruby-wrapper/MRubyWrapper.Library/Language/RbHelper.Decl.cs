@@ -7,7 +7,7 @@
     {
         // MRB_API mrb_value mrb_funcall_argv(mrb_state *mrb, mrb_value val, mrb_sym name, mrb_int argc, const mrb_value *argv);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
-        private static extern uint mrb_funcall_argv(
+        private static extern UInt64 mrb_funcall_argv(
             IntPtr state,
             UInt64 val,
             UInt64 sym,
@@ -16,7 +16,7 @@
 
         // MRB_API mrb_value mrb_funcall_with_block(mrb_state *mrb, mrb_value val, mrb_sym name, mrb_int argc, const mrb_value *argv, mrb_value block);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
-        private static extern uint mrb_funcall_with_block(
+        private static extern UInt64 mrb_funcall_with_block(
             IntPtr state,
             UInt64 val,
             UInt64 sym,
@@ -26,7 +26,7 @@
         
         // MRB_API mrb_sym mrb_intern_cstr(mrb_state *mrb, const char* str);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
-        private static extern UInt32 mrb_intern_cstr(
+        private static extern UInt64 mrb_intern_cstr(
             IntPtr state,
             [MarshalAs(UnmanagedType.LPStr)] string name);
 
@@ -53,5 +53,9 @@
         // MRB_API mrb_value mrb_ptr_to_mrb_value(void *p);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
         private static extern UInt64 mrb_ptr_to_mrb_value(IntPtr p);
+        
+        // MRB_API bool mrb_exception_happened(mrb_state *mrb)
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
+        private static extern bool mrb_exception_happened(IntPtr mrb);
     }
 }

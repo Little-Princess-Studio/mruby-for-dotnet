@@ -22,6 +22,14 @@
             this.NativeHandler = nativeHandler;
             this.RbState = rbState;
         }
+
+        public RbValue RbObject => RbHelper.PtrToRbValue(this.RbState, this.NativeHandler); 
+        
+        public RbValue CallMethod(string methodName, params RbValue[] args)
+        {
+            var classObj = this.RbObject;
+            return RbHelper.CallMethod(this.RbState, classObj, methodName, args);
+        }
         
         public void DefineMethod(string name, CSharpMethodSignature callback, uint parameterAspect)
         {
@@ -31,7 +39,7 @@
 
         private static unsafe NativeMethodSignature BuildCSharpCallbackToNativeCallbackBridgeMethod(CSharpMethodSignature callback)
         {
-            NativeMethodSignature lambda = new NativeMethodSignature((state, self) =>
+            NativeMethodSignature lambda = (state, self) =>
             {
                 var argc = mrb_get_argc(state);
                 var argv = mrb_get_argv(state);
@@ -46,14 +54,14 @@
                 var csharpSelf = new RbValue(csharpState, self);
                 var csharpRes = callback(csharpState, csharpSelf, args);
                 return csharpRes.NativeValue;
-            });
+            };
             return lambda;
         }
 
-        public void DefineClassMethod(RbClass @class, string name, CSharpMethodSignature callback, uint parameterAspect)
+        public void DefineClassMethod(string name, CSharpMethodSignature callback, uint parameterAspect)
         {
             var lambda = BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
-            mrb_define_class_method(this.RbState.NativeHandler, @class.NativeHandler, name, lambda, parameterAspect);
+            mrb_define_class_method(this.RbState.NativeHandler, this.NativeHandler, name, lambda, parameterAspect);
         }
 
         public void DefineSingletonMethod(string name, CSharpMethodSignature callback, uint parameterAspect)

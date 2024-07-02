@@ -6,7 +6,7 @@ using Library.Language;
 public class BasicTest
 {
     [Fact]
-    public void TestInstanceMethodForClass()
+    public void TestInstanceMethodAndInstanceVariables()
     {
         var state = Ruby.Open();
 
@@ -68,6 +68,52 @@ public class BasicTest
         Assert.True(res3 == boxed);
         var res4 = obj2.CallMethod("plus_new");
         Assert.True(res4 == state.BoxInt(7));
+        
+        Ruby.Close(state);
+    }
+
+    [Fact]
+    void TestClassMethodAndClassVariables()
+    {
+        var state = Ruby.Open();
+
+        var @class = state.DefineClass("TestClass", null);
+        var class2 = state.DefineClass("TestClass2", @class);
+
+        var boxedFloat = state.BoxFloat(12.0);
+        var unboxedFloat = state.UnboxFloat(boxedFloat);
+        Assert.True(Math.Abs(unboxedFloat - 12.0) < 0.0001);
+
+        @class.DefineClassMethod("class_sub", (stat, self, args) =>
+        {
+            var arg0 = stat.UnboxFloat(args[0]);
+            var arg1 = stat.UnboxFloat(args[1]);
+            var res = arg0 - arg1;
+            var boxedRes = stat.BoxFloat(res); 
+            return boxedRes;
+        }, RbHelper.MRB_ARGS_REQ(2));
+        
+        class2.DefineClassMethod("class_mul", (stat, self, argv) =>
+        {
+            var arg0 = stat.UnboxFloat(argv[0]);
+            var arg1 = stat.UnboxFloat(argv[1]);
+            var arg2 = stat.UnboxFloat(argv[2]);
+            var res = arg0 * arg1 * arg2;
+            var boxedRes = stat.BoxFloat(res);
+            return boxedRes;
+        }, RbHelper.MRB_ARGS_REQ(3));
+
+        var subRes = @class.CallMethod("class_sub", state.BoxFloat(4.5), state.BoxFloat(0.5));
+        var subResUnboxed = state.UnboxFloat(subRes);
+        Assert.True(Math.Abs(subResUnboxed - 4.0) < 0.0001);
+
+        var mulRes = @class2.CallMethod("class_mul", state.BoxFloat(2.0), state.BoxFloat(3.0), state.BoxFloat(4.0));
+        var mulResUnboxed = state.UnboxFloat(mulRes);
+        Assert.True(Math.Abs(mulResUnboxed - 24.0) < 0.0001);
+        
+        var subRes2 = @class.CallMethod("class_sub", state.BoxFloat(6.4), state.BoxFloat(6.7));
+        var subResUnboxed2 = state.UnboxFloat(subRes2);
+        Assert.True(Math.Abs(subResUnboxed2 - -0.3) < 0.0001);
         
         Ruby.Close(state);
     }

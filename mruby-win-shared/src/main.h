@@ -33,5 +33,9 @@ extern "C" {
   MRB_API void *mrb_data_object_get_ptr(mrb_state *mrb, mrb_value obj,
                                         mrb_data_type *type);
 
-  void *mrb_data_object_get_type(mrb_value obj);
+  MRB_API void *mrb_data_object_get_type(mrb_value obj);
+
+  MRB_API bool mrb_exception_happened(mrb_state *mrb);
+
+  MRB_API void mrb_print_error_ex(mrb_state *mrb);
 }

@@ -1,4 +1,5 @@
 #include "main.h"
+#include <cstdint>
 
 // make linker happy
 mrb_value mrb_bint_new_int64(mrb_state *mrb, int64_t x) {
@@ -20,7 +21,7 @@ mrb_bool mrb_pool_can_realloc(struct mrb_pool *, void *, size_t) {
 }
 
 mrb_value mrb_float_value_boxing(struct mrb_state *mrb, mrb_float f) {
-  return mrb_float_value(mrb, f);
+  return mrb_word_boxing_float_value(mrb, f);
 }
 
 mrb_value mrb_int_value_boxing(mrb_int i) {
@@ -63,6 +64,12 @@ void *mrb_data_object_get_ptr(mrb_state *mrb, mrb_value obj, mrb_data_type *type
   return p;
 }
 
-void *mrb_data_object_get_type(mrb_value obj) {
-    return DATA_PTR(obj);
+void *mrb_data_object_get_type(mrb_value obj) { return DATA_PTR(obj); }
+
+bool mrb_exception_happened(mrb_state *mrb) {
+  return mrb->exc != NULL;
+}
+
+void mrb_print_error_ex(mrb_state* mrb) {
+    mrb_print_error(mrb);
 }
