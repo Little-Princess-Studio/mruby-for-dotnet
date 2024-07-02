@@ -45,6 +45,8 @@
             return result;
         }
 
+        public RbClass GetRbClass(RbValue value) => RbHelper.GetRbClassFromValue(this, value);
+
         public string? GetSymbolName(UInt64 sym) => RbHelper.GetSymbolName(this, sym);
         
         public RbValue GetSymbolStr(UInt64 sym) => RbHelper.GetSymbolStr(this, sym);

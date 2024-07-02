@@ -73,3 +73,7 @@ bool mrb_exception_happened(mrb_state *mrb) {
 void mrb_print_error_ex(mrb_state* mrb) {
     mrb_print_error(mrb);
 }
+
+RClass *mrb_get_class_ptr(mrb_value value) {
+  return mrb_class_ptr(value);
+}

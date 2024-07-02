@@ -1,6 +1,7 @@
 #include "mruby.h"
-#include "mruby/string.h"
+#include "mruby/class.h"
 #include "mruby/data.h"
+#include "mruby/string.h"
 
 extern "C" {
   MRB_API mrb_value mrb_float_value_boxing(struct mrb_state *mrb, mrb_float f);
@@ -38,4 +39,6 @@ extern "C" {
   MRB_API bool mrb_exception_happened(mrb_state *mrb);
 
   MRB_API void mrb_print_error_ex(mrb_state *mrb);
+
+  MRB_API RClass *mrb_get_class_ptr(mrb_value value);
 }

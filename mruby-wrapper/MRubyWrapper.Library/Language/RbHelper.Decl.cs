@@ -54,8 +54,8 @@
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
         private static extern UInt64 mrb_ptr_to_mrb_value(IntPtr p);
         
-        // MRB_API bool mrb_exception_happened(mrb_state *mrb)
+        // MRB_API RClass *mrb_get_class_ptr(mrb_value value);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
-        private static extern bool mrb_exception_happened(IntPtr mrb);
+        private static extern IntPtr mrb_get_class_ptr(UInt64 value);
     }
 }

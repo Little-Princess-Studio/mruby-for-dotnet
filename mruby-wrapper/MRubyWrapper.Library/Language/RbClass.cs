@@ -168,9 +168,10 @@
             return Marshal.PtrToStringAnsi(result);
         }
 
-        public RbValue CvGet(UInt64 sym)
+        public RbValue CvGet(string name)
         {
             var mod = RbHelper.PtrToRbValue(this.RbState, this.NativeHandler);
+            var sym = RbHelper.GetInternSymbol(this.RbState, name);
             var result = mrb_cv_get(this.NativeHandler, mod.NativeValue, sym);
             return new RbValue(this.RbState, result);
         }
@@ -195,6 +196,5 @@
             var sym = RbHelper.GetInternSymbol(this.RbState, constName);
             return mrb_const_defined_at(this.RbState.NativeHandler, mod.NativeValue, sym);
         }
-
     }
 }

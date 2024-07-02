@@ -155,5 +155,11 @@
             var result = mrb_ptr_to_mrb_value(p);
             return new RbValue(state, result);
         }
+        
+        public static RbClass GetRbClassFromValue(RbState state, RbValue value)
+        {
+            var ptr = mrb_get_class_ptr(value.NativeValue);
+            return new RbClass(ptr, state);
+        }
     }
 }
