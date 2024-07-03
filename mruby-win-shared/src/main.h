@@ -43,6 +43,4 @@ extern "C" {
   MRB_API RClass *mrb_get_class_ptr(mrb_value value);
 
   MRB_API RObject *mrb_value_to_obj_ptr(mrb_value value);
-
-  MRB_API bool mrb_cls_method_defined(mrb_state* mrb, mrb_value mod);
 }

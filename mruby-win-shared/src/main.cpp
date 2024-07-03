@@ -77,5 +77,3 @@ void mrb_print_error_ex(mrb_state* mrb) {
 }
 
 RClass *mrb_get_class_ptr(mrb_value value) { return mrb_class_ptr(value); }
-
-bool mrb_cls_method_defined(mrb_state* mrb, mrb_value mod) { return mrb_mod_method_defined(mrb, mod); }
