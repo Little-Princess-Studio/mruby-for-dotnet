@@ -5,6 +5,14 @@
 
     public partial class RbState
     {
+        // MRB_API struct RClass * mrb_class_new(mrb_state *mrb, struct RClass *super);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern IntPtr mrb_class_new(IntPtr mrb, IntPtr super);
+
+        // MRB_API struct RClass * mrb_module_new(mrb_state *mrb);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern IntPtr mrb_module_new(IntPtr mrb);
+        
         // MRB_API struct RClass *mrb_define_class(mrb_state *mrb, const char *name, struct RClass *super);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern IntPtr mrb_define_class(
@@ -175,22 +183,6 @@
         // MRB_API const char* mrb_string_value_unboxing(struct mrb_state* mrb, mrb_value value);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern IntPtr mrb_string_value_unboxing(IntPtr mrb, UInt64 value);
-
-        // MRB_API mrb_value mrb_const_get(mrb_state*, mrb_value, mrb_sym);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_const_get(IntPtr mrb, UInt64 mod, UInt64 sym);
-
-        // MRB_API void mrb_const_set(mrb_state*, mrb_value, mrb_sym, mrb_value);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern void mrb_const_set(IntPtr mrb, UInt64 mod, UInt64 sym, UInt64 val);
-
-        // MRB_API mrb_bool mrb_const_defined(mrb_state*, mrb_value, mrb_sym);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern bool mrb_const_defined(IntPtr mrb, UInt64 mod, UInt64 sym);
-
-        // MRB_API void mrb_const_remove(mrb_state*, mrb_value, mrb_sym);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern void mrb_const_remove(IntPtr mrb, UInt64 mod, UInt64 sym);
 
         // MRB_API mrb_bool mrb_iv_name_sym_p(mrb_state *mrb, mrb_sym sym);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]

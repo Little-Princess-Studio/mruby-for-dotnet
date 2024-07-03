@@ -51,6 +51,18 @@
         
         public RbValue GetSymbolStr(UInt64 sym) => RbHelper.GetSymbolStr(this, sym);
 
+        public RbClass NewClass(RbClass? super)
+        {
+            var classPtr = mrb_class_new(this.NativeHandler, super?.NativeHandler ?? IntPtr.Zero);
+            return new RbClass(classPtr, this);
+        }
+
+        public RbClass NewModule()
+        {
+            var modulePtr = mrb_module_new(this.NativeHandler);
+            return new RbClass(modulePtr, this);
+        }
+        
         public RbClass DefineClass(string name, RbClass? @class)
         {
             var classPtr = mrb_define_class(this.NativeHandler, name, @class?.NativeHandler ?? IntPtr.Zero);
@@ -197,19 +209,6 @@
         
         public string? UnboxString(RbValue value) => Marshal.PtrToStringAnsi(mrb_string_value_unboxing(this.NativeHandler, value.NativeValue));
         
-        public RbValue ConstGet(UInt64 mod, UInt64 sym)
-        {
-            var result = mrb_const_get(this.NativeHandler, mod, sym);
-            return new RbValue(this, result);
-        }
-
-        public void ConstSet(UInt64 mod, UInt64 sym, RbValue val)
-            => mrb_const_set(this.NativeHandler, mod, sym, val.NativeValue);
-
-        public bool ConstDefined(UInt64 mod, UInt64 sym) => mrb_const_defined(this.NativeHandler, mod, sym);
-
-        public void ConstRemove(UInt64 mod, UInt64 sym) => mrb_const_remove(this.NativeHandler, mod, sym);
-
         public bool IvNameSymP(UInt64 sym) => mrb_iv_name_sym_p(this.NativeHandler, sym);
 
         public void IvNameSymCheck(UInt64 sym) => mrb_iv_name_sym_check(this.NativeHandler, sym);

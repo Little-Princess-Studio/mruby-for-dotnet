@@ -54,6 +54,8 @@ const char *mrb_string_value_unboxing(struct mrb_state* mrb, mrb_value value) {
 
 mrb_value mrb_ptr_to_mrb_value(void *p) { return mrb_obj_value(p); }
 
+RObject* mrb_value_to_obj_ptr(mrb_value value) { return mrb_obj_ptr(value); }
+
 mrb_value mrb_new_data_object(mrb_state *mrb, RClass *klass, void *datap, mrb_data_type *type) {
   return mrb_obj_value(Data_Wrap_Struct(mrb, klass, type, datap));
 }
@@ -74,6 +76,6 @@ void mrb_print_error_ex(mrb_state* mrb) {
     mrb_print_error(mrb);
 }
 
-RClass *mrb_get_class_ptr(mrb_value value) {
-  return mrb_class_ptr(value);
-}
+RClass *mrb_get_class_ptr(mrb_value value) { return mrb_class_ptr(value); }
+
+bool mrb_cls_method_defined(mrb_state* mrb, mrb_value mod) { return mrb_mod_method_defined(mrb, mod); }

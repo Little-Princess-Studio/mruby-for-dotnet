@@ -52,6 +52,33 @@
             return RbDataClassMapping[name];
         }
 
+        internal static unsafe NativeMethodSignature BuildCSharpCallbackToNativeCallbackBridgeMethod(CSharpMethodSignature callback)
+        {
+            UInt64 Lambda(IntPtr state, ulong self)
+            {
+                var argc = mrb_get_argc(state);
+                var argv = mrb_get_argv(state);
+                var args = new RbValue[(int)argc];
+                for (int i = 0; i < argc; i++)
+                {
+                    var arg = *(((UInt64*)argv) + i);
+                    args[i] = new RbValue(new RbState
+                    {
+                        NativeHandler = state
+                    }, arg);
+                }
+
+                var csharpState = new RbState
+                {
+                    NativeHandler = state
+                };
+                var csharpSelf = new RbValue(csharpState, self);
+                var csharpRes = callback(csharpState, csharpSelf, args);
+                return csharpRes.NativeValue;
+            }
+            return Lambda;
+        }
+        
         public static IntPtr GetIntPtrOfCSharpObject(object obj) => GCHandle.ToIntPtr(GCHandle.Alloc(obj, GCHandleType.Pinned));
 
         public static object? GetObjectFromIntPtr(IntPtr ptr) => GCHandle.FromIntPtr(ptr).Target;
@@ -161,5 +188,7 @@
             var ptr = mrb_get_class_ptr(value.NativeValue);
             return new RbClass(ptr, state);
         }
+        
+        internal static IntPtr GetRbObjectPtrFromValue(RbValue value) => mrb_value_to_obj_ptr(value.NativeValue);
     }
 }

@@ -57,5 +57,17 @@
         // MRB_API RClass *mrb_get_class_ptr(mrb_value value);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
         private static extern IntPtr mrb_get_class_ptr(UInt64 value);
+        
+        // MRB_API RObject* mrb_value_to_obj_ptr(mrb_value value);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
+        private static extern IntPtr mrb_value_to_obj_ptr(UInt64 value);
+        
+        // MRB_API mrb_int mrb_get_argc(mrb_state *mrb);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
+        private static extern Int64 mrb_get_argc(IntPtr mrb);
+
+        // MRB_API const mrb_value *mrb_get_argv(mrb_state *mrb);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
+        private static extern IntPtr mrb_get_argv(IntPtr mrb);
     }
 }

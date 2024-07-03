@@ -5,10 +5,6 @@
 
     public partial class RbValue
     {
-        // MRB_API struct RClass *mrb_singleton_class_ptr(mrb_state *mrb, mrb_value val);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_singleton_class_ptr(IntPtr state, UInt64 val);
-
         // MRB_API mrb_value mrb_obj_dup(mrb_state *mrb, mrb_value obj);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern UInt64 mrb_obj_dup(IntPtr state, UInt64 obj);
@@ -96,5 +92,14 @@
         // void *mrb_data_object_get_type(mrb_value obj);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern IntPtr mrb_data_object_get_type(UInt64 obj);
+        
+        // MRB_API void mrb_define_singleton_method(mrb_state *mrb, struct RObject *cla, const char *name, mrb_func_t fun, mrb_aspec aspec);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
+        private static extern void mrb_define_singleton_method(
+            IntPtr mrb,
+            IntPtr obj,
+            [MarshalAs(UnmanagedType.LPStr)] string name,
+            [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodSignature nativeMethod,
+            uint parameterAspect);
     }
 }

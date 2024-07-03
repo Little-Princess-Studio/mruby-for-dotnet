@@ -23,56 +23,47 @@
             this.RbState = rbState;
         }
 
-        public RbValue RbObject => RbHelper.PtrToRbValue(this.RbState, this.NativeHandler); 
+        public RbValue ClassObject => RbHelper.PtrToRbValue(this.RbState, this.NativeHandler); 
+        
+        public RbValue SingletonClassObject
+        {
+            get {
+                var objVal = this.ClassObject;
+                var classPtr = mrb_singleton_class_ptr(this.RbState.NativeHandler, objVal.NativeValue);
+                return RbHelper.PtrToRbValue(this.RbState, classPtr);
+            }
+        }
+        
+        public RbClass SingletonClass
+        {
+            get {
+                var objVal = this.ClassObject;
+                var classPtr = mrb_singleton_class_ptr(this.RbState.NativeHandler, objVal.NativeValue);
+                return new RbClass(classPtr, this.RbState);
+            }
+        }
         
         public RbValue CallMethod(string methodName, params RbValue[] args)
         {
-            var classObj = this.RbObject;
+            var classObj = this.ClassObject;
             return RbHelper.CallMethod(this.RbState, classObj, methodName, args);
         }
         
         public void DefineMethod(string name, CSharpMethodSignature callback, uint parameterAspect)
         {
-            var lambda = BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
+            var lambda = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
             mrb_define_method(this.RbState.NativeHandler, this.NativeHandler, name, lambda, parameterAspect);
-        }
-
-        private static unsafe NativeMethodSignature BuildCSharpCallbackToNativeCallbackBridgeMethod(CSharpMethodSignature callback)
-        {
-            NativeMethodSignature lambda = (state, self) =>
-            {
-                var argc = mrb_get_argc(state);
-                var argv = mrb_get_argv(state);
-                var args = new RbValue[(int)argc];
-                for (int i = 0; i < argc; i++)
-                {
-                    var arg = *(((UInt64*)argv)+ i);
-                    args[i] = new RbValue(new RbState { NativeHandler = state }, arg);
-                }
-
-                var csharpState = new RbState { NativeHandler = state };
-                var csharpSelf = new RbValue(csharpState, self);
-                var csharpRes = callback(csharpState, csharpSelf, args);
-                return csharpRes.NativeValue;
-            };
-            return lambda;
         }
 
         public void DefineClassMethod(string name, CSharpMethodSignature callback, uint parameterAspect)
         {
-            var lambda = BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
+            var lambda = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
             mrb_define_class_method(this.RbState.NativeHandler, this.NativeHandler, name, lambda, parameterAspect);
         }
-
-        public void DefineSingletonMethod(string name, CSharpMethodSignature callback, uint parameterAspect)
-        {
-            var lambda = BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
-            mrb_define_singleton_method(this.RbState.NativeHandler, this.NativeHandler, name, lambda, parameterAspect);
-        }
-
+        
         public void DefineModuleMethod(string name, CSharpMethodSignature callback, uint parameterAspect)
         {
-            var lambda = BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
+            var lambda = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
             mrb_define_module_function(this.RbState.NativeHandler, this.NativeHandler, name, lambda, parameterAspect);
         }
 
@@ -126,18 +117,6 @@
         public void PrependModule(RbClass prepended)
             => mrb_prepend_module(this.RbState.NativeHandler, this.NativeHandler, prepended.NativeHandler);
 
-        public RbClass ClassNew(RbClass super)
-        {
-            var classPtr = mrb_class_new(this.RbState.NativeHandler, super.NativeHandler);
-            return new RbClass(classPtr, this.RbState);
-        }
-
-        public RbClass ModuleNew()
-        {
-            var modulePtr = mrb_module_new(this.RbState.NativeHandler);
-            return new RbClass(modulePtr, this.RbState);
-        }
-
         public bool ObjRespondTo(string name) => mrb_obj_respond_to(this.RbState.NativeHandler, this.NativeHandler, RbHelper.GetInternSymbol(this.RbState, name));
 
         public RbClass DefineClassUnder(RbClass outer, string name, RbClass super)
@@ -168,7 +147,7 @@
             return Marshal.PtrToStringAnsi(result);
         }
 
-        public RbValue CvGet(string name)
+        public RbValue GetClassVariable(string name)
         {
             var mod = RbHelper.PtrToRbValue(this.RbState, this.NativeHandler);
             var sym = RbHelper.GetInternSymbol(this.RbState, name);
@@ -176,25 +155,43 @@
             return new RbValue(this.RbState, result);
         }
 
-        public void CvSet(string cvName, RbValue val)
+        public void SetClassVariable(string cvName, RbValue val)
         {
             var mod = RbHelper.PtrToRbValue(this.RbState, this.NativeHandler);
             var sym = RbHelper.GetInternSymbol(this.RbState, cvName);
-            mrb_cv_set(this.NativeHandler, mod.NativeValue, sym, val.NativeValue);
+            mrb_cv_set(this.RbState.NativeHandler, mod.NativeValue, sym, val.NativeValue);
         }
 
-        public bool CvDefined(string cvName)
+        public bool ClassVariableDefined(string cvName)
         {
             var mod = RbHelper.PtrToRbValue(this.RbState, this.NativeHandler);
             var sym = RbHelper.GetInternSymbol(this.RbState, cvName);
-            return mrb_cv_defined(this.NativeHandler, mod.NativeValue, sym);
+            return mrb_cv_defined(this.RbState.NativeHandler, mod.NativeValue, sym);
         }
 
-        public bool IsConstantDefinedAt(string constName)
+        public RbValue GetConst(string name)
         {
-            var mod = RbHelper.PtrToRbValue(this.RbState, this.NativeHandler);
-            var sym = RbHelper.GetInternSymbol(this.RbState, constName);
-            return mrb_const_defined_at(this.RbState.NativeHandler, mod.NativeValue, sym);
+            var sym = RbHelper.GetInternSymbol(this.RbState, name);
+            var result = mrb_const_get(this.RbState.NativeHandler, this.NativeHandler, sym);
+            return new RbValue(this.RbState, result);
+        }
+
+        public void SetConst(string name, RbValue val)
+        {
+            var sym = RbHelper.GetInternSymbol(this.RbState, name);
+            mrb_const_set(this.RbState.NativeHandler, this.NativeHandler, sym, val.NativeValue);
+        }
+
+        public bool ConstDefined(string name)
+        {
+            var sym = RbHelper.GetInternSymbol(this.RbState, name);
+            return mrb_const_defined(this.RbState.NativeHandler, this.NativeHandler, sym);
+        }
+
+        public void RemoveConst(string name)
+        {
+            var sym = RbHelper.GetInternSymbol(this.RbState, name);
+            mrb_const_remove(this.RbState.NativeHandler, this.NativeHandler, sym);
         }
     }
 }

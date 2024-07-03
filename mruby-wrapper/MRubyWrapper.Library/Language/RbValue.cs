@@ -33,12 +33,6 @@
         public RbValue CallMethod(string name, params RbValue[] args)
             => RbHelper.CallMethod(this.rbState, this, name, args);
 
-        public RbClass SingletonClass()
-        {
-            var classPtr = mrb_singleton_class_ptr(this.rbState.NativeHandler, this.nativeValue.Value);
-            return new RbClass(classPtr, this.rbState);
-        }
-
         // Wrapper for mrb_obj_dup
         public RbValue Duplicate()
         {
@@ -190,6 +184,13 @@
         {
             var ptr = mrb_data_object_get_type(this.nativeValue.Value);
             return Marshal.PtrToStructure<RbDataClassType>(ptr);
+        }
+        
+        public void DefineSingletonMethod(string name, CSharpMethodSignature callback, uint parameterAspect)
+        {
+            var lambda = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
+            var objPtr = RbHelper.GetRbObjectPtrFromValue(this);
+            mrb_define_singleton_method(this.rbState.NativeHandler, objPtr, name, lambda, parameterAspect);
         }
     }
 }
