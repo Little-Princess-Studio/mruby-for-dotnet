@@ -1,4 +1,4 @@
-﻿namespace MRubyWrapper.Library.Language
+namespace MRubyWrapper.Library.Language
 {
     using System;
     using System.Runtime.InteropServices;
@@ -19,11 +19,13 @@
 
         // MRB_API mrb_bool mrb_obj_eq(mrb_state *mrb, mrb_value a, mrb_value b);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern bool mrb_obj_eq(IntPtr mrb, UInt64 a, UInt64 b);
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern Boolean mrb_obj_equal(IntPtr mrb, UInt64 a, UInt64 b);
 
         // MRB_API mrb_bool mrb_eql(mrb_state *mrb, mrb_value obj1, mrb_value obj2);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern bool mrb_eql(IntPtr mrb, UInt64 obj1, UInt64 obj2);
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern Boolean mrb_eql(IntPtr mrb, UInt64 obj1, UInt64 obj2);
         
         // MRB_API mrb_int mrb_cmp(mrb_state *mrb, mrb_value obj1, mrb_value obj2);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
@@ -47,7 +49,8 @@
         
         // MRB_API mrb_bool mrb_obj_is_kind_of(mrb_state *mrb, mrb_value obj, struct RClass *c);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern bool mrb_obj_is_kind_of(IntPtr mrb, UInt64 obj, IntPtr @class);
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern Boolean mrb_obj_is_kind_of(IntPtr mrb, UInt64 obj, IntPtr @class);
         
         // MRB_API mrb_value mrb_obj_inspect(mrb_state *mrb, mrb_value self);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
@@ -71,7 +74,8 @@
 
         // MRB_API mrb_bool mrb_iv_defined(mrb_state*, mrb_value, mrb_sym);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern bool mrb_iv_defined(IntPtr mrb, UInt64 obj, UInt64 sym);
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern Boolean mrb_iv_defined(IntPtr mrb, UInt64 obj, UInt64 sym);
 
         // MRB_API mrb_value mrb_iv_remove(mrb_state *mrb, mrb_value obj, mrb_sym sym);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]

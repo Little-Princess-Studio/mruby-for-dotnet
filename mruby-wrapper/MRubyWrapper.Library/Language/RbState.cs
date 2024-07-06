@@ -1,4 +1,4 @@
-﻿namespace MRubyWrapper.Library.Language
+namespace MRubyWrapper.Library.Language
 {
     using System;
     using System.Linq;
@@ -116,7 +116,7 @@
 
         public RbValue GetTopSelf() => new RbValue(this, mrb_top_self(this.NativeHandler));
 
-        public bool ClassDefinedUnder(RbClass outer, string name) => mrb_class_defined_under(this.NativeHandler, outer.NativeHandler, name);
+        public Boolean ClassDefinedUnder(RbClass outer, string name) => mrb_class_defined_under(this.NativeHandler, outer.NativeHandler, name);
 
         public RbClass GetClassUnder(RbClass outer, string name)
         {
@@ -234,18 +234,18 @@
         
         public string? UnboxString(RbValue value) => Marshal.PtrToStringAnsi(mrb_string_value_unboxing(this.NativeHandler, value.NativeValue));
         
-        public bool IvNameSymP(UInt64 sym) => mrb_iv_name_sym_p(this.NativeHandler, sym);
+        public Boolean IsInstanceVariableNameSymP(UInt64 sym) => mrb_iv_name_sym_p(this.NativeHandler, sym);
 
-        public void IvNameSymCheck(UInt64 sym) => mrb_iv_name_sym_check(this.NativeHandler, sym);
+        public void IsInstanceVariableNameSymCheck(UInt64 sym) => mrb_iv_name_sym_check(this.NativeHandler, sym);
 
-        public RbValue GvGet(UInt64 sym)
+        public RbValue GetGlobalVariable(UInt64 sym)
         {
             var result = mrb_gv_get(this.NativeHandler, sym);
             return new RbValue(this, result);
         }
 
-        public void GvSet(UInt64 sym, RbValue val) => mrb_gv_set(this.NativeHandler, sym, val.NativeValue);
+        public void SetGlobalVariable(UInt64 sym, RbValue val) => mrb_gv_set(this.NativeHandler, sym, val.NativeValue);
 
-        public void GvRemove(UInt64 sym) => mrb_gv_remove(this.NativeHandler, sym);
+        public void RemoveGlobalVariable(UInt64 sym) => mrb_gv_remove(this.NativeHandler, sym);
     }
 }

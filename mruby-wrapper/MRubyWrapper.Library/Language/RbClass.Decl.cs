@@ -1,4 +1,4 @@
-﻿namespace MRubyWrapper.Library.Language
+namespace MRubyWrapper.Library.Language
 {
     using System;
     using System.Runtime.InteropServices;
@@ -62,7 +62,8 @@
         
         // MRB_API mrb_bool mrb_obj_respond_to(mrb_state *mrb, struct RClass* c, mrb_sym mid);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern bool mrb_obj_respond_to(IntPtr mrb, IntPtr c, UInt64 mid);
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern Boolean mrb_obj_respond_to(IntPtr mrb, IntPtr c, UInt64 mid);
         
         // MRB_API void mrb_define_alias(mrb_state *mrb, struct RClass *c, const char *a, const char *b);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
@@ -90,7 +91,8 @@
         
         // MRB_API mrb_bool mrb_cv_defined(mrb_state *mrb, mrb_value mod, mrb_sym sym);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern bool mrb_cv_defined(IntPtr mrb, UInt64 mod, UInt64 sym);
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern Boolean mrb_cv_defined(IntPtr mrb, UInt64 mod, UInt64 sym);
         
         // MRB_API mrb_value mrb_new_data_object(mrb_state *mrb, RClass *klass, void *datap, mrb_data_type *type);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
@@ -106,7 +108,8 @@
 
         // MRB_API mrb_bool mrb_const_defined(mrb_state*, mrb_value, mrb_sym);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern bool mrb_const_defined(IntPtr mrb, IntPtr mod, UInt64 sym);
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern Boolean mrb_const_defined(IntPtr mrb, IntPtr mod, UInt64 sym);
 
         // MRB_API void mrb_const_remove(mrb_state*, mrb_value, mrb_sym);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]

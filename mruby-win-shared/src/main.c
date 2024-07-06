@@ -1,8 +1,7 @@
 #include "main.h"
-#include <cstdint>
 
 // make linker happy
-mrb_value mrb_bint_new_int64(mrb_state *mrb, int64_t x) {
+mrb_value mrb_bint_new_int64(struct mrb_state *mrb, int64_t x) {
   return mrb_nil_value();
 }
 
@@ -14,9 +13,9 @@ int mrb_msvc_vsnprintf(char *s, size_t n, const char *format, va_list arg) {
   return 0;
 }
 
-int64_t mrb_bint_as_int64(mrb_state *mrb, mrb_value x) { return 0; }
+int64_t mrb_bint_as_int64(struct mrb_state *mrb, mrb_value x) { return 0; }
 
-mrb_bool mrb_pool_can_realloc(struct mrb_pool *, void *, size_t) {
+mrb_bool mrb_pool_can_realloc(struct mrb_pool * pool, void * p, size_t size) {
   return FALSE;
 }
 
@@ -54,13 +53,13 @@ const char *mrb_string_value_unboxing(struct mrb_state* mrb, mrb_value value) {
 
 mrb_value mrb_ptr_to_mrb_value(void *p) { return mrb_obj_value(p); }
 
-RObject* mrb_value_to_obj_ptr(mrb_value value) { return mrb_obj_ptr(value); }
+struct RObject* mrb_value_to_obj_ptr(mrb_value value) { return mrb_obj_ptr(value); }
 
-mrb_value mrb_new_data_object(mrb_state *mrb, RClass *klass, void *datap, mrb_data_type *type) {
+mrb_value mrb_new_data_object(struct mrb_state *mrb, struct RClass *klass, void *datap, struct mrb_data_type *type) {
   return mrb_obj_value(Data_Wrap_Struct(mrb, klass, type, datap));
 }
 
-void *mrb_data_object_get_ptr(mrb_state *mrb, mrb_value obj, mrb_data_type *type) {
+void *mrb_data_object_get_ptr(struct mrb_state *mrb, mrb_value obj, struct mrb_data_type *type) {
   void *p;
   Data_Get_Struct(mrb, obj, type, p);
   return p;
@@ -68,12 +67,15 @@ void *mrb_data_object_get_ptr(mrb_state *mrb, mrb_value obj, mrb_data_type *type
 
 void *mrb_data_object_get_type(mrb_value obj) { return DATA_PTR(obj); }
 
-bool mrb_exception_happened(mrb_state *mrb) {
+mrb_bool mrb_exception_happened(struct mrb_state *mrb) {
   return mrb->exc != NULL;
 }
 
-void mrb_print_error_ex(mrb_state* mrb) {
+void mrb_print_error_ex(struct mrb_state* mrb) {
     mrb_print_error(mrb);
 }
 
-RClass *mrb_get_class_ptr(mrb_value value) { return mrb_class_ptr(value); }
+struct RClass *mrb_get_class_ptr(mrb_value value) { return mrb_class_ptr(value); }
+
+mrb_bool mrb_bool_true() { return TRUE; }
+mrb_bool mrb_bool_false() { return FALSE; }

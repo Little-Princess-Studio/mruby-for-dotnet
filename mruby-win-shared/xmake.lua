@@ -4,7 +4,7 @@ local mruby_dir = "../mruby"
 
 local function common_settings()
     set_kind("shared")
-    add_files("src/*.cpp", "tools/mruby.def")
+    add_files("src/*.c", "tools/mruby.def")
     add_includedirs("src/", mruby_dir .. "/build/host/include")
     add_defines("MRB_BUILD_AS_DLL", "MRB_CORE", "MRB_LIB")
     set_runtimes("MD")

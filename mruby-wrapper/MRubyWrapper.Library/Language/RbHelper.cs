@@ -1,4 +1,4 @@
-﻿namespace MRubyWrapper.Library.Language
+namespace MRubyWrapper.Library.Language
 {
     using System;
     using System.Collections.Generic;
@@ -18,7 +18,7 @@
             this.FreeFunc = freeFunc;
         }
     }
-    
+
     public static partial class RbHelper
     {
         public static uint MRB_ARGS_REQ(uint n) => (n & 0x1fU) << 18;
@@ -30,7 +30,7 @@
         public static uint MRB_ARGS_BLOCK() => 1U;
         public static uint MRB_ARGS_ANY() => MRB_ARGS_REST();
         public static uint MRB_ARGS_NONE() => 0U;
-        
+
         private static Dictionary<string, IntPtr> RbDataClassMapping { get; } = new Dictionary<string, IntPtr>();
 
         private static bool RbDataStructExist(string name) => RbDataClassMapping.ContainsKey(name);

@@ -1,4 +1,4 @@
-﻿namespace MRubyWrapper.Library.Language
+namespace MRubyWrapper.Library.Language
 {
     using System;
     using System.Runtime.InteropServices;
@@ -66,7 +66,7 @@
 
         public bool StrictEquals(RbValue rbValue)
         {
-            var res = mrb_obj_eq(this.RbState.NativeHandler, this.nativeValue.Value, rbValue.nativeValue.Value);
+            var res = mrb_obj_equal(this.RbState.NativeHandler, this.nativeValue.Value, rbValue.nativeValue.Value);
             return res;
         }
 

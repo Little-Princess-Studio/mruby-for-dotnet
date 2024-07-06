@@ -1,4 +1,4 @@
-﻿namespace MRubyWrapper.Library.Language
+namespace MRubyWrapper.Library.Language
 {
     using System;
     using System.Linq;
@@ -136,7 +136,8 @@
         {
             var mod = this.RbState.PtrToRbValue(this.NativeHandler);
             var sym = this.RbState.GetInternSymbol(cvName);
-            return mrb_cv_defined(this.RbState.NativeHandler, mod.NativeValue, sym);
+            var defined = mrb_cv_defined(this.RbState.NativeHandler, mod.NativeValue, sym);
+            return defined;
         }
 
         public RbValue GetConst(string name)

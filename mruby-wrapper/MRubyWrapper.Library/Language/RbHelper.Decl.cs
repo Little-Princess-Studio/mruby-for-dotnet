@@ -1,4 +1,4 @@
-﻿namespace MRubyWrapper.Library.Language
+namespace MRubyWrapper.Library.Language
 {
     using System;
     using System.Runtime.InteropServices;
@@ -32,7 +32,8 @@
 
         // MRB_API mrb_bool mrb_block_given_p(mrb_state *mrb);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
-        private static extern bool mrb_block_given_p(IntPtr mrb);
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern Boolean mrb_block_given_p(IntPtr mrb);
         
         // MRB_API const char *mrb_sym_name(mrb_state*,mrb_sym);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
