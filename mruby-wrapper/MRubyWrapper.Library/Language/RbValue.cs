@@ -62,7 +62,7 @@ namespace MRubyWrapper.Library.Language
             return new RbValue(this.RbState, result);
         }
 
-        public Int64 ObjectId() => mrb_obj_id(this.nativeValue.Value);
+        public Int64 ObjectId => mrb_obj_id(this.nativeValue.Value);
 
         public bool StrictEquals(RbValue rbValue)
         {
