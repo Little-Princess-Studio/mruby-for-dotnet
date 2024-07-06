@@ -101,5 +101,9 @@
             [MarshalAs(UnmanagedType.LPStr)] string name,
             [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodSignature nativeMethod,
             uint parameterAspect);
+        
+        // MRB_API struct RClass *mrb_singleton_class_ptr(mrb_state *mrb, mrb_value val);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern IntPtr mrb_singleton_class_ptr(IntPtr state, UInt64 val);
     }
 }

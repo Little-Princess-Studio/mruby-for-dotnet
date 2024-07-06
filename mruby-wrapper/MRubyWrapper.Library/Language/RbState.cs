@@ -21,6 +21,8 @@
             this.RbUndef = new RbValue(this, mrb_undef_value_boxing());
         }
 
+        public UInt64 GetInternSymbol(string name) => RbHelper.GetInternSymbol(this, name);
+
         public RbValue BoxFloat(double value)
         {
             var result = mrb_float_value_boxing(this.NativeHandler, value);
@@ -45,11 +47,34 @@
             return result;
         }
 
+        public RbValue NewRubyString(string str)
+        {
+            var result = RbHelper.NewRubyString(this, str);
+            return result;
+        }
+        
+        
+        public RbClass DefineClassUnder(RbClass outer, string name, RbClass? super)
+        {
+            var classPtr = mrb_define_class_under(this.NativeHandler, outer.NativeHandler, name, super?.NativeHandler?? IntPtr.Zero);
+            return new RbClass(classPtr, this);
+        }
+
+        public RbClass DefineModuleUnder(RbClass outer, string name)
+        {
+            var modulePtr = mrb_define_module_under(this.NativeHandler, outer.NativeHandler, name);
+            return new RbClass(modulePtr, this);
+        }
+        
+        public RbValue PtrToRbValue(IntPtr p) => RbHelper.PtrToRbValue(this, p);
+        
         public RbClass GetRbClass(RbValue value) => RbHelper.GetRbClassFromValue(this, value);
 
         public string? GetSymbolName(UInt64 sym) => RbHelper.GetSymbolName(this, sym);
         
         public RbValue GetSymbolStr(UInt64 sym) => RbHelper.GetSymbolStr(this, sym);
+        
+        public string? GetSymbolDump(UInt64 sym) => RbHelper.GetSymbolDump(this, sym);
 
         public RbClass NewClass(RbClass? super)
         {
@@ -85,7 +110,7 @@
 
         public RbClass GetExceptionClass(string name)
         {
-            var classPtr = mrb_exc_get_id(this.NativeHandler, RbHelper.GetInternSymbol(this, name));
+            var classPtr = mrb_exc_get_id(this.NativeHandler, this.GetInternSymbol(name));
             return new RbClass(classPtr, this);
         }
 

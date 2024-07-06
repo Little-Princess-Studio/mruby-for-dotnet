@@ -25,24 +25,6 @@
 
         public RbValue ClassObject => RbHelper.PtrToRbValue(this.RbState, this.NativeHandler); 
         
-        public RbValue SingletonClassObject
-        {
-            get {
-                var objVal = this.ClassObject;
-                var classPtr = mrb_singleton_class_ptr(this.RbState.NativeHandler, objVal.NativeValue);
-                return RbHelper.PtrToRbValue(this.RbState, classPtr);
-            }
-        }
-        
-        public RbClass SingletonClass
-        {
-            get {
-                var objVal = this.ClassObject;
-                var classPtr = mrb_singleton_class_ptr(this.RbState.NativeHandler, objVal.NativeValue);
-                return new RbClass(classPtr, this.RbState);
-            }
-        }
-        
         public RbValue CallMethod(string methodName, params RbValue[] args)
         {
             var classObj = this.ClassObject;
@@ -117,19 +99,7 @@
         public void PrependModule(RbClass prepended)
             => mrb_prepend_module(this.RbState.NativeHandler, this.NativeHandler, prepended.NativeHandler);
 
-        public bool ObjRespondTo(string name) => mrb_obj_respond_to(this.RbState.NativeHandler, this.NativeHandler, RbHelper.GetInternSymbol(this.RbState, name));
-
-        public RbClass DefineClassUnder(RbClass outer, string name, RbClass super)
-        {
-            var classPtr = mrb_define_class_under(this.RbState.NativeHandler, outer.NativeHandler, name, super.NativeHandler);
-            return new RbClass(classPtr, this.RbState);
-        }
-
-        public RbClass DefineModuleUnder(RbClass outer, string name)
-        {
-            var modulePtr = mrb_define_module_under(this.RbState.NativeHandler, outer.NativeHandler, name);
-            return new RbClass(modulePtr, this.RbState);
-        }
+        public bool ObjRespondTo(string name) => mrb_obj_respond_to(this.RbState.NativeHandler, this.NativeHandler, this.RbState.GetInternSymbol(name));
 
         public void DefineAlias(string a, string b)
         {
@@ -149,48 +119,48 @@
 
         public RbValue GetClassVariable(string name)
         {
-            var mod = RbHelper.PtrToRbValue(this.RbState, this.NativeHandler);
-            var sym = RbHelper.GetInternSymbol(this.RbState, name);
+            var mod = this.RbState.PtrToRbValue(this.NativeHandler);
+            var sym = this.RbState.GetInternSymbol(name);
             var result = mrb_cv_get(this.NativeHandler, mod.NativeValue, sym);
             return new RbValue(this.RbState, result);
         }
 
         public void SetClassVariable(string cvName, RbValue val)
         {
-            var mod = RbHelper.PtrToRbValue(this.RbState, this.NativeHandler);
-            var sym = RbHelper.GetInternSymbol(this.RbState, cvName);
+            var mod = this.RbState.PtrToRbValue(this.NativeHandler);
+            var sym = this.RbState.GetInternSymbol(cvName);
             mrb_cv_set(this.RbState.NativeHandler, mod.NativeValue, sym, val.NativeValue);
         }
 
         public bool ClassVariableDefined(string cvName)
         {
-            var mod = RbHelper.PtrToRbValue(this.RbState, this.NativeHandler);
-            var sym = RbHelper.GetInternSymbol(this.RbState, cvName);
+            var mod = this.RbState.PtrToRbValue(this.NativeHandler);
+            var sym = this.RbState.GetInternSymbol(cvName);
             return mrb_cv_defined(this.RbState.NativeHandler, mod.NativeValue, sym);
         }
 
         public RbValue GetConst(string name)
         {
-            var sym = RbHelper.GetInternSymbol(this.RbState, name);
+            var sym = this.RbState.GetInternSymbol(name);
             var result = mrb_const_get(this.RbState.NativeHandler, this.NativeHandler, sym);
             return new RbValue(this.RbState, result);
         }
 
         public void SetConst(string name, RbValue val)
         {
-            var sym = RbHelper.GetInternSymbol(this.RbState, name);
+            var sym = this.RbState.GetInternSymbol(name);
             mrb_const_set(this.RbState.NativeHandler, this.NativeHandler, sym, val.NativeValue);
         }
 
         public bool ConstDefined(string name)
         {
-            var sym = RbHelper.GetInternSymbol(this.RbState, name);
+            var sym = this.RbState.GetInternSymbol(name);
             return mrb_const_defined(this.RbState.NativeHandler, this.NativeHandler, sym);
         }
 
         public void RemoveConst(string name)
         {
-            var sym = RbHelper.GetInternSymbol(this.RbState, name);
+            var sym = this.RbState.GetInternSymbol(name);
             mrb_const_remove(this.RbState.NativeHandler, this.NativeHandler, sym);
         }
     }

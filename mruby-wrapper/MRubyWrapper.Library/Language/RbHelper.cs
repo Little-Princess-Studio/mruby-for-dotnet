@@ -42,7 +42,7 @@
             RbDataClassMapping.Add(name, typeStruct);
         }
         
-        public static IntPtr GetOrCreateNewRbDataStructPtr(string name) {
+        internal static IntPtr GetOrCreateNewRbDataStructPtr(string name) {
             if (RbDataStructExist(name))
             {
                 return RbDataClassMapping[name];
@@ -89,9 +89,9 @@
             handle.Free();
         }
 
-        public static UInt64 GetInternSymbol(RbState state, string str) => mrb_intern_cstr(state.NativeHandler, str);
+        internal static UInt64 GetInternSymbol(RbState state, string str) => mrb_intern_cstr(state.NativeHandler, str);
 
-        public static RbValue CallMethod(RbState state, RbValue value, string name, params RbValue[] args)
+        internal static RbValue CallMethod(RbState state, RbValue value, string name, params RbValue[] args)
         {
             int length = args.Length;
 
@@ -120,7 +120,7 @@
             return new RbValue(state, resVal);
         }
 
-        public static RbValue CallMethodWithBlock(RbState state, RbValue value, string name, RbValue block, params RbValue[] args)
+        internal static RbValue CallMethodWithBlock(RbState state, RbValue value, string name, RbValue block, params RbValue[] args)
         {
             int length = args.Length;
 
@@ -151,44 +151,44 @@
             return new RbValue(state, resVal);
         }
         
-        public static bool BlockGivenP(RbState state) => mrb_block_given_p(state.NativeHandler);
+        internal static bool BlockGivenP(RbState state) => mrb_block_given_p(state.NativeHandler);
 
-        public static string? GetSymbolName(RbState state, UInt64 sym)
+        internal static string? GetSymbolName(RbState state, UInt64 sym)
         {
             var ptr = mrb_sym_name(state.NativeHandler, sym);
             return Marshal.PtrToStringAnsi(ptr);
         }
 
-        public static string? GetSymbolDump(RbState state, UInt64 sym)
+        internal static string? GetSymbolDump(RbState state, UInt64 sym)
         {
             var ptr = mrb_sym_dump(state.NativeHandler, sym);
             return Marshal.PtrToStringAnsi(ptr);
         }
         
-        public static RbValue GetSymbolStr(RbState state, UInt64 sym)
+        internal static RbValue GetSymbolStr(RbState state, UInt64 sym)
         {
             var result = mrb_sym_str(state.NativeHandler, sym);
             return new RbValue(state, result);
         }
         
-        public static RbValue NewRubyString(RbState state, string str)
+        internal static RbValue NewRubyString(RbState state, string str)
         {
             var result = mrb_str_new_cstr(state.NativeHandler, str);
             return new RbValue(state, result);
         }
 
-        public static RbValue PtrToRbValue(RbState state, IntPtr p)
+        internal static RbValue PtrToRbValue(RbState state, IntPtr p)
         {
             var result = mrb_ptr_to_mrb_value(p);
             return new RbValue(state, result);
         }
         
-        public static RbClass GetRbClassFromValue(RbState state, RbValue value)
+        internal static RbClass GetRbClassFromValue(RbState state, RbValue value)
         {
             var ptr = mrb_get_class_ptr(value.NativeValue);
             return new RbClass(ptr, state);
         }
         
-        internal static IntPtr GetRbObjectPtrFromValue(RbValue value) => mrb_value_to_obj_ptr(value.NativeValue);
+        public static IntPtr GetRbObjectPtrFromValue(RbValue value) => mrb_value_to_obj_ptr(value.NativeValue);
     }
 }

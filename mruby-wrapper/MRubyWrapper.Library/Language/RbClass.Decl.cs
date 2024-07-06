@@ -63,16 +63,6 @@
         // MRB_API mrb_bool mrb_obj_respond_to(mrb_state *mrb, struct RClass* c, mrb_sym mid);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern bool mrb_obj_respond_to(IntPtr mrb, IntPtr c, UInt64 mid);
-
-        // MRB_API struct RClass* mrb_define_class_under(mrb_state *mrb, struct RClass *outer, const char *name, struct RClass *super);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_define_class_under(
-            IntPtr mrb, IntPtr outer, [MarshalAs(UnmanagedType.LPStr)] string name, IntPtr super);
-
-        // MRB_API struct RClass* mrb_define_module_under(mrb_state *mrb, struct RClass *outer, const char *name);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_define_module_under(
-            IntPtr mrb, IntPtr outer, [MarshalAs(UnmanagedType.LPStr)] string name);
         
         // MRB_API void mrb_define_alias(mrb_state *mrb, struct RClass *c, const char *a, const char *b);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
@@ -105,10 +95,6 @@
         // MRB_API mrb_value mrb_new_data_object(mrb_state *mrb, RClass *klass, void *datap, mrb_data_type *type);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern UInt64 mrb_new_data_object(IntPtr mrb, IntPtr klass, IntPtr data, IntPtr type);
-        
-        // MRB_API struct RClass *mrb_singleton_class_ptr(mrb_state *mrb, mrb_value val);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_singleton_class_ptr(IntPtr state, UInt64 val);
         
         // MRB_API mrb_value mrb_const_get(mrb_state*, mrb_value, mrb_sym);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]

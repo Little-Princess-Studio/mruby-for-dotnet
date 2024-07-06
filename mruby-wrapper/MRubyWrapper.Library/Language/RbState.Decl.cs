@@ -12,7 +12,7 @@
         // MRB_API struct RClass * mrb_module_new(mrb_state *mrb);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern IntPtr mrb_module_new(IntPtr mrb);
-        
+
         // MRB_API struct RClass *mrb_define_class(mrb_state *mrb, const char *name, struct RClass *super);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern IntPtr mrb_define_class(
@@ -203,5 +203,15 @@
         // MRB_API void mrb_gv_remove(mrb_state *mrb, mrb_sym sym);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern void mrb_gv_remove(IntPtr mrb, UInt64 sym);
+
+        // MRB_API struct RClass* mrb_define_class_under(mrb_state *mrb, struct RClass *outer, const char *name, struct RClass *super);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern IntPtr mrb_define_class_under(
+            IntPtr mrb, IntPtr outer, [MarshalAs(UnmanagedType.LPStr)] string name, IntPtr super);
+
+        // MRB_API struct RClass* mrb_define_module_under(mrb_state *mrb, struct RClass *outer, const char *name);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern IntPtr mrb_define_module_under(
+            IntPtr mrb, IntPtr outer, [MarshalAs(UnmanagedType.LPStr)] string name);
     }
 }

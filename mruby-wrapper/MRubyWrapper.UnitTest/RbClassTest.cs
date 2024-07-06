@@ -3,7 +3,7 @@ namespace MRubyWrapper.UnitTest;
 using Library;
 using Library.Language;
 
-public class BasicTest
+public class RbClassTest
 {
     [Fact]
     public void TestInstanceMethodAndInstanceVariables()
@@ -13,6 +13,9 @@ public class BasicTest
         var rbClass = state.DefineClass("MyClass", null);
         var rbClass2 = state.DefineClass("MyClass2", rbClass);
 
+        Assert.Equal("MyClass", rbClass.GetClassName());
+        Assert.Equal("MyClass2", rbClass2.GetClassName());
+        
         // test for rbClass2
         var setVal = false;
         rbClass.DefineMethod("test", (_, self, argv) =>
@@ -53,13 +56,13 @@ public class BasicTest
             return self;
         }, RbHelper.MRB_ARGS_REQ(2));
 
-        rbClass2.DefineMethod("plus_new", (state, self, args) =>
+        rbClass2.DefineMethod("plus_new", (stat, self, args) =>
         {
             // add @a and @b
             var a = self.GetInstanceVariable("@a");
             var b = self.GetInstanceVariable("@b");
-            var sum = state.UnboxInt(a) + state.UnboxInt(b);
-            var boxedRes = state.BoxInt(sum);
+            var sum = stat.UnboxInt(a) + stat.UnboxInt(b);
+            var boxedRes = stat.BoxInt(sum);
             return boxedRes;
         }, RbHelper.MRB_ARGS_NONE());
 
@@ -129,13 +132,13 @@ public class BasicTest
 
         var classObj = class2.ClassObject;
         var respondTo = classObj.CallMethod("respond_to?",
-            state.BoxSymbol(RbHelper.GetInternSymbol(state, "class_mul")));
+            state.BoxSymbol(state.GetInternSymbol("class_mul")));
         Assert.True(respondTo == state.RbTrue);
         
         class2.UndefClassMethod("class_mul");
         
         respondTo = classObj.CallMethod("respond_to?",
-            state.BoxSymbol(RbHelper.GetInternSymbol(state, "class_mul")));
+            state.BoxSymbol(state.GetInternSymbol("class_mul")));
         Assert.True(respondTo == state.RbFalse);
         
         Ruby.Close(state);
@@ -259,10 +262,128 @@ public class BasicTest
         var defined = @class.ConstDefined("CONST1");
         Assert.True(defined);
         
+        @class.SetConst("CONST1", state.BoxInt(789));
+        var constVal = @class.GetConst("CONST1");
+        Assert.True(constVal == state.BoxInt(789));
+        
         @class.RemoveConst("CONST1");
 
         defined = @class.ConstDefined("CONST1");
         Assert.False(defined);
+        
+        Ruby.Close(state);
+    }
+
+    private class MyData
+    {
+        public Int64 Value { get; set; }
+    }
+    
+    [Fact]
+    void TestNewObjectWithCSharpDataObject()
+    {
+        var state = Ruby.Open();
+        
+        var @class = state.DefineClass("MyData", null);
+        @class.DefineMethod("initialize", (stat, self, args) =>
+        {
+            var value = state.UnboxInt(args[0]);
+            var obj = self.GetDataObject<MyData>("MyData")!;
+            obj.Value = value;
+            return self;
+        }, RbHelper.MRB_ARGS_REQ(1));
+
+        @class.DefineMethod("get_value", (stat, self, args) =>
+        {
+            var obj = self.GetDataObject<MyData>("MyData")!;
+            var boxed = stat.BoxInt(obj.Value);
+            return boxed;
+        }, RbHelper.MRB_ARGS_NONE());
+
+        var dataObj = @class.NewObjectWithCSharpDataObject("MyData", new MyData(), state.BoxInt(12345));
+        var v = dataObj.CallMethod("get_value");
+
+        var unboxed = state.UnboxInt(v);
+        Assert.Equal(12345, unboxed);
+        
+        Ruby.Close(state);
+    }
+
+    [Fact]
+    void TestPrependModule()
+    {
+        var state = Ruby.Open();
+
+        var mod = state.DefineModule("MyModule");
+        var cls = state.DefineClass("MyClass", null);
+
+        var val = 0;
+        mod.DefineMethod("test_to_override", (stat, self, args) =>
+        {
+            val = 1;
+            return stat.RbNil;
+        }, RbHelper.MRB_ARGS_NONE());
+        
+        cls.DefineMethod("test_to_override", (stat, self, args) =>
+        {
+            val = 2;
+            return stat.RbTrue;
+        }, RbHelper.MRB_ARGS_NONE());
+
+        cls.PrependModule(mod);
+        
+        var obj = cls.NewObject();
+        var res = obj.CallMethod("test_to_override");
+
+        Assert.True(res == state.RbNil);
+        Assert.Equal(1, val);
+        
+        Ruby.Close(state);
+    }
+
+    [Fact]
+    void TestDefineClassAndModuleUnder()
+    {
+        var state = Ruby.Open();
+
+        var mod = state.DefineModule("MyModule");
+        var cls = state.DefineClass("MyClass", null);
+
+        var mod2 = state.DefineModuleUnder(mod, "MyModule2");
+        var cls2 = state.DefineClassUnder(cls,"MyClass2", null);
+
+        Assert.Equal("MyModule::MyModule2", mod2.GetClassName());
+        Assert.Equal("MyClass::MyClass2", cls2.GetClassName());
+        
+        Ruby.Close(state);
+    }
+
+    [Fact]
+    void TestDefineAlias()
+    {
+        var state = Ruby.Open();
+        
+        var @class = state.DefineClass("MyClass", null);
+
+        var val = 0;
+        @class.DefineMethod("test_method", (stat, self, args) =>
+        {
+            ++val;
+            return stat.RbNil;
+        }, RbHelper.MRB_ARGS_NONE());
+        
+        @class.DefineAlias("alias_method0", "test_method");
+        @class.DefineAliasId(state.GetInternSymbol("alias_method1"), state.GetInternSymbol("test_method"));
+        
+        var obj = @class.NewObject();
+        obj.CallMethod("test_method");
+        Assert.Equal(1, val);
+        
+        obj.CallMethod("alias_method0");
+        Assert.Equal(2, val);
+        
+        obj.CallMethod("alias_method1");
+        Assert.Equal(3, val);
         
         Ruby.Close(state);
     }
