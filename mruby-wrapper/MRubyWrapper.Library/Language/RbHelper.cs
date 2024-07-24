@@ -190,5 +190,18 @@ namespace MRubyWrapper.Library.Language
         }
         
         public static IntPtr GetRbObjectPtrFromValue(RbValue value) => mrb_value_to_obj_ptr(value.NativeValue);
+        
+        public static RbValue GetConst(RbState state, RbValue scope, string name)
+        {
+            var sym = state.GetInternSymbol(name);
+            var result = mrb_const_get(state.NativeHandler, scope.NativeValue, sym);
+            return new RbValue(state, result);
+        }
+        
+        public static void SetConst(RbState state, RbValue scope, string name, RbValue val)
+        {
+            var sym = state.GetInternSymbol(name);
+            mrb_const_set(state.NativeHandler, scope.NativeValue, sym, val.NativeValue);
+        }
     }
 }

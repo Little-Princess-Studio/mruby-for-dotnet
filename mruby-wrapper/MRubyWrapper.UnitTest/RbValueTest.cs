@@ -107,4 +107,80 @@ public class RbValueTest
         
         Ruby.Close(state);
     }
+
+    [Fact]
+    void TestStringAndSymbol()
+    {
+        var state = Ruby.Open();
+
+        var csharpString = "Hello, World!";
+        
+        var str = state.NewRubyString(csharpString);
+        var sym0 = state.GetInternSymbol(csharpString);
+        var sym1 = state.GetInternSymbol(csharpString);
+        
+        Assert.Equal(sym0, sym1);
+
+        var symbolNameVal = state.GetSymbolStr(sym0);
+        Assert.True(str == symbolNameVal);
+
+        var symbolNameStr = state.GetSymbolName(sym0);
+        Assert.Equal(csharpString, symbolNameStr);
+        
+        Ruby.Close(state);
+    }
+
+    [Fact]
+    void TestSymbolBoxingAndUnboxing()
+    {
+        var state = Ruby.Open();
+        var csharpString = "Hello, World!";
+
+        var sym0 = state.GetInternSymbol(csharpString);
+        var sym0Val = state.BoxSymbol(sym0);
+        var sym1 = state.GetInternSymbol(csharpString);
+        var sym1Val = state.BoxSymbol(sym1);
+        
+        Assert.True(sym0Val == sym1Val);
+
+        var sym0Unboxed = state.UnboxSymbol(sym0Val);
+        var sym1Unboxed = state.UnboxSymbol(sym1Val);
+        
+        Assert.Equal(sym0, sym0Unboxed);
+        Assert.Equal(sym1, sym1Unboxed);
+        
+        Ruby.Close(state);
+    }
+
+    [Fact]
+    void TestTopSelf()
+    {
+        var state0 = Ruby.Open();
+        var state1 = Ruby.Open();
+
+        var top0 = state0.GetTopSelf();
+        var top1 = state1.GetTopSelf();
+        
+        Assert.True(top0 != top1);
+        Ruby.Close(state1);
+
+        var a = false;
+        top0.DefineSingletonMethod("test", (stat, self, args) =>
+        {
+            a = true;
+            return stat.RbNil;
+        }, RbHelper.MRB_ARGS_NONE());
+
+        top0.CallMethod("test");
+        
+        Assert.True(a);
+        
+        state0.DefineGlobalConst("ABC", state0.BoxString("HHH"));
+        var abc0 = state0.GetGlobalConst("ABC");
+        var abc0Unboxed = state0.UnboxString(abc0);
+        
+        Assert.Equal("HHH", abc0Unboxed);
+        
+        Ruby.Close(state0);
+    }
 }

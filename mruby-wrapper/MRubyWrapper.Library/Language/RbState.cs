@@ -124,6 +124,12 @@ namespace MRubyWrapper.Library.Language
             return new RbClass(classPtr, this);
         }
 
+        public RbClass GetModuleUnder(RbClass outer, string name)
+        {
+            var classPtr = mrb_module_get_under(this.NativeHandler, outer.NativeHandler, name);
+            return new RbClass(classPtr, this);
+        }
+
         public RbClass GetModule(string name)
         {
             var modulePtr = mrb_module_get(this.NativeHandler, name);
@@ -135,12 +141,6 @@ namespace MRubyWrapper.Library.Language
         public RbValue NotImplementM(RbValue value)
         {
             var result = mrb_notimplement_m(this.NativeHandler, value.NativeValue);
-            return new RbValue(this, result);
-        }
-
-        public RbValue ObjItself(RbValue value)
-        {
-            var result = mrb_obj_itself(this.NativeHandler, value.NativeValue);
             return new RbValue(this, result);
         }
 
@@ -167,7 +167,13 @@ namespace MRubyWrapper.Library.Language
         {
             mrb_define_global_const(this.NativeHandler, name, value.NativeValue);
         }
-
+        
+        public RbValue GetGlobalConst(string name)
+        {
+            var objClass = this.GetClass("Object");
+            return RbHelper.GetConst(this, objClass.ClassObject, name);
+        }
+        
         public RbValue FiberNew(RbProc proc)
         {
             var result = mrb_fiber_new(this.NativeHandler, proc.NativeHandler);
@@ -234,9 +240,9 @@ namespace MRubyWrapper.Library.Language
         
         public string? UnboxString(RbValue value) => Marshal.PtrToStringAnsi(mrb_string_value_unboxing(this.NativeHandler, value.NativeValue));
         
-        public Boolean IsInstanceVariableNameSymP(UInt64 sym) => mrb_iv_name_sym_p(this.NativeHandler, sym);
-
-        public void IsInstanceVariableNameSymCheck(UInt64 sym) => mrb_iv_name_sym_check(this.NativeHandler, sym);
+        // public Boolean IsInstanceVariableNameSymP(UInt64 sym) => mrb_iv_name_sym_p(this.NativeHandler, sym);
+        //
+        // public void IsInstanceVariableNameSymCheck(UInt64 sym) => mrb_iv_name_sym_check(this.NativeHandler, sym);
 
         public RbValue GetGlobalVariable(UInt64 sym)
         {
@@ -244,8 +250,26 @@ namespace MRubyWrapper.Library.Language
             return new RbValue(this, result);
         }
 
+        public RbValue GetGlobalVariable(string name)
+        {
+            var sym = this.GetInternSymbol(name);
+            return this.GetGlobalVariable(sym);
+        }
+
         public void SetGlobalVariable(UInt64 sym, RbValue val) => mrb_gv_set(this.NativeHandler, sym, val.NativeValue);
 
+        public void SetGlobalVariable(string name, RbValue val)
+        {
+            var sym = this.GetInternSymbol(name);
+            this.SetGlobalVariable(sym, val);
+        }
+
+        public void RemoveGlobalVariable(string name)
+        {
+            var sym = this.GetInternSymbol(name);
+            this.RemoveGlobalVariable(sym);
+        }
+        
         public void RemoveGlobalVariable(UInt64 sym) => mrb_gv_remove(this.NativeHandler, sym);
     }
 }

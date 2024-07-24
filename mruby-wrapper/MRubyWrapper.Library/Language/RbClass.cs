@@ -140,18 +140,9 @@ namespace MRubyWrapper.Library.Language
             return defined;
         }
 
-        public RbValue GetConst(string name)
-        {
-            var sym = this.RbState.GetInternSymbol(name);
-            var result = mrb_const_get(this.RbState.NativeHandler, this.NativeHandler, sym);
-            return new RbValue(this.RbState, result);
-        }
+        public RbValue GetConst(string name) => RbHelper.GetConst(this.RbState, this.ClassObject, name);
 
-        public void SetConst(string name, RbValue val)
-        {
-            var sym = this.RbState.GetInternSymbol(name);
-            mrb_const_set(this.RbState.NativeHandler, this.NativeHandler, sym, val.NativeValue);
-        }
+        public void SetConst(string name, RbValue val) => RbHelper.SetConst(this.RbState, this.ClassObject, name, val);
 
         public bool ConstDefined(string name)
         {

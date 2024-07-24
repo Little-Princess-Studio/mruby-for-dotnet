@@ -60,6 +60,13 @@ namespace MRubyWrapper.Library.Language
             IntPtr outer,
             [MarshalAs(UnmanagedType.LPStr)] string name);
 
+        // MRB_API struct RClass * mrb_module_get_under(mrb_state *mrb, struct RClass *outer, const char *name);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern IntPtr mrb_module_get_under(
+            IntPtr mrb,
+            IntPtr outer,
+            [MarshalAs(UnmanagedType.LPStr)] string name);
+
         // MRB_API struct RClass * mrb_module_get(mrb_state *mrb, const char *name);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern IntPtr mrb_module_get(
@@ -74,9 +81,9 @@ namespace MRubyWrapper.Library.Language
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern UInt64 mrb_notimplement_m(IntPtr mrb, UInt64 value);
 
-        // MRB_API mrb_value mrb_obj_itself(mrb_state*, mrb_value);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_obj_itself(IntPtr mrb, UInt64 value);
+        // // MRB_API mrb_value mrb_obj_itself(mrb_state*, mrb_value);
+        // [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        // private static extern UInt64 mrb_obj_itself(IntPtr mrb, UInt64 value);
 
         // MRB_API mrb_value mrb_top_self(mrb_state *mrb);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
@@ -186,14 +193,14 @@ namespace MRubyWrapper.Library.Language
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern IntPtr mrb_string_value_unboxing(IntPtr mrb, UInt64 value);
 
-        // MRB_API mrb_bool mrb_iv_name_sym_p(mrb_state *mrb, mrb_sym sym);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        private static extern Boolean mrb_iv_name_sym_p(IntPtr mrb, UInt64 sym);
-
-        // MRB_API void mrb_iv_name_sym_check(mrb_state *mrb, mrb_sym sym);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern void mrb_iv_name_sym_check(IntPtr mrb, UInt64 sym);
+        // // MRB_API mrb_bool mrb_iv_name_sym_p(mrb_state *mrb, mrb_sym sym);
+        // [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        // [return: MarshalAs(UnmanagedType.U1)]
+        // private static extern Boolean mrb_iv_name_sym_p(IntPtr mrb, UInt64 sym);
+        //
+        // // MRB_API void mrb_iv_name_sym_check(mrb_state *mrb, mrb_sym sym);
+        // [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        // private static extern void mrb_iv_name_sym_check(IntPtr mrb, UInt64 sym);
 
         // MRB_API mrb_value mrb_gv_get(mrb_state *mrb, mrb_sym sym);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]

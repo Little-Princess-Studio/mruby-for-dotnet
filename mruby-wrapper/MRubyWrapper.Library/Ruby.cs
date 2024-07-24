@@ -22,9 +22,6 @@
             return state;
         }
 
-        public static void Close(RbState state)
-        {
-            mrb_close(state.NativeHandler);
-        }
+        public static void Close(RbState state) => mrb_close(state.NativeHandler);
     }
 }
