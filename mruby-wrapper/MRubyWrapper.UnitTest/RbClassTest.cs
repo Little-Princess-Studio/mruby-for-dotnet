@@ -39,6 +39,9 @@ public class RbClassTest
         var obj = rbClass.NewObject();
         var res = obj.CallMethod("test");
 
+        Assert.Equal("MyClass", obj.GetClassName());
+        Assert.Equal(obj.GetClass().NativeHandler, rbClass.NativeHandler);
+
         Assert.True(setVal);
         Assert.True(res == state.RbNil);
 
@@ -71,6 +74,10 @@ public class RbClassTest
 
         var obj2 = rbClass2.NewObject(state.BoxInt(3), state.BoxInt(4));
         var res3 = obj2.CallMethod("plus", state.BoxInt(1), state.BoxInt(2));
+
+        Assert.Equal("MyClass2", obj2.GetClassName());
+        Assert.Equal(obj2.GetClass().NativeHandler, rbClass2.NativeHandler);
+        
         Assert.True(res3 == boxed);
         var res4 = obj2.CallMethod("plus_new");
         Assert.True(res4 == state.BoxInt(7));
