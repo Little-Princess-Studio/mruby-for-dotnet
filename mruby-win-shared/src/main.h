@@ -42,3 +42,7 @@ MRB_API void mrb_print_error_ex(struct mrb_state *mrb);
 MRB_API struct RClass *mrb_get_class_ptr(mrb_value value);
 
 MRB_API struct RObject *mrb_value_to_obj_ptr(mrb_value value);
+
+MRB_API mrb_bool mrb_check_frozen_ex(mrb_value o);
+
+MRB_API mrb_value mrb_get_block(struct mrb_state *mrb);

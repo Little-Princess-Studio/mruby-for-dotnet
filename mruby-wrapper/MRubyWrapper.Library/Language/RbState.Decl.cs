@@ -161,21 +161,17 @@ namespace MRubyWrapper.Library.Language
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern UInt64 mrb_fiber_alive_p(IntPtr mrb, UInt64 fib);
 
-        // MRB_API mrb_value mrb_yield(mrb_state *mrb, mrb_value b, mrb_value arg);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_yield(IntPtr mrb, UInt64 b, UInt64 arg);
-
-        // MRB_API mrb_value mrb_yield_argv(mrb_state *mrb, mrb_value b, mrb_int argc, const mrb_value *argv);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_yield_argv(IntPtr mrb, UInt64 b, int argc, UInt64[] argv);
+        // // MRB_API mrb_value mrb_yield(mrb_state *mrb, mrb_value b, mrb_value arg);
+        // [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        // private static extern UInt64 mrb_yield(IntPtr mrb, UInt64 b, UInt64 arg);
+        
+        // // MRB_API mrb_value mrb_yield_argv(mrb_state *mrb, mrb_value b, mrb_int argc, const mrb_value *argv);
+        // [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        // private static extern UInt64 mrb_yield_argv(IntPtr mrb, UInt64 b, int argc, UInt64[] argv);
 
         // MRB_API mrb_value mrb_yield_with_class(mrb_state *mrb, mrb_value b, mrb_int argc, const mrb_value *argv, mrb_value self, struct RClass *c);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern UInt64 mrb_yield_with_class(IntPtr mrb, UInt64 b, int argc, UInt64[] argv, UInt64 self, IntPtr c);
-
-        // mrb_value mrb_yield_cont(mrb_state *mrb, mrb_value b, mrb_value self, mrb_int argc, const mrb_value *argv);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_yield_cont(IntPtr mrb, UInt64 b, UInt64 self, int argc, UInt64[] argv);
 
         // MRB_API mrb_int mrb_int_value_unboxing(mrb_value value);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
@@ -223,5 +219,14 @@ namespace MRubyWrapper.Library.Language
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern IntPtr mrb_define_module_under(
             IntPtr mrb, IntPtr outer, [MarshalAs(UnmanagedType.LPStr)] string name);
+        
+        // MRB_API struct RProc *mrb_proc_new_cfunc_with_env(mrb_state *mrb, mrb_func_t func, mrb_int argc, const mrb_value *argv);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern IntPtr mrb_proc_new_cfunc_with_env(
+            IntPtr mrb,[MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodSignature func, int argc, UInt64[]? argv);
+        
+        // mrb_value mrb_get_block(struct mrb_state *mrb) {
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern UInt64 mrb_get_block(IntPtr mrb);
     }
 }

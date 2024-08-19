@@ -6,7 +6,7 @@ namespace MRubyWrapper.Library.Language
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate UInt64 IvForeachFunc(IntPtr state, UInt64 sym, UInt64 val, IntPtr data);
     
-    public delegate RbValue CSharpIvForeachFunc(RbState state, string name, RbValue self, IntPtr data);
+    public delegate RbValue CSharpIvForeachFunc(RbState state, string name, RbValue value);
     
     public partial class RbValue
     {
@@ -49,6 +49,15 @@ namespace MRubyWrapper.Library.Language
         public RbValue CallMethod(string name, params RbValue[] args)
             => RbHelper.CallMethod(this.RbState, this, name, args);
 
+        public RbValue CallMethodWithBlock(string name, RbValue block, params RbValue[] args)
+            => RbHelper.CallMethodWithBlock(this.RbState, this, name, block, args);
+
+        public RbValue CallMethodWithBlock(string name, RbProc proc, params RbValue[] args)
+        {
+            var procObj = RbHelper.PtrToRbValue(this.RbState, proc.NativeHandler);
+            return this.CallMethodWithBlock(name, procObj, args);
+        }
+        
         // Wrapper for mrb_obj_dup
         public RbValue Duplicate()
         {
@@ -61,6 +70,8 @@ namespace MRubyWrapper.Library.Language
             var result = mrb_obj_freeze(this.RbState.NativeHandler, this.nativeValue.Value);
             return new RbValue(this.RbState, result);
         }
+
+        public bool CheckFrozen() => mrb_check_frozen_ex(this.NativeValue);
 
         public Int64 ObjectId => mrb_obj_id(this.nativeValue.Value);
 
@@ -88,12 +99,6 @@ namespace MRubyWrapper.Library.Language
         {
             var classPtr = mrb_obj_class(this.RbState.NativeHandler, this.nativeValue.Value);
             return new RbClass(classPtr, this.RbState);
-        }
-
-        public RbValue GetClassPath(RbClass @class)
-        {
-            var result = mrb_class_path(this.RbState.NativeHandler, @class.NativeHandler);
-            return new RbValue(this.RbState, result);
         }
 
         public bool IsKindOf(RbClass @class)
@@ -177,16 +182,17 @@ namespace MRubyWrapper.Library.Language
 
         public void CopyInstanceVariables(RbValue dst) => mrb_iv_copy(this.RbState.NativeHandler, dst.nativeValue.Value, this.nativeValue.Value);
         
-        public void IvForeach(CSharpIvForeachFunc func, IntPtr data)
+        public void InstanceVariableForeach(CSharpIvForeachFunc func)
         {
-            var nativeFunc = new IvForeachFunc((state, sym, val, nativeData) =>
+            var nativeFunc = new IvForeachFunc((state, sym, val, _) =>
             {
-                var nativeState = new RbState() { NativeHandler = state };
+                var nativeState = new RbState { NativeHandler = state };
                 var name = nativeState.GetSymbolName(sym);
-                var self = new RbValue(this.RbState, val);
-                return func(this.RbState, name!, self, nativeData).nativeValue.Value;
+                var value = new RbValue(this.RbState, val);
+                return func(this.RbState, name!, value).nativeValue.Value;
             });
-            mrb_iv_foreach(this.RbState.NativeHandler, this.nativeValue.Value, nativeFunc, data);
+
+            mrb_iv_foreach(this.RbState.NativeHandler, this.nativeValue.Value, nativeFunc, IntPtr.Zero);
         }
         
         public T? GetDataObject<T>(string typeName) where T : class

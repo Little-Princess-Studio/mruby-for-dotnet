@@ -77,5 +77,12 @@ void mrb_print_error_ex(struct mrb_state* mrb) {
 
 struct RClass *mrb_get_class_ptr(mrb_value value) { return mrb_class_ptr(value); }
 
-mrb_bool mrb_bool_true() { return TRUE; }
-mrb_bool mrb_bool_false() { return FALSE; }
+mrb_bool mrb_check_frozen_ex(mrb_value o) {
+  return mrb_frozen_p(mrb_basic_ptr(o)) ? TRUE : FALSE;
+}
+
+mrb_value mrb_get_block(struct mrb_state *mrb) {
+    struct RProc *proc;
+    mrb_get_args(mrb, "&!", &proc);
+    return mrb_obj_value(proc);
+}

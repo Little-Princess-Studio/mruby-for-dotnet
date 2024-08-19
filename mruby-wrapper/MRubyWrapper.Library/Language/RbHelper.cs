@@ -58,6 +58,7 @@ namespace MRubyWrapper.Library.Language
             {
                 var argc = mrb_get_argc(state);
                 var argv = mrb_get_argv(state);
+
                 var args = new RbValue[(int)argc];
                 for (int i = 0; i < argc; i++)
                 {
@@ -80,6 +81,8 @@ namespace MRubyWrapper.Library.Language
         }
         
         public static IntPtr GetIntPtrOfCSharpObject(object obj) => GCHandle.ToIntPtr(GCHandle.Alloc(obj, GCHandleType.Pinned));
+        
+        public static void FreeIntPtrOfCSharpObject(IntPtr ptr) => GCHandle.FromIntPtr(ptr).Free();
 
         public static object? GetObjectFromIntPtr(IntPtr ptr) => GCHandle.FromIntPtr(ptr).Target;
         
@@ -191,6 +194,8 @@ namespace MRubyWrapper.Library.Language
         
         public static IntPtr GetRbObjectPtrFromValue(RbValue value) => mrb_value_to_obj_ptr(value.NativeValue);
         
+        public static IntPtr GetRbObjectPtrFromValue(UInt64 nativeHandler) => mrb_value_to_obj_ptr(nativeHandler);
+        
         public static RbValue GetConst(RbState state, RbValue scope, string name)
         {
             var sym = state.GetInternSymbol(name);
@@ -202,6 +207,23 @@ namespace MRubyWrapper.Library.Language
         {
             var sym = state.GetInternSymbol(name);
             mrb_const_set(state.NativeHandler, scope.NativeValue, sym, val.NativeValue);
+        }
+        
+        public static Int64 GetArgs(RbState stat, string format, ref RbValue[] args)
+        {
+            unsafe
+            {
+                var argc = args.Length;
+                IntPtr[] argsToParse = new IntPtr[args.Length];
+
+                var argCnt = mrb_get_args_a(stat.NativeHandler, format, ref argsToParse);
+                for (var i = 0; i < argc; ++i)
+                {
+                    // args[i] = new RbValue(stat,  *(UInt64*)argsToParse[i]);
+                    args[i] = PtrToRbValue(stat, argsToParse[i]);
+                }
+                return argCnt;
+            }
         }
     }
 }

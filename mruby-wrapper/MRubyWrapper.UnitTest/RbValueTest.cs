@@ -11,11 +11,11 @@ public class RbValueTest
         var state = Ruby.Open();
 
         var obj = null as Object;
-        
+
         Assert.False(obj == state.RbNil);
         Assert.False(state.RbNil == null);
         Assert.False(state.RbNil.Equals(obj));
-        
+
         Assert.True(state.BoxInt(123) == state.BoxInt(123));
         Assert.True(state.BoxInt(123).Equals(state.BoxInt(123)));
         Assert.True(state.BoxInt(123).StrictEquals(state.BoxInt(123)));
@@ -30,7 +30,7 @@ public class RbValueTest
             self.SetInstanceVariable("@a", stat.BoxInt(1));
             return self;
         }, RbHelper.MRB_ARGS_NONE());
-        
+
         @class.DefineMethod("eql?", (stat, self, args) =>
         {
             var other = args[0];
@@ -38,36 +38,44 @@ public class RbValueTest
             var b = other.GetInstanceVariable("@a");
             return a == b ? stat.RbTrue : stat.RbFalse;
         }, RbHelper.MRB_ARGS_REQ(1));
-        
+
         var obj1 = @class.NewObject();
         var obj2 = @class.NewObject();
-        
+
         Assert.True(obj1 == obj2);
         Assert.True(obj1.Equals(obj2));
         Assert.False(obj1.StrictEquals(obj2));
-        
+
         Ruby.Close(state);
     }
-    
+
     [Fact]
-    void TestDuplicate()
+    void TestDuplicateAndClone()
     {
         var state = Ruby.Open();
-        
-        var obj = state.BoxInt(123);
+
+        var cls = state.GetClass("Object");
+        var obj = cls.NewObject();
+
+        obj.Freeze();
+        Assert.True(obj.CallMethod("frozen?") == state.RbTrue);
+        Assert.True(obj.CheckFrozen());
+
         var dup = obj.Duplicate();
-        
-        Assert.True(obj == dup);
-        Assert.True(obj.Equals(dup));
-        Assert.True(obj.StrictEquals(dup));
-        
+        Assert.False(dup.CallMethod("frozen?") == state.RbTrue);
+        Assert.False(dup.CheckFrozen());
+
+        var clone = obj.Clone();
+        Assert.True(clone.CallMethod("frozen?") == state.RbTrue);
+        Assert.True(clone.CheckFrozen());
+
         var @class = state.DefineClass("MyClass", null);
         @class.DefineMethod("initialize", (stat, self, args) =>
         {
             self.SetInstanceVariable("@a", args[0]);
             return self;
         }, RbHelper.MRB_ARGS_REQ(1));
-        
+
         @class.DefineMethod("eql?", (stat, self, args) =>
         {
             var other = args[0];
@@ -75,14 +83,19 @@ public class RbValueTest
             var b = other.GetInstanceVariable("@a");
             return a == b ? stat.RbTrue : stat.RbFalse;
         }, RbHelper.MRB_ARGS_REQ(1));
-        
+
         var obj1 = @class.NewObject(state.BoxInt(123));
         var obj2 = obj1.Duplicate();
-        
+        var obj3 = obj1.Clone();
+
         Assert.True(obj1 == obj2);
         Assert.True(obj1.Equals(obj2));
         Assert.False(obj1.StrictEquals(obj2));
-        
+
+        Assert.True(obj1 == obj3);
+        Assert.True(obj1.Equals(obj3));
+        Assert.False(obj1.StrictEquals(obj3));
+
         Ruby.Close(state);
     }
 
@@ -90,21 +103,21 @@ public class RbValueTest
     void TestObjectId()
     {
         var state = Ruby.Open();
-        
+
         var obj = state.BoxInt(123);
         var obj2 = state.BoxInt(123);
         var id = obj.ObjectId;
         var id2 = obj2.ObjectId;
-        
+
         Assert.True(id == id2);
-        
+
         var obj3 = state.GetClass("Object").NewObject();
         var obj4 = state.GetClass("Object").NewObject();
         var id3 = obj3.ObjectId;
         var id4 = obj4.ObjectId;
-        
+
         Assert.True(id3 != id4);
-        
+
         Ruby.Close(state);
     }
 
@@ -114,11 +127,11 @@ public class RbValueTest
         var state = Ruby.Open();
 
         var csharpString = "Hello, World!";
-        
+
         var str = state.NewRubyString(csharpString);
         var sym0 = state.GetInternSymbol(csharpString);
         var sym1 = state.GetInternSymbol(csharpString);
-        
+
         Assert.Equal(sym0, sym1);
 
         var symbolNameVal = state.GetSymbolStr(sym0);
@@ -126,7 +139,7 @@ public class RbValueTest
 
         var symbolNameStr = state.GetSymbolName(sym0);
         Assert.Equal(csharpString, symbolNameStr);
-        
+
         Ruby.Close(state);
     }
 
@@ -140,15 +153,15 @@ public class RbValueTest
         var sym0Val = state.BoxSymbol(sym0);
         var sym1 = state.GetInternSymbol(csharpString);
         var sym1Val = state.BoxSymbol(sym1);
-        
+
         Assert.True(sym0Val == sym1Val);
 
         var sym0Unboxed = state.UnboxSymbol(sym0Val);
         var sym1Unboxed = state.UnboxSymbol(sym1Val);
-        
+
         Assert.Equal(sym0, sym0Unboxed);
         Assert.Equal(sym1, sym1Unboxed);
-        
+
         Ruby.Close(state);
     }
 
@@ -160,7 +173,7 @@ public class RbValueTest
 
         var top0 = state0.GetTopSelf();
         var top1 = state1.GetTopSelf();
-        
+
         Assert.True(top0 != top1);
         Ruby.Close(state1);
 
@@ -172,15 +185,65 @@ public class RbValueTest
         }, RbHelper.MRB_ARGS_NONE());
 
         top0.CallMethod("test");
-        
+
         Assert.True(a);
-        
+
         state0.DefineGlobalConst("ABC", state0.BoxString("HHH"));
         var abc0 = state0.GetGlobalConst("ABC");
         var abc0Unboxed = state0.UnboxString(abc0);
-        
+
         Assert.Equal("HHH", abc0Unboxed);
-        
+
         Ruby.Close(state0);
+    }
+
+    [Fact]
+    void TestIvForeach()
+    {
+        var state = Ruby.Open();
+
+        var cls = state.DefineClass("MyClass", null);
+        cls.DefineMethod("initialize", (stat, self, args) =>
+        {
+            self.SetInstanceVariable("@a", stat.BoxInt(1));
+            self.SetInstanceVariable("@b", stat.BoxInt(2));
+            self.SetInstanceVariable("@c", stat.BoxInt(3));
+            return self;
+        }, RbHelper.MRB_ARGS_NONE());
+
+        var obj = cls.NewObject();
+
+        var nameDict = new Dictionary<string, int>
+        {
+            ["@a"] = 1,
+            ["@b"] = 2,
+            ["@c"] = 3,
+        };
+
+        var callback = new CSharpIvForeachFunc(((stat, name, val) =>
+        {
+            if (!nameDict.ContainsKey(name))
+            {
+                return stat.RbNil;
+            }
+
+            var valInt = stat.UnboxInt(val);
+            var compared = nameDict[name];
+
+            if (valInt != compared)
+            {
+                return stat.RbNil;
+            }
+
+            nameDict.Remove(name);
+            
+            return stat.RbNil;
+        }));
+
+        obj.InstanceVariableForeach(callback);
+        
+        Assert.Empty(nameDict);
+
+        Ruby.Close(state);
     }
 }

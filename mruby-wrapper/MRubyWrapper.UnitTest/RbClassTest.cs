@@ -74,7 +74,21 @@ public class RbClassTest
 
         var obj2 = rbClass2.NewObject(state.BoxInt(3), state.BoxInt(4));
         var res3 = obj2.CallMethod("plus", state.BoxInt(1), state.BoxInt(2));
+        var obj3 = rbClass2.NewObject(state.BoxInt(8), state.BoxInt(9));
 
+        obj2.CopyInstanceVariables(obj3);
+        Assert.True(obj3.GetInstanceVariable("@a") == obj2.GetInstanceVariable("@a"));
+        Assert.True(obj3.GetInstanceVariable("@b") == obj2.GetInstanceVariable("@b"));
+        
+        Assert.False(obj.IsInstanceVariableDefined("@a"));
+        Assert.False(obj.IsInstanceVariableDefined("@b"));
+        
+        Assert.True(obj2.IsInstanceVariableDefined("@a"));
+        Assert.True(obj2.IsInstanceVariableDefined("@b"));
+
+        Assert.True(obj2.IsKindOf(rbClass));
+        Assert.True(obj2.IsKindOf(rbClass2));
+        
         Assert.Equal("MyClass2", obj2.GetClassName());
         Assert.Equal(obj2.GetClass().NativeHandler, rbClass2.NativeHandler);
         
@@ -85,6 +99,12 @@ public class RbClassTest
         rbClass.UndefMethod("test");
         respondTo = rbClass.ObjRespondTo("test");
         Assert.False(respondTo);
+        
+        obj2.RemoveInstanceVariable("@a");
+        obj2.RemoveInstanceVariable("@b");
+
+        Assert.False(obj2.IsInstanceVariableDefined("@a"));
+        Assert.False(obj2.IsInstanceVariableDefined("@b"));
 
         Ruby.Close(state);
     }
@@ -373,6 +393,9 @@ public class RbClassTest
         Assert.Equal("MyModule::MyModule2", mod2.GetClassName());
         Assert.Equal("MyClass::MyClass2", cls2.GetClassName());
 
+        Assert.True(state.BoxString("MyClass") == cls.GetClassPath());
+        Assert.True(state.BoxString("MyClass::MyClass2") == cls2.GetClassPath());
+        
         Assert.False(state.ClassDefined("MyClass::MyClass2"));
         Assert.False(state.ClassDefined("MyModule::MyModule2"));
 

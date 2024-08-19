@@ -13,6 +13,11 @@ namespace MRubyWrapper.Library.Language
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern UInt64 mrb_obj_freeze(IntPtr mrb, UInt64 obj);
         
+        // MRB_API mrb_bool mrb_check_frozen_ex(mrb_value o);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern Boolean mrb_check_frozen_ex(UInt64 obj);
+        
         // MRB_API mrb_int mrb_obj_id(mrb_value obj);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern Int64 mrb_obj_id(UInt64 obj);
@@ -42,10 +47,6 @@ namespace MRubyWrapper.Library.Language
         // MRB_API struct RClass* mrb_obj_class(mrb_state *mrb, mrb_value obj);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern IntPtr mrb_obj_class(IntPtr mrb, UInt64 obj);
-        
-        // MRB_API mrb_value mrb_class_path(mrb_state *mrb, struct RClass *c);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_class_path(IntPtr mrb, IntPtr @class);
         
         // MRB_API mrb_bool mrb_obj_is_kind_of(mrb_state *mrb, mrb_value obj, struct RClass *c);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]

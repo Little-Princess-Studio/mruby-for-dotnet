@@ -155,5 +155,11 @@ namespace MRubyWrapper.Library.Language
             var sym = this.RbState.GetInternSymbol(name);
             mrb_const_remove(this.RbState.NativeHandler, this.NativeHandler, sym);
         }
+        
+        public RbValue GetClassPath()
+        {
+            var result = mrb_class_path(this.RbState.NativeHandler, this.NativeHandler);
+            return new RbValue(this.RbState, result);
+        }
     }
 }

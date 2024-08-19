@@ -78,5 +78,12 @@ namespace MRubyWrapper.Library.Language
         // MRB_API void mrb_const_set(mrb_state*, mrb_value, mrb_sym, mrb_value);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern void mrb_const_set(IntPtr mrb, UInt64 mod, UInt64 sym, UInt64 val);
+        
+        // MRB_API mrb_int mrb_get_args_a(mrb_state *mrb, mrb_args_format format, void** ptr);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
+        private static extern Int64 mrb_get_args_a(
+            IntPtr mrb,
+            [MarshalAs(UnmanagedType.LPStr)] string format,
+            ref IntPtr[] ptr);
     }
 }

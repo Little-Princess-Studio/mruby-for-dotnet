@@ -198,15 +198,32 @@ namespace MRubyWrapper.Library.Language
             return new RbValue(this, result);
         }
 
-        public RbValue Yield(RbValue b, RbValue arg)
-        {
-            var result = mrb_yield(this.NativeHandler, b.NativeValue, arg.NativeValue);
-            return new RbValue(this, result);
-        }
+        // public RbValue Yield(RbValue b)
+        // {
+        //     var result = mrb_yield(this.NativeHandler, b.NativeValue, this.RbNil.NativeValue);
+        //     return new RbValue(this, result);
+        // }
+        //
+        // public RbValue Yield(RbValue b, RbValue arg)
+        // {
+        //     var result = mrb_yield(this.NativeHandler, b.NativeValue, arg.NativeValue);
+        //     return new RbValue(this, result);
+        // }
 
-        public RbValue YieldArgv(RbValue b, params RbValue[] argv)
+        // public RbValue YieldArgv(RbValue b, params RbValue[] argv)
+        // {
+        //     var result = mrb_yield_argv(this.NativeHandler, b.NativeValue, argv.Length, argv.Select(a => a.NativeValue).ToArray());
+        //     return new RbValue(this, result);
+        // }
+        
+        public RbValue YieldWithClass(RbValue block, RbValue self, RbClass @class, params RbValue[]? args)
         {
-            var result = mrb_yield_argv(this.NativeHandler, b.NativeValue, argv.Length, argv.Select(a => a.NativeValue).ToArray());
+            var result = mrb_yield_with_class(
+                this.NativeHandler,
+                block.NativeValue,
+                args?.Length ?? 0,
+                args?.Select(a => a.NativeValue).ToArray() ?? null!,
+                self.NativeValue, @class.NativeHandler);
             return new RbValue(this, result);
         }
         
@@ -214,22 +231,6 @@ namespace MRubyWrapper.Library.Language
         {
             mrb_p(this.NativeHandler, value.NativeValue);
             return value;
-        }
-        
-        public RbValue YieldWithClass(RbValue b, RbValue c, RbValue[] args, RbValue self, RbClass @class)
-        {
-            var result = mrb_yield_with_class(
-                this.NativeHandler,
-                b.NativeValue,
-                args.Length,
-                args.Select(a => a.NativeValue).ToArray(),
-                self.NativeValue, @class.NativeHandler);
-            return new RbValue(this, result);
-        }
-        
-        public UInt64 YieldCont(RbValue b, RbValue self, params RbValue[] args)
-        {
-            return mrb_yield_cont(this.NativeHandler, b.NativeValue, self.NativeValue, args.Length, args.Select(a => a.NativeValue).ToArray());
         }
         
         public Int64 UnboxInt(RbValue value) => mrb_int_value_unboxing(value.NativeValue);
@@ -271,5 +272,25 @@ namespace MRubyWrapper.Library.Language
         }
         
         public void RemoveGlobalVariable(UInt64 sym) => mrb_gv_remove(this.NativeHandler, sym);
+        
+        public Int64 GetArgs(string format, ref RbValue[] args) => RbHelper.GetArgs(this, format, ref args);
+
+        public RbProc NewProc(CSharpMethodSignature func, RbValue[]? argv)
+        {
+            UInt64[]? args = null;
+            if (argv != null)
+            {
+                args = argv.Select(v => v.NativeValue).ToArray();
+            }
+
+            var cb = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(func);
+            var handler = mrb_proc_new_cfunc_with_env(this.NativeHandler, cb, args?.Length ?? 0, args);
+
+            return new RbProc(handler);
+        }
+
+        public bool BlockGiven() => RbHelper.BlockGivenP(this);
+        
+        public RbValue GetBlock() => new RbValue(this, mrb_get_block(this.NativeHandler));
     }
 }

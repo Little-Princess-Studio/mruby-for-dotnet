@@ -106,5 +106,9 @@ namespace MRubyWrapper.Library.Language
         // MRB_API void mrb_const_remove(mrb_state*, mrb_value, mrb_sym);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern void mrb_const_remove(IntPtr mrb, IntPtr mod, UInt64 sym);
+
+        // MRB_API mrb_value mrb_class_path(mrb_state *mrb, struct RClass *c);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern UInt64 mrb_class_path(IntPtr mrb, IntPtr @class);
     }
 }
