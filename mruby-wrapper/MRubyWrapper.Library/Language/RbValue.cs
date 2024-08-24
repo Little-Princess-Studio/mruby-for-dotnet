@@ -208,7 +208,7 @@ namespace MRubyWrapper.Library.Language
             return Marshal.PtrToStructure<RbDataClassType>(ptr);
         }
         
-        public void DefineSingletonMethod(string name, CSharpMethodSignature callback, uint parameterAspect)
+        public void DefineSingletonMethod(string name, CSharpMethodFunc callback, uint parameterAspect)
         {
             var lambda = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
             var objPtr = RbHelper.GetRbObjectPtrFromValue(this);

@@ -174,7 +174,7 @@ namespace MRubyWrapper.Library.Language
             return RbHelper.GetConst(this, objClass.ClassObject, name);
         }
         
-        public RbValue FiberNew(RbProc proc)
+        public RbValue NewFiber(RbProc proc)
         {
             var result = mrb_fiber_new(this.NativeHandler, proc.NativeHandler);
             return new RbValue(this, result);
@@ -192,7 +192,7 @@ namespace MRubyWrapper.Library.Language
             return new RbValue(this, result);
         }
 
-        public RbValue FiberAliveP(RbValue fib)
+        public RbValue CheckFiberAlive(RbValue fib)
         {
             var result = mrb_fiber_alive_p(this.NativeHandler, fib.NativeValue);
             return new RbValue(this, result);
@@ -275,7 +275,7 @@ namespace MRubyWrapper.Library.Language
         
         public Int64 GetArgs(string format, ref RbValue[] args) => RbHelper.GetArgs(this, format, ref args);
 
-        public RbProc NewProc(CSharpMethodSignature func, RbValue[]? argv)
+        public RbProc NewProc(CSharpMethodFunc func, RbValue[]? argv)
         {
             UInt64[]? args = null;
             if (argv != null)

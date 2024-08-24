@@ -11,7 +11,7 @@ namespace MRubyWrapper.Library.Language
             IntPtr mrb,
             IntPtr @class,
             [MarshalAs(UnmanagedType.LPStr)] string name,
-            [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodSignature nativeMethod,
+            [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc nativeMethod,
             uint parameterAspect);
 
         // MRB_API void mrb_define_class_method(mrb_state *mrb, struct RClass *cla, const char *name, mrb_func_t fun, mrb_aspec aspec);
@@ -20,7 +20,7 @@ namespace MRubyWrapper.Library.Language
             IntPtr mrb,
             IntPtr @class,
             [MarshalAs(UnmanagedType.LPStr)] string name,
-            [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodSignature nativeMethod,
+            [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc nativeMethod,
             uint parameterAspect);
         
         // MRB_API void mrb_define_module_function(mrb_state *mrb, struct RClass *cla, const char *name, mrb_func_t fun, mrb_aspec aspec);
@@ -29,7 +29,7 @@ namespace MRubyWrapper.Library.Language
             IntPtr mrb,
             IntPtr @class,
             [MarshalAs(UnmanagedType.LPStr)] string name,
-            [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodSignature nativeMethod,
+            [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc nativeMethod,
             uint parameterAspect);
 
         // MRB_API void mrb_define_const(mrb_state* mrb, struct RClass* cla, const char *name, mrb_value val);

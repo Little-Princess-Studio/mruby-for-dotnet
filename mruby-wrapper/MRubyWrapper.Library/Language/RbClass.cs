@@ -5,9 +5,9 @@ namespace MRubyWrapper.Library.Language
     using System.Runtime.InteropServices;
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate UInt64 NativeMethodSignature(IntPtr state, UInt64 self);
+    public delegate UInt64 NativeMethodFunc(IntPtr state, UInt64 self);
 
-    public delegate RbValue CSharpMethodSignature(RbState state, RbValue self, params RbValue[] args);
+    public delegate RbValue CSharpMethodFunc(RbState state, RbValue self, params RbValue[] args);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void NativeDataObjectFreeFunc(IntPtr mrb, IntPtr data);
@@ -31,19 +31,19 @@ namespace MRubyWrapper.Library.Language
             return RbHelper.CallMethod(this.RbState, classObj, methodName, args);
         }
         
-        public void DefineMethod(string name, CSharpMethodSignature callback, uint parameterAspect)
+        public void DefineMethod(string name, CSharpMethodFunc callback, uint parameterAspect)
         {
             var lambda = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
             mrb_define_method(this.RbState.NativeHandler, this.NativeHandler, name, lambda, parameterAspect);
         }
 
-        public void DefineClassMethod(string name, CSharpMethodSignature callback, uint parameterAspect)
+        public void DefineClassMethod(string name, CSharpMethodFunc callback, uint parameterAspect)
         {
             var lambda = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
             mrb_define_class_method(this.RbState.NativeHandler, this.NativeHandler, name, lambda, parameterAspect);
         }
         
-        public void DefineModuleMethod(string name, CSharpMethodSignature callback, uint parameterAspect)
+        public void DefineModuleMethod(string name, CSharpMethodFunc callback, uint parameterAspect)
         {
             var lambda = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
             mrb_define_module_function(this.RbState.NativeHandler, this.NativeHandler, name, lambda, parameterAspect);

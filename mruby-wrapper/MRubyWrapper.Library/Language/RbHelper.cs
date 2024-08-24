@@ -52,7 +52,7 @@ namespace MRubyWrapper.Library.Language
             return RbDataClassMapping[name];
         }
 
-        internal static unsafe NativeMethodSignature BuildCSharpCallbackToNativeCallbackBridgeMethod(CSharpMethodSignature callback)
+        internal static unsafe NativeMethodFunc BuildCSharpCallbackToNativeCallbackBridgeMethod(CSharpMethodFunc callback)
         {
             UInt64 Lambda(IntPtr state, ulong self)
             {

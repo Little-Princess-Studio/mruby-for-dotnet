@@ -67,12 +67,12 @@ void *mrb_data_object_get_ptr(struct mrb_state *mrb, mrb_value obj, struct mrb_d
 
 void *mrb_data_object_get_type(mrb_value obj) { return DATA_PTR(obj); }
 
-mrb_bool mrb_exception_happened(struct mrb_state *mrb) {
-  return mrb->exc != NULL;
-}
-
-void mrb_print_error_ex(struct mrb_state* mrb) {
-    mrb_print_error(mrb);
+mrb_value mrb_get_exc_obj(struct mrb_state *mrb) {
+  if (mrb->exc) {
+    return mrb_obj_value(mrb->exc);
+  } else {
+    return mrb_nil_value();
+  }
 }
 
 struct RClass *mrb_get_class_ptr(mrb_value value) { return mrb_class_ptr(value); }
@@ -85,4 +85,12 @@ mrb_value mrb_get_block(struct mrb_state *mrb) {
     struct RProc *proc;
     mrb_get_args(mrb, "&!", &proc);
     return mrb_obj_value(proc);
+}
+
+void mrb_name_error_ex(mrb_state *mrb, mrb_sym id, const char *msg) {
+  mrb_name_error(mrb, id, msg);
+}
+
+void mrb_warn_ex(mrb_state *mrb, const char *msg) {
+  mrb_warn(mrb, msg);
 }

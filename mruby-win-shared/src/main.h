@@ -35,9 +35,7 @@ MRB_API void *mrb_data_object_get_ptr(struct mrb_state *mrb, mrb_value obj,
 
 MRB_API void *mrb_data_object_get_type(mrb_value obj);
 
-MRB_API mrb_bool mrb_exception_happened(struct mrb_state *mrb);
-
-MRB_API void mrb_print_error_ex(struct mrb_state *mrb);
+MRB_API mrb_value mrb_get_exc_obj(struct mrb_state *mrb);
 
 MRB_API struct RClass *mrb_get_class_ptr(mrb_value value);
 
@@ -46,3 +44,8 @@ MRB_API struct RObject *mrb_value_to_obj_ptr(mrb_value value);
 MRB_API mrb_bool mrb_check_frozen_ex(mrb_value o);
 
 MRB_API mrb_value mrb_get_block(struct mrb_state *mrb);
+
+MRB_API mrb_noreturn void mrb_name_error_ex(mrb_state *mrb, mrb_sym id,
+                                            const char *msg);
+
+MRB_API void mrb_warn_ex(mrb_state *mrb, const char *msg);

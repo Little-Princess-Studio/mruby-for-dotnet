@@ -106,4 +106,42 @@ public class RbProcTest
         
         Ruby.Close(state);
     }
+
+    // [Fact]
+    // void TestFiber()
+    // {
+    //     var state = Ruby.Open();
+    //
+    //     List<int> toCheck = new List<int>();
+    //     
+    //     var proc0 = state.NewProc((stat, self, args) =>
+    //     {
+    //         stat.FiberYield(self);
+    //
+    //         toCheck.Add(0);
+    //         return stat.RbNil;
+    //     }, null);
+    //     
+    //     
+    //     var proc1 = state.NewProc((stat, self, args) =>
+    //     {
+    //         stat.FiberYield(self);
+    //
+    //         toCheck.Add(1);
+    //         return stat.RbNil;
+    //     }, null);
+    //
+    //     var fiber0 = state.NewFiber(proc0);
+    //     var fiber1 = state.NewFiber(proc1);
+    //
+    //     Assert.True(state.CheckFiberAlive(fiber0) == state.RbTrue);
+    //     Assert.True(state.CheckFiberAlive(fiber1) == state.RbTrue);
+    //     
+    //     state.FiberResume(fiber1);
+    //     state.FiberResume(fiber0);
+    //     
+    //     Assert.Equal(new List<int> { 1, 0 }, toCheck);
+    //     
+    //     Ruby.Close(state);
+    // }
 }

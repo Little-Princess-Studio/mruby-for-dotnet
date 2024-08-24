@@ -104,7 +104,7 @@ namespace MRubyWrapper.Library.Language
             IntPtr mrb,
             IntPtr obj,
             [MarshalAs(UnmanagedType.LPStr)] string name,
-            [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodSignature nativeMethod,
+            [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc nativeMethod,
             uint parameterAspect);
         
         // MRB_API struct RClass *mrb_singleton_class_ptr(mrb_state *mrb, mrb_value val);
