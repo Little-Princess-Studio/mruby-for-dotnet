@@ -72,11 +72,16 @@
 
         // MRB_API mrb_value mrb_ensure(mrb_state *mrb, mrb_func_t body, mrb_value b_data, mrb_func_t ensure, mrb_value e_data);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_ensure(IntPtr mrb, [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc body, UInt64 b_data, IntPtr ensure, UInt64 e_data);
+        private static extern UInt64 mrb_ensure(IntPtr mrb, [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc body, UInt64 b_data, [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc ensure, UInt64 e_data);
 
         // MRB_API mrb_value mrb_rescue(mrb_state *mrb, mrb_func_t body, mrb_value b_data, mrb_func_t rescue, mrb_value r_data);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_rescue(IntPtr mrb, [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc body, UInt64 b_data, IntPtr rescue, UInt64 r_data);
+        private static extern UInt64 mrb_rescue(
+            IntPtr mrb,
+            [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc body,
+            UInt64 b_data,
+            [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc rescue,
+            UInt64 r_data);
 
         // MRB_API mrb_value mrb_rescue_exceptions(mrb_state *mrb, mrb_func_t body, mrb_value b_data, mrb_func_t rescue, mrb_value r_data, mrb_int len, struct RClass **classes);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]

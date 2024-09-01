@@ -83,7 +83,7 @@ namespace MRubyWrapper.Library.Language
             return new RbValue(this.RbState, value);
         }
 
-        public RbValue NewObjectWithCSharpDataObject(string dataName, object data, params RbValue[] args)
+        public RbValue NewObjectWithCSharpDataObject<T>(string dataName, T data, params RbValue[] args) where T: class
         {
             var dataType = RbHelper.GetOrCreateNewRbDataStructPtr(dataName);
             var dataPtr = RbHelper.GetIntPtrOfCSharpObject(data);

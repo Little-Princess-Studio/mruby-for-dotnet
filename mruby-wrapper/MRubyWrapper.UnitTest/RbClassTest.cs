@@ -335,7 +335,7 @@ public class RbClassTest
             return boxed;
         }, RbHelper.MRB_ARGS_NONE());
 
-        var dataObj = @class.NewObjectWithCSharpDataObject("MyData", new MyData(), state.BoxInt(12345));
+        var dataObj = @class.NewObjectWithCSharpDataObject<MyData>("MyData", new MyData(), state.BoxInt(12345));
         var v = dataObj.CallMethod("get_value");
 
         var unboxed = state.UnboxInt(v);

@@ -86,11 +86,7 @@ namespace MRubyWrapper.Library.Language
 
         public static object? GetObjectFromIntPtr(IntPtr ptr) => GCHandle.FromIntPtr(ptr).Target;
         
-        private static void NativeDataObjectFreeFunc(IntPtr state, IntPtr data)
-        {
-            GCHandle handle = GCHandle.FromIntPtr(data);
-            handle.Free();
-        }
+        private static void NativeDataObjectFreeFunc(IntPtr state, IntPtr data) => FreeIntPtrOfCSharpObject(data);
 
         internal static UInt64 GetInternSymbol(RbState state, string str) => mrb_intern_cstr(state.NativeHandler, str);
 

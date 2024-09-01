@@ -1,14 +1,15 @@
 ﻿namespace MRubyWrapper.Library.Language
 {
     using System;
+    using System.Linq;
     using System.Runtime.InteropServices;
 
     // typedef mrb_value mrb_protect_error_func(mrb_state *mrb, void *userdata);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate UInt64 NativeProtectErrorFunc(IntPtr mrb, IntPtr userdata);
-    
+
     public delegate RbValue CSharpProtectErrorFunc(RbState state);
-    
+
     public partial class RbState
     {
         public void SysFail(string message) => mrb_sys_fail(this.NativeHandler, message);
@@ -18,9 +19,9 @@
             var result = mrb_exc_new_str(this.NativeHandler, c.NativeHandler, str.NativeValue);
             return new RbValue(this, result);
         }
-        
+
         public void ClearError() => mrb_clear_error(this.NativeHandler);
-        
+
         public bool CheckError() => mrb_check_error(this.NativeHandler);
 
         public RbValue Protect(CSharpProtectErrorFunc body, ref bool error)
@@ -28,7 +29,7 @@
             var fn = new NativeProtectErrorFunc((mrb, _) =>
             {
                 var stat = new RbState { NativeHandler = mrb };
-                var res= body(stat).NativeValue;
+                var res = body(stat).NativeValue;
                 return res;
             });
             var result = mrb_protect_error(this.NativeHandler, fn, IntPtr.Zero, ref error);
@@ -41,7 +42,7 @@
             var result = mrb_protect(this.NativeHandler, fn, this.RbNil.NativeValue, ref error);
             return new RbValue(this, result);
         }
-        
+
         public RbValue Protect(CSharpMethodFunc body, RbValue data, ref bool error)
         {
             var fn = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(body);
@@ -49,26 +50,39 @@
             return new RbValue(this, result);
         }
 
-        public RbValue Ensure(CSharpMethodFunc body, RbValue bData, IntPtr ensure, RbValue eData)
+        public RbValue Ensure(CSharpMethodFunc body, RbValue userdata, CSharpMethodFunc ensureBody, RbValue eData)
         {
             var fn = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(body);
-            var result = mrb_ensure(this.NativeHandler, fn, bData.NativeValue, ensure, eData.NativeValue);
+            var fnEnsure = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(ensureBody);
+            var result = mrb_ensure(this.NativeHandler, fn, userdata.NativeValue, fnEnsure, eData.NativeValue);
             return new RbValue(this, result);
         }
-        
-        public RbValue Rescue(CSharpMethodFunc body, RbValue bData, IntPtr rescue, RbValue rData)
+
+        public RbValue Rescue(CSharpMethodFunc body, RbValue userdata, CSharpMethodFunc rescueBody, RbValue rData)
         {
             var fn = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(body);
-            var result = mrb_rescue(this.NativeHandler, fn, bData.NativeValue, rescue, rData.NativeValue);
+            var fnRescure = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(rescueBody);
+            var result = mrb_rescue(this.NativeHandler, fn, userdata.NativeValue, fnRescure, rData.NativeValue);
             return new RbValue(this, result);
         }
-        
-        public RbValue RescueExceptions(CSharpMethodFunc body, RbValue bData, CSharpMethodFunc rescue, RbValue rData, IntPtr[] classes)
+
+        public RbValue RescueExceptions(CSharpMethodFunc body, RbValue bData, CSharpMethodFunc rescue, RbValue rData, RbClass[] classes)
         {
             var funcBody = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(body);
             var funcRescue = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(rescue);
-            var result = mrb_rescue_exceptions(this.NativeHandler, funcBody, bData.NativeValue, funcRescue, rData.NativeValue, classes.Length, classes);
+            var nativeExcClasses = classes.Select(c => c.NativeHandler).ToArray();
+            var result = mrb_rescue_exceptions(this.NativeHandler, funcBody, bData.NativeValue, funcRescue, rData.NativeValue, classes.Length, nativeExcClasses);
             return new RbValue(this, result);
+        }
+
+        public RbValue HandleException(
+            CSharpMethodFunc main, RbValue mainUserData,
+            CSharpMethodFunc rescue, RbValue rescueUserData, RbClass[] classes,
+            CSharpMethodFunc ensure, RbValue ensureUserData)
+        {
+            var fnCaughtMain = new CSharpMethodFunc((stat, userdata, args) =>
+                this.RescueExceptions(main, mainUserData, rescue, rescueUserData, classes));
+            return this.Ensure(fnCaughtMain, this.RbNil, ensure, ensureUserData);
         }
 
         public void Raise(RbValue exc) => mrb_exc_raise(this.NativeHandler, exc.NativeValue);
@@ -93,7 +107,7 @@
 
         public void PrintError() => mrb_print_error(this.NativeHandler);
 
-        public RbValue GetExceptionObj()
+        public RbValue GetExceptionObject()
         {
             var nativeObj = mrb_get_exc_obj(this.NativeHandler);
             return new RbValue(this, nativeObj);
