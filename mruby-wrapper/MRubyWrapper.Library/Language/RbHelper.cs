@@ -80,7 +80,7 @@ namespace MRubyWrapper.Library.Language
             return Lambda;
         }
         
-        public static IntPtr GetIntPtrOfCSharpObject(object obj) => GCHandle.ToIntPtr(GCHandle.Alloc(obj, GCHandleType.Pinned));
+        public static IntPtr GetIntPtrOfCSharpObject(object? obj) => GCHandle.ToIntPtr(GCHandle.Alloc(obj, GCHandleType.Pinned));
         
         public static void FreeIntPtrOfCSharpObject(IntPtr ptr) => GCHandle.FromIntPtr(ptr).Free();
 

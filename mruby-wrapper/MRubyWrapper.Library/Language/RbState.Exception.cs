@@ -7,7 +7,7 @@
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate UInt64 NativeProtectErrorFunc(IntPtr mrb, IntPtr userdata);
     
-    public delegate RbValue CSharpProtectErrorFunc(RbState state, object userdata);
+    public delegate RbValue CSharpProtectErrorFunc(RbState state);
     
     public partial class RbState
     {
@@ -23,21 +23,25 @@
         
         public bool CheckError() => mrb_check_error(this.NativeHandler);
 
-        public RbValue Protect(CSharpProtectErrorFunc body, object data, ref bool error)
+        public RbValue Protect(CSharpProtectErrorFunc body, ref bool error)
         {
-            var fn = new NativeProtectErrorFunc((mrb, userdata) =>
+            var fn = new NativeProtectErrorFunc((mrb, _) =>
             {
-                var stat = new RbState() { NativeHandler = mrb };
-                var udata = RbHelper.GetObjectFromIntPtr(userdata);
-                var res= body(stat, udata).NativeValue;
-                RbHelper.FreeIntPtrOfCSharpObject(userdata);
+                var stat = new RbState { NativeHandler = mrb };
+                var res= body(stat).NativeValue;
                 return res;
             });
-            var ptr = RbHelper.GetIntPtrOfCSharpObject(data);
-            var result = mrb_protect_error(this.NativeHandler, fn, ptr, ref error);
+            var result = mrb_protect_error(this.NativeHandler, fn, IntPtr.Zero, ref error);
             return new RbValue(this, result);
         }
 
+        public RbValue Protect(CSharpMethodFunc body, ref bool error)
+        {
+            var fn = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(body);
+            var result = mrb_protect(this.NativeHandler, fn, this.RbNil.NativeValue, ref error);
+            return new RbValue(this, result);
+        }
+        
         public RbValue Protect(CSharpMethodFunc body, RbValue data, ref bool error)
         {
             var fn = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(body);
@@ -81,7 +85,7 @@
 
         public void RaiseArgumentNumberError(int argc, int min, int max) => mrb_argnum_error(this.NativeHandler, argc, min, max);
 
-        public void WarnEx(string msg) => mrb_warn_ex(this.NativeHandler, msg);
+        public void Warn(string msg) => mrb_warn_ex(this.NativeHandler, msg);
 
         public void Bug(string msg) => mrb_bug(this.NativeHandler, msg);
 
