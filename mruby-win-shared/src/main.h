@@ -33,7 +33,7 @@ MRB_API mrb_value mrb_new_data_object(struct mrb_state *mrb, struct RClass *klas
 MRB_API void *mrb_data_object_get_ptr(struct mrb_state *mrb, mrb_value obj,
                                       struct mrb_data_type *type);
 
-MRB_API void *mrb_data_object_get_type(mrb_value obj);
+MRB_API const mrb_data_type *mrb_data_object_get_type(mrb_value obj);
 
 MRB_API struct RClass *mrb_get_class_ptr(mrb_value value);
 

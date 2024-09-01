@@ -339,7 +339,7 @@ public class RbClassTest
         var dataObj = @class.NewObjectWithCSharpDataObject("MyData", myData, state.BoxInt(12345));
         var v = dataObj.CallMethod("get_value");
 
-        var dataObjectType = v.GetDataObjectType();
+        var dataObjectType = dataObj.GetDataObjectType();
         Assert.Equal("MyData", dataObjectType.Name);
         
         var unboxed = state.UnboxInt(v);

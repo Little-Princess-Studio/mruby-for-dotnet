@@ -65,7 +65,7 @@ void *mrb_data_object_get_ptr(struct mrb_state *mrb, mrb_value obj, struct mrb_d
   return p;
 }
 
-void *mrb_data_object_get_type(mrb_value obj) { return DATA_PTR(obj); }
+const mrb_data_type *mrb_data_object_get_type(mrb_value obj) { return DATA_TYPE(obj); }
 
 struct RClass *mrb_get_class_ptr(mrb_value value) { return mrb_class_ptr(value); }
 
