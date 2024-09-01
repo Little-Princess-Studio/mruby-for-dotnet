@@ -1,6 +1,7 @@
 namespace MRubyWrapper.Library.Language
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -83,6 +84,7 @@ namespace MRubyWrapper.Library.Language
 
         public Int64 Compare(RbValue rbValue) => mrb_cmp(this.RbState.NativeHandler, this.nativeValue.Value, rbValue.nativeValue.Value);
 
+        [ExcludeFromCodeCoverage]
         public RbValue ToRbString()
         {
             var result = mrb_any_to_s(this.RbState.NativeHandler, this.nativeValue.Value);
@@ -106,6 +108,7 @@ namespace MRubyWrapper.Library.Language
             return mrb_obj_is_kind_of(this.RbState.NativeHandler, this.nativeValue.Value, @class.NativeHandler);
         }
 
+        [ExcludeFromCodeCoverage]
         public RbValue Inspect()
         {
             var result = mrb_obj_inspect(this.RbState.NativeHandler, this.nativeValue.Value);

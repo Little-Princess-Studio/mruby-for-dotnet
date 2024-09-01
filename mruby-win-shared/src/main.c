@@ -67,14 +67,6 @@ void *mrb_data_object_get_ptr(struct mrb_state *mrb, mrb_value obj, struct mrb_d
 
 void *mrb_data_object_get_type(mrb_value obj) { return DATA_PTR(obj); }
 
-mrb_value mrb_get_exc_obj(struct mrb_state *mrb) {
-  if (mrb->exc) {
-    return mrb_obj_value(mrb->exc);
-  } else {
-    return mrb_nil_value();
-  }
-}
-
 struct RClass *mrb_get_class_ptr(mrb_value value) { return mrb_class_ptr(value); }
 
 mrb_bool mrb_check_frozen_ex(mrb_value o) {

@@ -37,7 +37,7 @@ public class RbProcTest
             var newA = stat.BoxInt(unboxed + 1);
             self.SetInstanceVariable("@a", newA);
             return stat.RbTrue;
-        }, null);
+        });
         
         for (int i = 0; i < 5; i++)
         {
@@ -94,7 +94,7 @@ public class RbProcTest
             var newA = stat.BoxInt(unboxedA + list[unboxedIdx]);
             self.SetInstanceVariable("@a", newA);
             return stat.RbTrue;
-        }, null);
+        });
         
         for (int i = 0; i < 5; i++)
         {

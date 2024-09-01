@@ -1,6 +1,7 @@
 namespace MRubyWrapper.Library.Language
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Runtime.InteropServices;
 
@@ -227,6 +228,7 @@ namespace MRubyWrapper.Library.Language
             return new RbValue(this, result);
         }
         
+        [ExcludeFromCodeCoverage]
         public RbValue P(RbValue value)
         {
             mrb_p(this.NativeHandler, value.NativeValue);
@@ -275,16 +277,10 @@ namespace MRubyWrapper.Library.Language
         
         public Int64 GetArgs(string format, ref RbValue[] args) => RbHelper.GetArgs(this, format, ref args);
 
-        public RbProc NewProc(CSharpMethodFunc func, RbValue[]? argv)
+        public RbProc NewProc(CSharpMethodFunc func)
         {
-            UInt64[]? args = null;
-            if (argv != null)
-            {
-                args = argv.Select(v => v.NativeValue).ToArray();
-            }
-
             var cb = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(func);
-            var handler = mrb_proc_new_cfunc_with_env(this.NativeHandler, cb, args?.Length ?? 0, args);
+            var handler = mrb_proc_new_cfunc_with_env(this.NativeHandler, cb, 0, null);
 
             return new RbProc(handler);
         }

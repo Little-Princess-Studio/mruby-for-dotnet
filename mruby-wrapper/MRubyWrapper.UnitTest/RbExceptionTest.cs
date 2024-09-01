@@ -13,26 +13,28 @@ public class RbExceptionTest
 
         bool err = false;
 
-        state.Protect(stat =>
+        var errObj = state.Protect(stat =>
         {
             var excClass = stat.GetExceptionClass("Exception");
             stat.Raise(excClass, errorMsg);
             return stat.RbNil;
         }, ref err);
         Assert.True(err);
+        Assert.Equal("Exception", errObj.GetClassName());
 
         state.Protect(stat => stat.RbNil, ref err);
         Assert.False(err);
 
-        state.Protect((stat, userdata, _) =>
+        errObj = state.Protect((stat, userdata, _) =>
         {
             Assert.True(stat.RbNil == userdata);
             var excClass = stat.GetExceptionClass("Exception");
-            var excObj = excClass.NewObject(stat.BoxString(errorMsg));
+            var excObj = stat.GenerateExceptionWithNewStr(excClass, errorMsg);
             stat.Raise(excObj);
             return stat.RbNil;
         }, ref err);
         Assert.True(err);
+        Assert.Equal("Exception", errObj.GetClassName());
 
         var @class = state.DefineClass("TestClass", null);
         @class.DefineMethod("initialize", (stat, self, args) =>
@@ -53,7 +55,6 @@ public class RbExceptionTest
         var str = state.UnboxString(obj.GetInstanceVariable("@a"));
         Assert.Equal(errorMsg, str);
 
-        Assert.False(state.CheckError());
         Ruby.Close(state);
     }
 
@@ -65,34 +66,53 @@ public class RbExceptionTest
         var expCls = state.GetExceptionClass("Exception");
         var clsExc1 = state.DefineClass("Excption1", expCls);
 
+        var excFlag1 = false;
+        var rescueFlag1 = false;
+        var excFlag2 = false;
+        var rescueFlag2 = false;
+
         var funcThrowExc1 = new CSharpMethodFunc((stat, _, _) =>
         {
             var excClass = stat.GetExceptionClass("StandardError");
             var exc = excClass.NewObject(stat.BoxString(""));
+            excFlag1 = true;
             stat.Raise(exc);
+
+            // should not reach here
+            excFlag1 = false;
             return stat.RbNil;
         });
 
         var funcThrowExc2 = new CSharpMethodFunc((stat, _, _) =>
         {
             var exc = clsExc1.NewObject(stat.BoxString(""));
+            excFlag2 = true;
             stat.Raise(exc);
+
+            // should not reach here
+            excFlag2 = false;
             return stat.RbNil;
         });
 
         state.Rescue(funcThrowExc1, state.RbNil, (stat, userdata, _) =>
         {
             Assert.True(userdata == stat.RbNil);
+            rescueFlag1 = true;
             return stat.RbNil;
         }, state.RbNil);
 
         state.RescueExceptions(funcThrowExc2, state.RbNil, (stat, userdata, _) =>
         {
             Assert.True(userdata == stat.RbNil);
+            rescueFlag2 = true;
             return stat.RbNil;
         }, state.RbNil, new[] { clsExc1 });
 
-        Assert.False(state.CheckError());
+        Assert.True(excFlag1);
+        Assert.True(excFlag2);
+        Assert.True(rescueFlag1);
+        Assert.True(rescueFlag2);
+
         Ruby.Close(state);
     }
 
@@ -161,8 +181,7 @@ public class RbExceptionTest
         Assert.True(mainFlag);
         Assert.True(rescueFlag);
         Assert.True(ensureFlag);
-        
-        Assert.False(state.CheckError());
+
         Ruby.Close(state);
     }
 }

@@ -4,7 +4,7 @@
     using System.Runtime.InteropServices;
     using Language;
 
-    public static partial class Ruby
+    public static class Ruby
     {
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
         private static extern IntPtr mrb_open();

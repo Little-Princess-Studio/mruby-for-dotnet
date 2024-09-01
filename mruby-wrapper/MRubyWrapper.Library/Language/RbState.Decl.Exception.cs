@@ -18,16 +18,16 @@
         private static extern void mrb_raise(IntPtr mrb, IntPtr c, [MarshalAs(UnmanagedType.LPStr)] string msg);
 
         // MRB_API mrb_noreturn void mrb_name_error_ex(mrb_state *mrb, mrb_sym id, const char *msg);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern void mrb_name_error_ex(IntPtr mrb, UInt64 id, [MarshalAs(UnmanagedType.LPStr)] string msg);
+        // [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        // private static extern void mrb_name_error_ex(IntPtr mrb, UInt64 id, [MarshalAs(UnmanagedType.LPStr)] string msg);
 
         // MRB_API mrb_noreturn void mrb_frozen_error(mrb_state *mrb, void *frozen_obj);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern void mrb_frozen_error(IntPtr mrb, IntPtr frozen_obj);
+        // [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        // private static extern void mrb_frozen_error(IntPtr mrb, IntPtr frozen_obj);
 
         // MRB_API mrb_noreturn void mrb_argnum_error(mrb_state *mrb, mrb_int argc, int min, int max);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern void mrb_argnum_error(IntPtr mrb, int argc, int min, int max);
+        // [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        // private static extern void mrb_argnum_error(IntPtr mrb, int argc, int min, int max);
 
         // MRB_API void mrb_warn_ex(mrb_state *mrb, const char *msg);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
@@ -46,21 +46,21 @@
         private static extern void mrb_print_error(IntPtr mrb);
 
         // MRB_API mrb_noreturn void mrb_sys_fail(mrb_state *mrb, const char *mesg);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern void mrb_sys_fail(IntPtr mrb, [MarshalAs(UnmanagedType.LPStr)] string mesg);
+        // [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        // private static extern void mrb_sys_fail(IntPtr mrb, [MarshalAs(UnmanagedType.LPStr)] string mesg);
 
         // MRB_API mrb_value mrb_exc_new_str(mrb_state *mrb, struct RClass* c, mrb_value str);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern UInt64 mrb_exc_new_str(IntPtr mrb, IntPtr c, UInt64 str);
 
         // MRB_API void mrb_clear_error(mrb_state *mrb);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern void mrb_clear_error(IntPtr mrb);
+        // [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        // private static extern void mrb_clear_error(IntPtr mrb);
 
         // MRB_API mrb_bool mrb_check_error(mrb_state *mrb);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        private static extern Boolean mrb_check_error(IntPtr mrb);
+        // [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        // [return: MarshalAs(UnmanagedType.U1)]
+        // private static extern Boolean mrb_check_error(IntPtr mrb);
 
         // MRB_API mrb_value mrb_protect_error(mrb_state *mrb, mrb_protect_error_func *body, void *userdata, mrb_bool *error);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
@@ -87,9 +87,5 @@
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern UInt64 mrb_rescue_exceptions(IntPtr mrb, [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc body, UInt64 b_data, [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc rescue, UInt64 r_data, int len,
             IntPtr[] classes);
-        
-        // MRB_API mrb_value mrb_get_exc_obj(struct mrb_state *mrb);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_get_exc_obj(IntPtr mrb);
     }
 }

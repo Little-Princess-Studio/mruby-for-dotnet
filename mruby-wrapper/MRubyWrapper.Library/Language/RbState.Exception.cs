@@ -1,6 +1,7 @@
 ﻿namespace MRubyWrapper.Library.Language
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Runtime.InteropServices;
 
@@ -12,17 +13,18 @@
 
     public partial class RbState
     {
-        public void SysFail(string message) => mrb_sys_fail(this.NativeHandler, message);
+        // public void SysFail(string message) => mrb_sys_fail(this.NativeHandler, message);
 
-        public RbValue GenerateExceptionWithNewStr(RbClass c, RbValue str)
+        public RbValue GenerateExceptionWithNewStr(RbClass c, string msg)
         {
+            var str = this.BoxString(msg);
             var result = mrb_exc_new_str(this.NativeHandler, c.NativeHandler, str.NativeValue);
             return new RbValue(this, result);
         }
 
-        public void ClearError() => mrb_clear_error(this.NativeHandler);
-
-        public bool CheckError() => mrb_check_error(this.NativeHandler);
+        // public void ClearError() => mrb_clear_error(this.NativeHandler);
+        //
+        // public bool CheckError() => mrb_check_error(this.NativeHandler);
 
         public RbValue Protect(CSharpProtectErrorFunc body, ref bool error)
         {
@@ -89,28 +91,26 @@
 
         public void Raise(RbClass c, string msg) => mrb_raise(this.NativeHandler, c.NativeHandler, msg);
 
-        public void RaiseNameError(string name, string msg)
-        {
-            var symId = GetInternSymbol(name);
-            mrb_name_error_ex(this.NativeHandler, symId, msg);
-        }
+        // public void RaiseNameError(string name, string msg)
+        // {
+        //     var symId = GetInternSymbol(name);
+        //     mrb_name_error_ex(this.NativeHandler, symId, msg);
+        // }
+        //
+        // public void RaiseFrozenError(RbValue frozenObj) => mrb_frozen_error(this.NativeHandler, RbHelper.GetRbObjectPtrFromValue(frozenObj));
+        //
+        // public void RaiseArgumentNumberError(int argc, int min, int max) => mrb_argnum_error(this.NativeHandler, argc, min, max);
 
-        public void RaiseFrozenError(RbValue frozenObj) => mrb_frozen_error(this.NativeHandler, RbHelper.GetRbObjectPtrFromValue(frozenObj));
-
-        public void RaiseArgumentNumberError(int argc, int min, int max) => mrb_argnum_error(this.NativeHandler, argc, min, max);
-
+        [ExcludeFromCodeCoverage]
         public void Warn(string msg) => mrb_warn_ex(this.NativeHandler, msg);
 
+        [ExcludeFromCodeCoverage]
         public void Bug(string msg) => mrb_bug(this.NativeHandler, msg);
 
+        [ExcludeFromCodeCoverage]
         public void PrintBacktrace() => mrb_print_backtrace(this.NativeHandler);
 
+        [ExcludeFromCodeCoverage]
         public void PrintError() => mrb_print_error(this.NativeHandler);
-
-        public RbValue GetExceptionObject()
-        {
-            var nativeObj = mrb_get_exc_obj(this.NativeHandler);
-            return new RbValue(this, nativeObj);
-        }
     }
 }
