@@ -14,8 +14,8 @@ namespace MRubyWrapper.Library.Language
         internal static extern void mrb_parser_free(IntPtr parser);
         
         // MRB_API void mrb_parser_parse(struct mrb_parser_state*,mrb_ccontext*);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
-        internal static extern void mrb_parser_parse(IntPtr parser, IntPtr ccontext);
+        // [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
+        // internal static extern void mrb_parser_parse(IntPtr parser, IntPtr ccontext);
         
         // MRB_API void mrb_parser_set_filename(struct mrb_parser_state*, char const* filename);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
@@ -48,5 +48,13 @@ namespace MRubyWrapper.Library.Language
         // MRB_API mrb_value mrb_top_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int stack_keep);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
         internal static extern UInt64 mrb_top_run(IntPtr mrb, IntPtr proc, UInt64 self, Int64 stackKeep);
+        
+        // MRB_API mrb_ccontext* mrb_ccontext_new(mrb_state *mrb);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
+        internal static extern IntPtr mrb_ccontext_new(IntPtr mrb);
+        
+        // MRB_API void mrb_ccontext_free(mrb_state *mrb, mrb_ccontext *cxt);
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
+        internal static extern void mrb_ccontext_free(IntPtr mrb, IntPtr ccontext);
     }
 }

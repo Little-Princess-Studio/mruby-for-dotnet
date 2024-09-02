@@ -16,7 +16,7 @@ public class RbProcTest
             self.SetInstanceVariable("@a", stat.BoxInt(1));
             return self;
         }, RbHelper.MRB_ARGS_NONE());
-        
+
         @class.DefineMethod("add", (stat, self, args) =>
         {
             Assert.True(stat.BlockGiven());
@@ -38,15 +38,15 @@ public class RbProcTest
             self.SetInstanceVariable("@a", newA);
             return stat.RbTrue;
         });
-        
+
         for (int i = 0; i < 5; i++)
         {
             obj.CallMethodWithBlock("add", block);
         }
-        
+
         var a = obj.GetInstanceVariable("@a");
         Assert.Equal(6, state.UnboxInt(a));
-        
+
         Ruby.Close(state);
     }
 
@@ -70,7 +70,7 @@ public class RbProcTest
             Assert.True(stat.BlockGiven());
 
             var idx = self.GetInstanceVariable("@idx");
-            
+
             var block = stat.GetBlock();
             var res = stat.YieldWithClass(block, self, @class, idx);
             Assert.True(res == stat.RbTrue);
@@ -78,7 +78,7 @@ public class RbProcTest
             var unboxed = stat.UnboxInt(idx);
             var newIdx = stat.BoxInt(unboxed + 1);
             self.SetInstanceVariable("@idx", newIdx);
-            
+
             return stat.RbNil;
         }, RbHelper.MRB_ARGS_BLOCK());
 
@@ -87,61 +87,61 @@ public class RbProcTest
         {
             var a = self.GetInstanceVariable("@a");
             var idx = args[0];
-            
+
             var unboxedIdx = stat.UnboxInt(idx);
-            
+
             var unboxedA = stat.UnboxInt(a);
             var newA = stat.BoxInt(unboxedA + list[unboxedIdx]);
             self.SetInstanceVariable("@a", newA);
             return stat.RbTrue;
         });
-        
+
         for (int i = 0; i < 5; i++)
         {
             obj.CallMethodWithBlock("add", block);
         }
-        
+
         var a = obj.GetInstanceVariable("@a");
         Assert.Equal(15, state.UnboxInt(a));
-        
+
         Ruby.Close(state);
     }
 
-    // [Fact]
-    // void TestFiber()
-    // {
-    //     var state = Ruby.Open();
-    //
-    //     List<int> toCheck = new List<int>();
-    //     
-    //     var proc0 = state.NewProc((stat, self, args) =>
-    //     {
-    //         stat.FiberYield(self);
-    //
-    //         toCheck.Add(0);
-    //         return stat.RbNil;
-    //     }, null);
-    //     
-    //     
-    //     var proc1 = state.NewProc((stat, self, args) =>
-    //     {
-    //         stat.FiberYield(self);
-    //
-    //         toCheck.Add(1);
-    //         return stat.RbNil;
-    //     }, null);
-    //
-    //     var fiber0 = state.NewFiber(proc0);
-    //     var fiber1 = state.NewFiber(proc1);
-    //
-    //     Assert.True(state.CheckFiberAlive(fiber0) == state.RbTrue);
-    //     Assert.True(state.CheckFiberAlive(fiber1) == state.RbTrue);
-    //     
-    //     state.FiberResume(fiber1);
-    //     state.FiberResume(fiber0);
-    //     
-    //     Assert.Equal(new List<int> { 1, 0 }, toCheck);
-    //     
-    //     Ruby.Close(state);
-    // }
+    [Fact]
+    void TestFiber()
+    {
+        using var state = Ruby.Open();
+        using var compiler = RbCompiler.ParserNew(state);
+        using var context = RbCompiler.NewContext(state);
+        string code = File.ReadAllText("test_scripts/fiber_test.rb");
+
+        compiler.LoadString(code, context);
+        var fiberProc0 = state.GetGlobalVariable("$p0");
+        var fiberProc1 = state.GetGlobalVariable("$p1");
+
+        // the proc of a fiber must be a ruby-side proc not c-side proc
+        var fiber0 = state.NewFiber(RbProc.FromRbValue(fiberProc0));
+        var fiber1 = state.NewFiber(RbProc.FromRbValue(fiberProc1));
+
+        Assert.True(state.CheckFiberAlive(fiber0) == state.RbTrue);
+        Assert.True(state.CheckFiberAlive(fiber1) == state.RbTrue);
+
+        Int64 cnt0 = 0;
+        Int64 cnt1 = 0;
+        for (int i = 0; i < 2; ++i)
+        {
+            var res = state.FiberResume(fiber0);
+            var unboxed = state.UnboxInt(res);
+            cnt0 += unboxed;
+        }
+        Assert.Equal(3, cnt0);
+
+        for (int i = 0; i < 2; ++i)
+        {
+            var res = state.FiberResume(fiber1);
+            var unboxed = state.UnboxInt(res);
+            cnt1 += unboxed;
+        }
+        Assert.Equal(7, cnt1);
+    }
 }

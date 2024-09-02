@@ -10,7 +10,7 @@
         private static extern IntPtr mrb_open();
 
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
-        private static extern void mrb_close(IntPtr mrb); 
+        private static extern void mrb_close(IntPtr mrb);
 
         public static RbState Open()
         {
@@ -22,6 +22,12 @@
             return state;
         }
 
-        public static void Close(RbState state) => mrb_close(state.NativeHandler);
+        public static void Close(RbState state)
+        {
+            if (state.NativeHandler != IntPtr.Zero)
+            {
+                mrb_close(state.NativeHandler);
+            }
+        }
     }
 }

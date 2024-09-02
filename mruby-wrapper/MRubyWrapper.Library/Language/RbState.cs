@@ -5,7 +5,7 @@ namespace MRubyWrapper.Library.Language
     using System.Linq;
     using System.Runtime.InteropServices;
 
-    public partial class RbState
+    public partial class RbState : IDisposable
     {
         public IntPtr NativeHandler { get; set; } = IntPtr.Zero;
 
@@ -282,11 +282,20 @@ namespace MRubyWrapper.Library.Language
             var cb = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(func);
             var handler = mrb_proc_new_cfunc_with_env(this.NativeHandler, cb, 0, null);
 
-            return new RbProc(handler);
+            return new RbProc(this, handler);
         }
 
         public bool BlockGiven() => RbHelper.BlockGivenP(this);
         
         public RbValue GetBlock() => new RbValue(this, mrb_get_block(this.NativeHandler));
+
+        public void Dispose()
+        {
+            if (this.NativeHandler != IntPtr.Zero)
+            {
+                Ruby.Close(this);
+                this.NativeHandler = IntPtr.Zero;
+            }
+        }
     }
 }

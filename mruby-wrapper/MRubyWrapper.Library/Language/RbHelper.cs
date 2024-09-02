@@ -2,6 +2,7 @@ namespace MRubyWrapper.Library.Language
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Runtime.InteropServices;
 
@@ -21,14 +22,23 @@ namespace MRubyWrapper.Library.Language
 
     public static partial class RbHelper
     {
+        [ExcludeFromCodeCoverage]
         public static uint MRB_ARGS_REQ(uint n) => (n & 0x1fU) << 18;
+        [ExcludeFromCodeCoverage]
         public static uint MRB_ARGS_OPT(uint n) => (n & 0x1fU) << 13;
+        [ExcludeFromCodeCoverage]
         public static uint MRB_ARGS_ARG(uint n1, uint n2) => MRB_ARGS_REQ(n1) | MRB_ARGS_OPT(n2);
+        [ExcludeFromCodeCoverage]
         public static uint MRB_ARGS_REST() => 1U << 12;
+        [ExcludeFromCodeCoverage]
         public static uint MRB_ARGS_POST(uint n) => (n & 0x1fU) << 7;
+        [ExcludeFromCodeCoverage]
         public static uint MRB_ARGS_KEY(uint n1, uint n2) => ((n1 & 0x1fU) << 2) | (n2 != 0 ? 1U : 0);
+        [ExcludeFromCodeCoverage]
         public static uint MRB_ARGS_BLOCK() => 1U;
+        [ExcludeFromCodeCoverage]
         public static uint MRB_ARGS_ANY() => MRB_ARGS_REST();
+        [ExcludeFromCodeCoverage]
         public static uint MRB_ARGS_NONE() => 0U;
 
         private static Dictionary<string, IntPtr> RbDataClassMapping { get; } = new Dictionary<string, IntPtr>();
