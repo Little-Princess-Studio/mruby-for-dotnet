@@ -78,8 +78,8 @@ namespace MRubyWrapper.Library.Language
         private static extern void mrb_notimplement(IntPtr mrb);
 
         // MRB_API mrb_value mrb_notimplement_m(mrb_state*, mrb_value);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_notimplement_m(IntPtr mrb, UInt64 value);
+        // [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        // private static extern UInt64 mrb_notimplement_m(IntPtr mrb, UInt64 value);
 
         // // MRB_API mrb_value mrb_obj_itself(mrb_state*, mrb_value);
         // [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]

@@ -86,3 +86,7 @@ void mrb_name_error_ex(mrb_state *mrb, mrb_sym id, const char *msg) {
 void mrb_warn_ex(mrb_state *mrb, const char *msg) {
   mrb_warn(mrb, msg);
 }
+
+mrb_int mrb_array_len(mrb_value array) {
+  return RARRAY_LEN(array);
+}

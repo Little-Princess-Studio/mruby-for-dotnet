@@ -168,11 +168,11 @@ namespace MRubyWrapper.Library.Language
             return Marshal.PtrToStringAnsi(ptr);
         }
 
-        internal static string? GetSymbolDump(RbState state, UInt64 sym)
-        {
-            var ptr = mrb_sym_dump(state.NativeHandler, sym);
-            return Marshal.PtrToStringAnsi(ptr);
-        }
+        // internal static string? GetSymbolDump(RbState state, UInt64 sym)
+        // {
+        //     var ptr = mrb_sym_dump(state.NativeHandler, sym);
+        //     return Marshal.PtrToStringAnsi(ptr);
+        // }
         
         internal static RbValue GetSymbolStr(RbState state, UInt64 sym)
         {
@@ -198,7 +198,7 @@ namespace MRubyWrapper.Library.Language
             return new RbClass(ptr, state);
         }
         
-        public static IntPtr GetRbObjectPtrFromValue(RbValue value) => mrb_value_to_obj_ptr(value.NativeValue);
+        public static IntPtr GetRbObjectPtrFromValue(RbValue value) => GetRbObjectPtrFromValue(value.NativeValue);
         
         public static IntPtr GetRbObjectPtrFromValue(UInt64 nativeHandler) => mrb_value_to_obj_ptr(nativeHandler);
         

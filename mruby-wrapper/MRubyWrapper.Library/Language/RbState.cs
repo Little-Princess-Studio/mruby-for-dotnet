@@ -1,6 +1,7 @@
 namespace MRubyWrapper.Library.Language
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Runtime.InteropServices;
@@ -75,7 +76,7 @@ namespace MRubyWrapper.Library.Language
         
         public RbValue GetSymbolStr(UInt64 sym) => RbHelper.GetSymbolStr(this, sym);
         
-        public string? GetSymbolDump(UInt64 sym) => RbHelper.GetSymbolDump(this, sym);
+        // public string? GetSymbolDump(UInt64 sym) => RbHelper.GetSymbolDump(this, sym);
 
         public RbClass NewClass(RbClass? super)
         {
@@ -137,13 +138,14 @@ namespace MRubyWrapper.Library.Language
             return new RbClass(modulePtr, this);
         }
 
-        public void NotImplement() => mrb_notimplement(this.NativeHandler);
+        [ExcludeFromCodeCoverage]
+        public void RaiseNotImplementError() => mrb_notimplement(this.NativeHandler);
 
-        public RbValue NotImplementM(RbValue value)
-        {
-            var result = mrb_notimplement_m(this.NativeHandler, value.NativeValue);
-            return new RbValue(this, result);
-        }
+        // public RbValue NotImplementM(RbValue value)
+        // {
+        //     var result = mrb_notimplement_m(this.NativeHandler, value.NativeValue);
+        //     return new RbValue(this, result);
+        // }
 
         public void FullGc() => mrb_full_gc(this.NativeHandler);
 
@@ -288,6 +290,27 @@ namespace MRubyWrapper.Library.Language
         public bool BlockGiven() => RbHelper.BlockGivenP(this);
         
         public RbValue GetBlock() => new RbValue(this, mrb_get_block(this.NativeHandler));
+
+        public RbArray NewArray()
+        {
+            return RbArray.New(this);
+        }
+        
+        public RbArray NewArray(IEnumerable<RbValue> array)
+        {
+            return RbArray.FromValues(this, array);
+        }
+
+        public RbArray NewArray(params RbValue[] array)
+        {
+            return RbArray.FromValues(this, array);
+        }
+        
+        [ExcludeFromCodeCoverage]
+        public RbArray FromArrayObject(RbValue array)
+        {
+            return RbArray.FromArrayObject(array);
+        }
 
         public void Dispose()
         {

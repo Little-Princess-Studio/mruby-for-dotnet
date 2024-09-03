@@ -40,8 +40,8 @@ namespace MRubyWrapper.Library.Language
         private static extern IntPtr mrb_sym_name(IntPtr mrb, UInt64 sym);
 
         // MRB_API const char *mrb_sym_dump(mrb_state*,mrb_sym);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
-        private static extern IntPtr mrb_sym_dump(IntPtr mrb, UInt64 sym);
+        // [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
+        // private static extern IntPtr mrb_sym_dump(IntPtr mrb, UInt64 sym);
         
         // MRB_API mrb_value mrb_sym_str(mrb_state*,mrb_sym);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]

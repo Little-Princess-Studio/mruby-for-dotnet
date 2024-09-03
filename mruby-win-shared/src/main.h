@@ -1,6 +1,7 @@
 #include "mruby.h"
 #include "mruby/class.h"
 #include "mruby/data.h"
+#include "mruby/array.h"
 #include "mruby/string.h"
 
 MRB_API mrb_value mrb_float_value_boxing(struct mrb_state *mrb, mrb_float f);
@@ -47,3 +48,5 @@ MRB_API mrb_noreturn void mrb_name_error_ex(mrb_state *mrb, mrb_sym id,
                                             const char *msg);
 
 MRB_API void mrb_warn_ex(mrb_state *mrb, const char *msg);
+
+MRB_API mrb_int mrb_array_len(mrb_value array);
