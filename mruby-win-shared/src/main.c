@@ -74,9 +74,9 @@ mrb_bool mrb_check_frozen_ex(mrb_value o) {
 }
 
 mrb_value mrb_get_block(struct mrb_state *mrb) {
-    struct RProc *proc;
-    mrb_get_args(mrb, "&!", &proc);
-    return mrb_obj_value(proc);
+  mrb_callinfo *ci = mrb->c->ci;
+  mrb_value b = ci->stack[mrb_ci_bidx(ci)];
+  return b;
 }
 
 void mrb_name_error_ex(mrb_state *mrb, mrb_sym id, const char *msg) {

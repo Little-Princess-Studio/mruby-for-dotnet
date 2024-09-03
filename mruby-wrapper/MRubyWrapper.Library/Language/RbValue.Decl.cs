@@ -62,8 +62,8 @@ namespace MRubyWrapper.Library.Language
         private static extern UInt64 mrb_obj_clone(IntPtr mrb, UInt64 self);
         
         // MRB_API mrb_value mrb_attr_get(mrb_state *mrb, mrb_value obj, mrb_sym id);
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern UInt64 mrb_attr_get(IntPtr mrb, UInt64 obj, UInt64 id);
+        // [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        // private static extern UInt64 mrb_attr_get(IntPtr mrb, UInt64 obj, UInt64 id);
         
         // MRB_API mrb_value mrb_iv_get(mrb_state *mrb, mrb_value obj, mrb_sym sym);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]

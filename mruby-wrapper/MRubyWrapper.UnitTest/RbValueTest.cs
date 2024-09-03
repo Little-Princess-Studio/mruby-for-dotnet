@@ -8,9 +8,9 @@ public class RbValueTest
     [Fact]
     public void TestRbValueEquals()
     {
-        var state = Ruby.Open();
+        using var state = Ruby.Open();
 
-        var obj = null as Object;
+        RbValue? obj = null;
 
         Assert.False(obj == state.RbNil);
         Assert.False(state.RbNil == null);
@@ -45,14 +45,12 @@ public class RbValueTest
         Assert.True(obj1 == obj2);
         Assert.True(obj1.Equals(obj2));
         Assert.False(obj1.StrictEquals(obj2));
-
-        Ruby.Close(state);
     }
 
     [Fact]
     void TestDuplicateAndClone()
     {
-        var state = Ruby.Open();
+        using var state = Ruby.Open();
 
         var cls = state.GetClass("Object");
         var obj = cls.NewObject();
@@ -95,14 +93,12 @@ public class RbValueTest
         Assert.True(obj1 == obj3);
         Assert.True(obj1.Equals(obj3));
         Assert.False(obj1.StrictEquals(obj3));
-
-        Ruby.Close(state);
     }
 
     [Fact]
     void TestObjectId()
     {
-        var state = Ruby.Open();
+        using var state = Ruby.Open();
 
         var obj = state.BoxInt(123);
         var obj2 = state.BoxInt(123);
@@ -117,14 +113,12 @@ public class RbValueTest
         var id4 = obj4.ObjectId;
 
         Assert.True(id3 != id4);
-
-        Ruby.Close(state);
     }
 
     [Fact]
     void TestStringAndSymbol()
     {
-        var state = Ruby.Open();
+        using var state = Ruby.Open();
 
         var csharpString = "Hello, World!";
 
@@ -139,14 +133,12 @@ public class RbValueTest
 
         var symbolNameStr = state.GetSymbolName(sym0);
         Assert.Equal(csharpString, symbolNameStr);
-
-        Ruby.Close(state);
     }
 
     [Fact]
     void TestSymbolBoxingAndUnboxing()
     {
-        var state = Ruby.Open();
+        using var state = Ruby.Open();
         var csharpString = "Hello, World!";
 
         var sym0 = state.GetInternSymbol(csharpString);
@@ -161,21 +153,18 @@ public class RbValueTest
 
         Assert.Equal(sym0, sym0Unboxed);
         Assert.Equal(sym1, sym1Unboxed);
-
-        Ruby.Close(state);
     }
 
     [Fact]
     void TestTopSelf()
     {
-        var state0 = Ruby.Open();
-        var state1 = Ruby.Open();
+        using var state0 = Ruby.Open();
+        using var state1 = Ruby.Open();
 
         var top0 = state0.GetTopSelf();
         var top1 = state1.GetTopSelf();
 
         Assert.True(top0 != top1);
-        Ruby.Close(state1);
 
         var a = false;
         top0.DefineSingletonMethod("test", (stat, self, args) =>
@@ -193,14 +182,12 @@ public class RbValueTest
         var abc0Unboxed = state0.UnboxString(abc0);
 
         Assert.Equal("HHH", abc0Unboxed);
-
-        Ruby.Close(state0);
     }
 
     [Fact]
     void TestIvForeach()
     {
-        var state = Ruby.Open();
+        using var state = Ruby.Open();
 
         var cls = state.DefineClass("MyClass", null);
         cls.DefineMethod("initialize", (stat, self, args) =>
@@ -243,7 +230,40 @@ public class RbValueTest
         obj.InstanceVariableForeach(callback);
         
         Assert.Empty(nameDict);
+    }
 
-        Ruby.Close(state);
+    [Fact]
+    void TestCompare()
+    {
+        using var state = Ruby.Open();
+        
+        var int1 = state.BoxInt(0);
+        var int2 = state.BoxInt(0);
+        var int3 = state.BoxInt(2);
+
+        Assert.True(int1.Compare(int2) == 0);
+        Assert.True(int1.Compare(int3) < 0);
+        Assert.True(int3.Compare(int1) > 0);
+    }
+    
+    [Fact]
+    void TestSingletonMethod()
+    {
+        using var state = Ruby.Open();
+        
+        var cls = state.DefineClass("MyClass", null);
+        var obj = cls.NewObject();
+        var singletonClass = obj.SingletonClass;
+        
+        var a = false;
+        singletonClass.DefineMethod("test", (stat, self, args) =>
+        {
+            a = true;
+            return stat.RbNil;
+        }, RbHelper.MRB_ARGS_NONE());
+        
+        obj.CallMethod("test");
+        
+        Assert.True(a);
     }
 }

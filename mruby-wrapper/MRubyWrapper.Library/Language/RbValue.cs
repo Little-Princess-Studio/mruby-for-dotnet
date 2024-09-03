@@ -31,14 +31,6 @@ namespace MRubyWrapper.Library.Language
             };
         }
 
-        public RbValue SingletonClassObject
-        {
-            get {
-                var classPtr = mrb_singleton_class_ptr(this.RbState.NativeHandler, this.NativeValue);
-                return this.RbState.PtrToRbValue(classPtr);
-            }
-        }
-        
         public RbClass SingletonClass
         {
             get {
@@ -50,13 +42,13 @@ namespace MRubyWrapper.Library.Language
         public RbValue CallMethod(string name, params RbValue[] args)
             => RbHelper.CallMethod(this.RbState, this, name, args);
 
-        public RbValue CallMethodWithBlock(string name, RbValue block, params RbValue[] args)
+        public RbValue CallMethod(string name, RbValue block, params RbValue[] args)
             => RbHelper.CallMethodWithBlock(this.RbState, this, name, block, args);
 
-        public RbValue CallMethodWithBlock(string name, RbProc proc, params RbValue[] args)
+        public RbValue CallMethod(string name, RbProc proc, params RbValue[] args)
         {
-            var procObj = RbHelper.PtrToRbValue(this.RbState, proc.NativeHandler);
-            return this.CallMethodWithBlock(name, procObj, args);
+            var procObj = proc.ToRbValue();
+            return this.CallMethod(name, procObj, args);
         }
         
         // Wrapper for mrb_obj_dup
@@ -121,12 +113,12 @@ namespace MRubyWrapper.Library.Language
             return new RbValue(this.RbState, result);
         }
         
-        public RbValue GetAttribute(string name)
-        {
-            var symId = this.RbState.GetInternSymbol(name);
-            var result = mrb_attr_get(this.RbState.NativeHandler, this.nativeValue.Value, symId);
-            return new RbValue(this.RbState, result);
-        }
+        // public RbValue GetAttribute(string name)
+        // {
+        //     var symId = this.RbState.GetInternSymbol(name);
+        //     var result = mrb_attr_get(this.RbState.NativeHandler, this.nativeValue.Value, symId);
+        //     return new RbValue(this.RbState, result);
+        // }
         
         public static bool operator ==(RbValue left, RbValue right)
         {

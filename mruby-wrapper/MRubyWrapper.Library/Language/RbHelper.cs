@@ -23,23 +23,23 @@ namespace MRubyWrapper.Library.Language
     public static partial class RbHelper
     {
         [ExcludeFromCodeCoverage]
-        public static uint MRB_ARGS_REQ(uint n) => (n & 0x1fU) << 18;
+        public static UInt32 MRB_ARGS_REQ(uint n) => (n & 0x1fU) << 18;
         [ExcludeFromCodeCoverage]
-        public static uint MRB_ARGS_OPT(uint n) => (n & 0x1fU) << 13;
+        public static UInt32 MRB_ARGS_OPT(uint n) => (n & 0x1fU) << 13;
         [ExcludeFromCodeCoverage]
-        public static uint MRB_ARGS_ARG(uint n1, uint n2) => MRB_ARGS_REQ(n1) | MRB_ARGS_OPT(n2);
+        public static UInt32 MRB_ARGS_ARG(uint n1, uint n2) => MRB_ARGS_REQ(n1) | MRB_ARGS_OPT(n2);
         [ExcludeFromCodeCoverage]
-        public static uint MRB_ARGS_REST() => 1U << 12;
+        public static UInt32 MRB_ARGS_REST() => 1U << 12;
         [ExcludeFromCodeCoverage]
-        public static uint MRB_ARGS_POST(uint n) => (n & 0x1fU) << 7;
+        public static UInt32 MRB_ARGS_POST(uint n) => (n & 0x1fU) << 7;
         [ExcludeFromCodeCoverage]
-        public static uint MRB_ARGS_KEY(uint n1, uint n2) => ((n1 & 0x1fU) << 2) | (n2 != 0 ? 1U : 0);
+        public static UInt32 MRB_ARGS_KEY(uint n1, uint n2) => ((n1 & 0x1fU) << 2) | (n2 != 0 ? 1U : 0);
         [ExcludeFromCodeCoverage]
-        public static uint MRB_ARGS_BLOCK() => 1U;
+        public static UInt32 MRB_ARGS_BLOCK() => 1U;
         [ExcludeFromCodeCoverage]
-        public static uint MRB_ARGS_ANY() => MRB_ARGS_REST();
+        public static UInt32 MRB_ARGS_ANY() => MRB_ARGS_REST();
         [ExcludeFromCodeCoverage]
-        public static uint MRB_ARGS_NONE() => 0U;
+        public static UInt32 MRB_ARGS_NONE() => 0U;
 
         private static Dictionary<string, IntPtr> RbDataClassMapping { get; } = new Dictionary<string, IntPtr>();
 
@@ -107,24 +107,12 @@ namespace MRubyWrapper.Library.Language
             UInt64 resVal;
             var sym = mrb_intern_cstr(state.NativeHandler, name);
 
-            if (length == 0)
-            { 
-                resVal = mrb_funcall_argv(
-                    state.NativeHandler,
-                    value.NativeValue,
-                    sym,
-                    length,
-                    null!);
-            }
-            else
-            {
-                resVal = mrb_funcall_argv(
-                    state.NativeHandler,
-                    value.NativeValue,
-                    sym,
-                    length,
-                    args.Select(v => v.NativeValue).ToArray());
-            }
+            resVal = mrb_funcall_argv(
+                state.NativeHandler, 
+                value.NativeValue,
+                sym, 
+                length,
+                length == 0 ? null! : args.Select(v => v.NativeValue).ToArray());
 
             return new RbValue(state, resVal);
         }
@@ -136,26 +124,13 @@ namespace MRubyWrapper.Library.Language
             UInt64 resVal;
             var sym = mrb_intern_cstr(state.NativeHandler, name);
 
-            if (length == 0)
-            {
-                resVal = mrb_funcall_with_block(
-                    state.NativeHandler,
-                    value.NativeValue,
-                    sym,
-                    length,
-                    null!,
-                    block.NativeValue);
-            }
-            else
-            {
-                resVal = mrb_funcall_with_block(
-                    state.NativeHandler,
-                    value.NativeValue,
-                    sym,
-                    length,
-                    args.Select(v => v.NativeValue).ToArray(),
-                    block.NativeValue);
-            }
+            resVal = mrb_funcall_with_block(
+                state.NativeHandler,
+                value.NativeValue, 
+                sym,
+                length,
+                length == 0 ? null! : args.Select(v => v.NativeValue).ToArray(),
+                block.NativeValue);
 
             return new RbValue(state, resVal);
         }

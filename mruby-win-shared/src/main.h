@@ -5,6 +5,7 @@
 #include "mruby/data.h"
 #include "mruby/hash.h"
 #include "mruby/string.h"
+#include "mruby/internal.h"
 
 MRB_API mrb_value mrb_float_value_boxing(struct mrb_state *mrb, mrb_float f);
 

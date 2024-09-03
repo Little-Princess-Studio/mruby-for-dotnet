@@ -147,20 +147,26 @@ namespace MRubyWrapper.Library.Language
         //     return new RbValue(this, result);
         // }
 
+        // Currently temporarily do not add tests for GC APIs
+        [ExcludeFromCodeCoverage]
         public void FullGc() => mrb_full_gc(this.NativeHandler);
 
+        [ExcludeFromCodeCoverage]
         public void IncrementalGc() => mrb_incremental_gc(this.NativeHandler);
 
+        [ExcludeFromCodeCoverage]
         public void GcProtect(RbValue value)
         {
             mrb_gc_protect(this.NativeHandler, value.NativeValue);
         }
 
+        [ExcludeFromCodeCoverage]
         public void GcRegister(RbValue value)
         {
             mrb_gc_register(this.NativeHandler, value.NativeValue);
         }
 
+        [ExcludeFromCodeCoverage]
         public void GcUnregister(RbValue value)
         {
             mrb_gc_unregister(this.NativeHandler, value.NativeValue);
