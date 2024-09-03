@@ -41,7 +41,7 @@ public class RbProcTest
 
         for (int i = 0; i < 5; i++)
         {
-            obj.CallMethod("add", block);
+            obj.CallMethodWithBlock("add", block);
         }
 
         var a = obj.GetInstanceVariable("@a");
@@ -103,7 +103,7 @@ public class RbProcTest
         var obj1 = @class.NewObject();
         for (int i = 0; i < 5; i++)
         {
-            obj1.CallMethod("add", block0);
+            obj1.CallMethodWithBlock("add", block0);
         }
         var a1 = obj1.GetInstanceVariable("@a");
         Assert.Equal(15, state.UnboxInt(a1));
@@ -111,7 +111,7 @@ public class RbProcTest
         var obj2 = @class.NewObject();
         for (int i = 0; i < 5; i++)
         {
-            obj2.CallMethod("add", block0, state.RbTrue);
+            obj2.CallMethodWithBlock("add", block0, state.RbTrue);
         }
         var a2 = obj2.GetInstanceVariable("@a");
         Assert.Equal(20, state.UnboxInt(a2));

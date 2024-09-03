@@ -42,13 +42,13 @@ namespace MRubyWrapper.Library.Language
         public RbValue CallMethod(string name, params RbValue[] args)
             => RbHelper.CallMethod(this.RbState, this, name, args);
 
-        public RbValue CallMethod(string name, RbValue block, params RbValue[] args)
+        public RbValue CallMethodWithBlock(string name, RbValue block, params RbValue[] args)
             => RbHelper.CallMethodWithBlock(this.RbState, this, name, block, args);
 
-        public RbValue CallMethod(string name, RbProc proc, params RbValue[] args)
+        public RbValue CallMethodWithBlock(string name, RbProc proc, params RbValue[] args)
         {
             var procObj = proc.ToRbValue();
-            return this.CallMethod(name, procObj, args);
+            return this.CallMethodWithBlock(name, procObj, args);
         }
         
         // Wrapper for mrb_obj_dup

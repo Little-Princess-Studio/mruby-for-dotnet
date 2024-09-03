@@ -10,9 +10,13 @@ namespace MRubyWrapper.Library.Language
     {
         public IntPtr NativeHandler { get; set; } = IntPtr.Zero;
 
+        [ExcludeFromCodeCoverage]
         public RbValue RbTrue { get; private set; }
+        [ExcludeFromCodeCoverage]
         public RbValue RbFalse { get; private set; }
+        [ExcludeFromCodeCoverage]
         public RbValue RbNil { get; private set; }
+        [ExcludeFromCodeCoverage]
         public RbValue RbUndef { get; private set; }
 
         internal RbState()
