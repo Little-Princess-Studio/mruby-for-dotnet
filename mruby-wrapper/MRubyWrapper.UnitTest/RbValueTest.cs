@@ -161,8 +161,8 @@ public class RbValueTest
         using var state0 = Ruby.Open();
         using var state1 = Ruby.Open();
 
-        var top0 = state0.GetTopSelf();
-        var top1 = state1.GetTopSelf();
+        var top0 = state0.TopSelf;
+        var top1 = state1.TopSelf;
 
         Assert.True(top0 != top1);
 

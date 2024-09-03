@@ -35,7 +35,7 @@ public class RbCompilerTest
         Assert.Equal("main", compiler.GetFilename(0));
 
         var proc = compiler.GenerateCode();
-        var res = compiler.TopRun(proc, state.GetTopSelf(), 0);
+        var res = compiler.TopRun(proc, state.TopSelf, 0);
         var unboxed = state.UnboxString(res);
 
         Assert.Equal("Hello, World!", unboxed);

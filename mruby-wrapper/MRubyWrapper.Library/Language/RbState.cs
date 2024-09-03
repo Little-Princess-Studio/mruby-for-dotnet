@@ -120,7 +120,7 @@ namespace MRubyWrapper.Library.Language
             return new RbClass(classPtr, this);
         }
 
-        public RbValue GetTopSelf() => new RbValue(this, mrb_top_self(this.NativeHandler));
+        public RbValue TopSelf => new RbValue(this, mrb_top_self(this.NativeHandler));
 
         public Boolean ClassDefinedUnder(RbClass outer, string name) => mrb_class_defined_under(this.NativeHandler, outer.NativeHandler, name);
 
