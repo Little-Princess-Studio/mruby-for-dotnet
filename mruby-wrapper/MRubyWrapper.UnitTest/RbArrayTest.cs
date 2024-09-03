@@ -22,7 +22,7 @@ public class RbArrayTests : IDisposable
     {
         var array = this.state.NewArray();
         Assert.Equal(this.state, array.RbState);
-        Assert.Equal(0, array.Length);
+        Assert.Equal(0, array.Size);
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class RbArrayTests : IDisposable
         };
         var array = this.state.NewArray(values);
         Assert.Equal(this.state, array.RbState);
-        Assert.Equal(2, array.Length);
+        Assert.Equal(2, array.Size);
         Assert.Equal(1, this.state.UnboxInt(array[0]));
         Assert.Equal(2, this.state.UnboxInt(array[1]));
     }
@@ -48,7 +48,7 @@ public class RbArrayTests : IDisposable
         var array = RbArray.AssocNew(this.state, car, cdr);
 
         Assert.Equal(this.state, array.RbState);
-        Assert.Equal(2, array.Length);
+        Assert.Equal(2, array.Size);
         Assert.Equal(1, this.state.UnboxInt(array[0]));
         Assert.Equal(2, this.state.UnboxInt(array[1]));
     }
@@ -72,7 +72,7 @@ public class RbArrayTests : IDisposable
         var array2 = this.state.NewArray(values1);
         array1.Concat(array2);
 
-        Assert.Equal(4, array1.Length);
+        Assert.Equal(4, array1.Size);
         Assert.Equal(1, this.state.UnboxInt(array1[0]));
         Assert.Equal(2, this.state.UnboxInt(array1[1]));
         Assert.Equal(3, this.state.UnboxInt(array1[2]));
@@ -86,7 +86,7 @@ public class RbArrayTests : IDisposable
         var value = this.state.BoxInt(1);
         array.Push(value);
 
-        Assert.Equal(1, array.Length);
+        Assert.Equal(1, array.Size);
         Assert.Equal(1, this.state.UnboxInt(array[0]));
     }
 
@@ -100,7 +100,7 @@ public class RbArrayTests : IDisposable
         var poppedValue = array.Pop();
 
         Assert.Equal(value, poppedValue);
-        Assert.Equal(0, array.Length);
+        Assert.Equal(0, array.Size);
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public class RbArrayTests : IDisposable
         var value = this.state.BoxInt(1);
         array[0] = value;
 
-        Assert.Equal(1, array.Length);
+        Assert.Equal(1, array.Size);
         Assert.Equal(1, this.state.UnboxInt(array[0]));
     }
 
@@ -134,7 +134,7 @@ public class RbArrayTests : IDisposable
 
         array1.Replace(array2);
 
-        Assert.Equal(2, array1.Length);
+        Assert.Equal(2, array1.Size);
         Assert.Equal(3, this.state.UnboxInt(array1[0]));
         Assert.Equal(4, this.state.UnboxInt(array1[1]));
     }
@@ -152,7 +152,7 @@ public class RbArrayTests : IDisposable
         var value = this.state.BoxInt(3);
         array.Unshift(value);
 
-        Assert.Equal(3, array.Length);
+        Assert.Equal(3, array.Size);
         Assert.Equal(3, this.state.UnboxInt(array[0]));
     }
 
@@ -164,7 +164,7 @@ public class RbArrayTests : IDisposable
         array.Push(value);
         var retrievedValue = array.Get(0);
 
-        Assert.Equal(1, array.Length);
+        Assert.Equal(1, array.Size);
         Assert.Equal(value, retrievedValue);
     }
 
@@ -190,13 +190,13 @@ public class RbArrayTests : IDisposable
         var array1 = this.state.NewArray(values1);
 
         var array2 = array0.Splice(1, 2);
-        Assert.Equal(3, array2.Length);
+        Assert.Equal(3, array2.Size);
         Assert.Equal(1, this.state.UnboxInt(array2[0]));
         Assert.Equal(4, this.state.UnboxInt(array2[1]));
         Assert.Equal(5, this.state.UnboxInt(array2[2]));
 
         var array3 = array0.Splice(1, 1, array1);
-        Assert.Equal(4, array3.Length);
+        Assert.Equal(4, array3.Size);
         Assert.Equal(1, this.state.UnboxInt(array3[0]));
         Assert.Equal(6, this.state.UnboxInt(array3[1]));
         Assert.Equal(7, this.state.UnboxInt(array3[2]));
@@ -211,7 +211,7 @@ public class RbArrayTests : IDisposable
         array.Push(value);
         var shiftedValue = array.Shift();
 
-        Assert.Equal(0, array.Length);
+        Assert.Equal(0, array.Size);
         Assert.Equal(1, this.state.UnboxInt(shiftedValue));
         Assert.Equal(value, shiftedValue);
     }
@@ -231,7 +231,7 @@ public class RbArrayTests : IDisposable
         var array = this.state.NewArray(values0);
         array.Clear();
 
-        Assert.Equal(0, array.Length);
+        Assert.Equal(0, array.Size);
     }
 
     [Fact]
@@ -261,6 +261,6 @@ public class RbArrayTests : IDisposable
         var array = this.state.NewArray();
         array.Resize(10);
 
-        Assert.Equal(10, array.Length);
+        Assert.Equal(10, array.Size);
     }
 }

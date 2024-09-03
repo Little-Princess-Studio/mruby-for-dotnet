@@ -87,6 +87,9 @@ void mrb_warn_ex(mrb_state *mrb, const char *msg) {
   mrb_warn(mrb, msg);
 }
 
-mrb_int mrb_array_len(mrb_value array) {
-  return RARRAY_LEN(array);
+mrb_int mrb_array_len(mrb_value array) { return RARRAY_LEN(array); }
+
+mrb_int mrb_obj_hash(mrb_state *mrb, mrb_value self) {
+  mrb_value hash_code = mrb_funcall(mrb, self, "hash", 0);
+  return mrb_int(mrb, hash_code);
 }

@@ -15,7 +15,7 @@ namespace MRubyWrapper.Library.Language
         public RbValue RbNil { get; private set; }
         public RbValue RbUndef { get; private set; }
 
-        public RbState()
+        internal RbState()
         {
             this.RbTrue = new RbValue(this, mrb_true_value_boxing());
             this.RbFalse = new RbValue(this, mrb_false_value_boxing());
@@ -54,11 +54,11 @@ namespace MRubyWrapper.Library.Language
             var result = RbHelper.NewRubyString(this, str);
             return result;
         }
-        
-        
+
+
         public RbClass DefineClassUnder(RbClass outer, string name, RbClass? super)
         {
-            var classPtr = mrb_define_class_under(this.NativeHandler, outer.NativeHandler, name, super?.NativeHandler?? IntPtr.Zero);
+            var classPtr = mrb_define_class_under(this.NativeHandler, outer.NativeHandler, name, super?.NativeHandler ?? IntPtr.Zero);
             return new RbClass(classPtr, this);
         }
 
@@ -67,15 +67,15 @@ namespace MRubyWrapper.Library.Language
             var modulePtr = mrb_define_module_under(this.NativeHandler, outer.NativeHandler, name);
             return new RbClass(modulePtr, this);
         }
-        
+
         public RbValue PtrToRbValue(IntPtr p) => RbHelper.PtrToRbValue(this, p);
-        
+
         public RbClass GetRbClass(RbValue value) => RbHelper.GetRbClassFromValue(this, value);
 
         public string? GetSymbolName(UInt64 sym) => RbHelper.GetSymbolName(this, sym);
-        
+
         public RbValue GetSymbolStr(UInt64 sym) => RbHelper.GetSymbolStr(this, sym);
-        
+
         // public string? GetSymbolDump(UInt64 sym) => RbHelper.GetSymbolDump(this, sym);
 
         public RbClass NewClass(RbClass? super)
@@ -89,7 +89,7 @@ namespace MRubyWrapper.Library.Language
             var modulePtr = mrb_module_new(this.NativeHandler);
             return new RbClass(modulePtr, this);
         }
-        
+
         public RbClass DefineClass(string name, RbClass? @class)
         {
             var classPtr = mrb_define_class(this.NativeHandler, name, @class?.NativeHandler ?? IntPtr.Zero);
@@ -170,13 +170,13 @@ namespace MRubyWrapper.Library.Language
         {
             mrb_define_global_const(this.NativeHandler, name, value.NativeValue);
         }
-        
+
         public RbValue GetGlobalConst(string name)
         {
             var objClass = this.GetClass("Object");
             return RbHelper.GetConst(this, objClass.ClassObject, name);
         }
-        
+
         public RbValue NewFiber(RbProc proc)
         {
             var result = mrb_fiber_new(this.NativeHandler, proc.NativeHandler);
@@ -215,10 +215,10 @@ namespace MRubyWrapper.Library.Language
 
         // public RbValue YieldArgv(RbValue b, params RbValue[] argv)
         // {
-        //     var result = mrb_yield_argv(this.NativeHandler, b.NativeValue, argv.Length, argv.Select(a => a.NativeValue).ToArray());
+        //     var result = mrb_yield_argv(this.NativeHandler, b.NativeValue, argv.Size, argv.Select(a => a.NativeValue).ToArray());
         //     return new RbValue(this, result);
         // }
-        
+
         public RbValue YieldWithClass(RbValue block, RbValue self, RbClass @class, params RbValue[]? args)
         {
             var result = mrb_yield_with_class(
@@ -229,22 +229,22 @@ namespace MRubyWrapper.Library.Language
                 self.NativeValue, @class.NativeHandler);
             return new RbValue(this, result);
         }
-        
+
         [ExcludeFromCodeCoverage]
         public RbValue P(RbValue value)
         {
             mrb_p(this.NativeHandler, value.NativeValue);
             return value;
         }
-        
+
         public Int64 UnboxInt(RbValue value) => mrb_int_value_unboxing(value.NativeValue);
-        
+
         public double UnboxFloat(RbValue value) => mrb_float_value_unboxing(value.NativeValue);
-        
+
         public UInt64 UnboxSymbol(RbValue value) => mrb_symbol_value_unboxing(value.NativeValue);
-        
+
         public string? UnboxString(RbValue value) => Marshal.PtrToStringAnsi(mrb_string_value_unboxing(this.NativeHandler, value.NativeValue));
-        
+
         // public Boolean IsInstanceVariableNameSymP(UInt64 sym) => mrb_iv_name_sym_p(this.NativeHandler, sym);
         //
         // public void IsInstanceVariableNameSymCheck(UInt64 sym) => mrb_iv_name_sym_check(this.NativeHandler, sym);
@@ -274,9 +274,9 @@ namespace MRubyWrapper.Library.Language
             var sym = this.GetInternSymbol(name);
             this.RemoveGlobalVariable(sym);
         }
-        
+
         public void RemoveGlobalVariable(UInt64 sym) => mrb_gv_remove(this.NativeHandler, sym);
-        
+
         public Int64 GetArgs(string format, ref RbValue[] args) => RbHelper.GetArgs(this, format, ref args);
 
         public RbProc NewProc(CSharpMethodFunc func)
@@ -288,29 +288,24 @@ namespace MRubyWrapper.Library.Language
         }
 
         public bool BlockGiven() => RbHelper.BlockGivenP(this);
-        
+
         public RbValue GetBlock() => new RbValue(this, mrb_get_block(this.NativeHandler));
 
-        public RbArray NewArray()
-        {
-            return RbArray.New(this);
-        }
-        
-        public RbArray NewArray(IEnumerable<RbValue> array)
-        {
-            return RbArray.FromValues(this, array);
-        }
+        public RbArray NewArray() => RbArray.New(this);
 
-        public RbArray NewArray(params RbValue[] array)
-        {
-            return RbArray.FromValues(this, array);
-        }
-        
+        public RbArray NewArray(IEnumerable<RbValue> array) => RbArray.FromValues(this, array);
+
+        public RbArray NewArray(params RbValue[] array) => RbArray.FromValues(this, array);
+
         [ExcludeFromCodeCoverage]
-        public RbArray FromArrayObject(RbValue array)
-        {
-            return RbArray.FromArrayObject(array);
-        }
+        public RbArray NewArrayFromArrayObject(RbValue array) => RbArray.FromArrayObject(array);
+
+        public RbHash NewHash() => RbHash.New(this);
+        
+        public RbHash NewHashFromDictionary(Dictionary<RbValue, RbValue> dict) => RbHash.FromDictionary(this, dict);
+
+        [ExcludeFromCodeCoverage]
+        public RbHash NewHashFromHashObject(RbValue hash) => RbHash.FromHashObject(hash);
 
         public void Dispose()
         {

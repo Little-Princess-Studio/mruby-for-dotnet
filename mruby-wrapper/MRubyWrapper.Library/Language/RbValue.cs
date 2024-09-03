@@ -154,7 +154,11 @@ namespace MRubyWrapper.Library.Language
             return false;
         }
 
-        public override int GetHashCode() => this.nativeValue.Value.GetHashCode();
+        public override int GetHashCode()
+        {
+            var hashCode = mrb_obj_hash(this.RbState.NativeHandler, this.nativeValue.Value);
+            return (int)hashCode;
+        }
 
         // Wrapper methods
         public RbValue GetInstanceVariable(string ivName)

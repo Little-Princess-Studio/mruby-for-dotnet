@@ -110,5 +110,9 @@ namespace MRubyWrapper.Library.Language
         // MRB_API struct RClass *mrb_singleton_class_ptr(mrb_state *mrb, mrb_value val);
         [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern IntPtr mrb_singleton_class_ptr(IntPtr state, UInt64 val);
+        
+        // mrb_int mrb_obj_hash(mrb_state *mrb, mrb_value self)
+        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern Int64 mrb_obj_hash(IntPtr mrb, UInt64 self);
     }
 }

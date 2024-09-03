@@ -10,7 +10,7 @@
         public readonly RbValue Value;
         public readonly RbState RbState;
 
-        public Int64 Length => mrb_array_len(this.Value.NativeValue);
+        public Int64 Size => mrb_array_len(this.Value.NativeValue);
         
         private RbArray(RbValue value)
         {
