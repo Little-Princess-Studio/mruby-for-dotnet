@@ -8,12 +8,13 @@
     <Version>0.1.0</Version>
     <Title>A mruby binding for .Net Core Platform</Title>
     <PackageProjectUrl>https://github.com/Little-Princess-Studio/mruby-for-dotnet</PackageProjectUrl>
-    <PackageLicenseUrl>MIT License</PackageLicenseUrl>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <RepositoryUrl>https://github.com/Little-Princess-Studio/mruby-for-dotnet</RepositoryUrl>
     <Company>Little Princess Studio</Company>
     <Product />
     <Authors>Little Princess Studio</Authors>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
@@ -29,6 +30,8 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="\"/>
+    <None Include="../../LICENSE" Pack="true" PackagePath="\"/>
     <Content Include="mruby_x64.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <PackageCopyToOutput>true</PackageCopyToOutput>

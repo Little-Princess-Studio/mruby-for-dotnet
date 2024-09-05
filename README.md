@@ -45,7 +45,7 @@ Assert.Equal("Hello, World!", unboxed);
 ## Status
 
 - [X] 100% Unittest Coverage
-- [ ] Nuget package
+- [X] Nuget package
 - [ ] Unity integral test
 - [ ] Test on Linux, macOS
 - [ ] Test on Android
