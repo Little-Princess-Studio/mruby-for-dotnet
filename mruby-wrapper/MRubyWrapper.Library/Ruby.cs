@@ -6,10 +6,18 @@
 
     public static class Ruby
     {
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
+#if PALTFORM_WINDOWS
+        internal const string MrubyLib = "mruby_x64.dll";
+#elif PALTFORM_UNIX
+        internal const string MrubyLib = "libmruby_x64.so";
+#elif PALTFORM_MACOS
+        internal const string MrubyLib = "libmruby.dylib";
+#endif
+
+        [DllImport(MrubyLib, CharSet = CharSet.Ansi)]
         private static extern IntPtr mrb_open();
 
-        [DllImport("mruby_x64.dll", CharSet = CharSet.Ansi)]
+        [DllImport(MrubyLib, CharSet = CharSet.Ansi)]
         private static extern void mrb_close(IntPtr mrb);
 
         public static RbState Open()

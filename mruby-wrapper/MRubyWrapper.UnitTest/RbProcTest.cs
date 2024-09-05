@@ -70,7 +70,7 @@ public class RbProcTest
             Assert.True(stat.BlockGiven());
 
             bool extra = args.Length == 1;
-            
+
             var idx = self.GetInstanceVariable("@idx");
 
             var block = stat.GetBlock();
@@ -97,7 +97,7 @@ public class RbProcTest
             self.SetInstanceVariable("@a", newA);
             return stat.RbTrue;
         };
-        
+
         var block0 = state.NewProc(blockFunc);
 
         var obj1 = @class.NewObject();
@@ -115,7 +115,7 @@ public class RbProcTest
         }
         var a2 = obj2.GetInstanceVariable("@a");
         Assert.Equal(20, state.UnboxInt(a2));
-        
+
         Ruby.Close(state);
     }
 
@@ -175,5 +175,29 @@ public class RbProcTest
             cnt1 += unboxed;
         }
         Assert.Equal(8, cnt1);
+    }
+
+    [Fact]
+    void TestFiberYield()
+    {
+        using var state = Ruby.Open();
+        using var compiler = RbCompiler.ParserNew(state);
+        using var context = RbCompiler.NewContext(state);
+        string code = File.ReadAllText("test_scripts/fiber_yield_test.rb");
+
+        var topSelf = state.TopSelf;
+        topSelf.DefineSingletonMethod("test_yield", (stat, self, args) =>
+        {
+            var arg = args[0];
+            return stat.FiberYield(stat.BoxInt(1 + stat.UnboxInt(arg)));
+        }, RbHelper.MRB_ARGS_REQ(1));
+
+        var fiber = compiler.LoadString(code, context);
+
+        var val = state.FiberResume(fiber);
+        Assert.Equal(2, state.UnboxInt(val));
+
+        val = state.FiberResume(fiber);
+        Assert.Equal(3, state.UnboxInt(val));
     }
 }

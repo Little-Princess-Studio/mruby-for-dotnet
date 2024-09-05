@@ -7,6 +7,18 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
+    <DefineConstants>PALTFORM_WINDOWS</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(OS)' == 'Unix' ">
+    <DefineConstants>PALTFORM_UNIX</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(OS)' == 'MacOS' ">
+    <DefineConstants>PALTFORM_MACOS</DefineConstants>
+  </PropertyGroup>
+  
   <ItemGroup>
     <Folder Include="obj\Debug\" />
   </ItemGroup>
