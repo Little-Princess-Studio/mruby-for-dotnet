@@ -2,6 +2,13 @@
 
 This is a mruby-wrapper for .NET, current for Windows and will come to other platform soon.
 
+## How to Install
+From nuget: https://www.nuget.org/packages/MRuby.Library/
+
+
+```bash
+dotnet add package MRuby.Library --version 0.1.0
+````
 ## How to Use
 
 A simple code to embed mruby into C# code.
