@@ -14,7 +14,7 @@ dotnet add package MRuby.Library --version 0.1.0
 A simple code to embed mruby into C# code.
 
 ```csharp
-using MRubyWrapper.Library
+using MRuby.Library
 
 // create ruby env
 using var state = Ruby.Open();
@@ -56,3 +56,4 @@ Assert.Equal("Hello, World!", unboxed);
 - [ ] Unity integral test
 - [ ] Test on Linux, macOS
 - [ ] Test on Android
+- [ ] Documentation
