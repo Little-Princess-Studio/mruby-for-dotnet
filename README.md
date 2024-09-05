@@ -7,7 +7,7 @@ This is a mruby-wrapper for .NET, current for Windows and will come to other pla
 From nuget: https://www.nuget.org/packages/MRuby.Library/
 
 ```bash
-dotnet add package MRuby.Library --version 0.1.0
+dotnet add package MRuby.Library --version 0.1.1
 ```
 
 ## How to Use
@@ -44,7 +44,7 @@ Assert.Equal("Hello, World!", unboxed);
 1. `git submodule update --init --recursive`
 2. `./build-mruby.bat` (for Windows, run this command under `VS x64 Command Prommpt)` or `./build-mruby.sh` for (*nix)
 3. `cd ../mruby-shared`
-4. `xmake f -m releasedbg`
+4. `xmake f-m releasedbg`
 5. `xmake`
 6. `cd ../mruby-wrapper`
 7. `dotnet build --configuration Release`
