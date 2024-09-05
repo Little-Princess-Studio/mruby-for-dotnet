@@ -1,4 +1,4 @@
-namespace MRubyWrapper.Library.Language
+namespace MRuby.Library.Language
 {
     using System;
     using System.Runtime.InteropServices;

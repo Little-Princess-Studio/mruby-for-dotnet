@@ -5,6 +5,15 @@
     <Nullable>enable</Nullable>
     <TargetFrameworks>net8.0;netstandard2.1</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Version>0.1.0</Version>
+    <Title>A mruby binding for .Net Core Platform</Title>
+    <PackageProjectUrl>https://github.com/Little-Princess-Studio/mruby-for-dotnet</PackageProjectUrl>
+    <PackageLicenseUrl>MIT License</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/Little-Princess-Studio/mruby-for-dotnet</RepositoryUrl>
+    <Company>Little Princess Studio</Company>
+    <Product />
+    <Authors>Little Princess Studio</Authors>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
@@ -20,6 +29,11 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <Content Include="mruby_x64.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+      <pack>true</pack>
+    </Content>
     <Folder Include="obj\Debug\" />
   </ItemGroup>
 

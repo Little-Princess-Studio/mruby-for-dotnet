@@ -1,4 +1,4 @@
-namespace MRubyWrapper.UnitTest;
+namespace MRuby.UnitTest;
 
 using Library;
 using Library.Language;

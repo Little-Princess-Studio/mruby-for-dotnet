@@ -1,6 +1,6 @@
-﻿using MRubyWrapper.Library.Language;
+﻿using MRuby.Library.Language;
 
-namespace MRubyWrapper.UnitTest
+namespace MRuby.UnitTest
 {
     using Library;
 
