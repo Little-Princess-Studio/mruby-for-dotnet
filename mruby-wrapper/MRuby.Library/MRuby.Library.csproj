@@ -30,13 +30,23 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <None Include="../../README.md" Pack="true" PackagePath="\"/>
-    <None Include="../../LICENSE" Pack="true" PackagePath="\"/>
-    <Content Include="mruby_x64.dll">
+    <Content Include="mruby_x64.dll" Condition=" '$(OS)' == 'Windows_NT' ">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <PackageCopyToOutput>true</PackageCopyToOutput>
       <pack>true</pack>
     </Content>
+    <Content Include="libmruby_x64.so" Condition=" '$(OS)' == 'Unix' ">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+      <pack>true</pack>
+    </Content>
+    <Content Include="libmruby_x64.dylib" Condition=" '$(OS)' == 'MacOS' ">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+      <pack>true</pack>
+    </Content>
+    <None Include="../../README.md" Pack="true" PackagePath="\"/>
+    <None Include="../../LICENSE" Pack="true" PackagePath="\"/>
     <Folder Include="obj\Debug\" />
   </ItemGroup>
 

@@ -23,8 +23,20 @@
 
     <ItemGroup>
         <Using Include="Xunit" />
-        <Content Include="mruby_x64.dll">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <Content Include="mruby_x64.dll" Condition=" '$(OS)' == 'Windows_NT' ">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <PackageCopyToOutput>true</PackageCopyToOutput>
+            <pack>true</pack>
+        </Content>
+        <Content Include="libmruby_x64.so" Condition=" '$(OS)' == 'Unix' ">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <PackageCopyToOutput>true</PackageCopyToOutput>
+            <pack>true</pack>
+        </Content>
+        <Content Include="libmruby_x64.dylib" Condition=" '$(OS)' == 'MacOS' ">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <PackageCopyToOutput>true</PackageCopyToOutput>
+            <pack>true</pack>
         </Content>
         <Content Include="test_scripts\**">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -32,7 +44,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\MRuby.Library\MRuby.Library.csproj" />
+        <ProjectReference Include="..\MRuby.Library\MRuby.Library.csproj" />
     </ItemGroup>
 
 </Project>
