@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <TargetFrameworks>net8.0;netstandard2.1</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Title>A mruby binding for .Net Core Platform</Title>
     <PackageProjectUrl>https://github.com/Little-Princess-Studio/mruby-for-dotnet</PackageProjectUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
@@ -30,17 +30,17 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <Content Include="mruby_x64.dll" Condition=" '$(OS)' == 'Windows_NT' ">
+    <Content Include="mruby_x64.dll" Condition="Exists('mruby_x64.dll')">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <PackageCopyToOutput>true</PackageCopyToOutput>
       <pack>true</pack>
     </Content>
-    <Content Include="libmruby_x64.so" Condition=" '$(OS)' == 'Unix' ">
+    <Content Include="libmruby_x64.so" Condition="Exists('libmruby_x64.so')">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <PackageCopyToOutput>true</PackageCopyToOutput>
       <pack>true</pack>
     </Content>
-    <Content Include="libmruby_x64.dylib" Condition=" '$(OS)' == 'MacOS' ">
+    <Content Include="libmruby_x64.dylib" Condition="Exists('libmruby_x64.dylib')">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <PackageCopyToOutput>true</PackageCopyToOutput>
       <pack>true</pack>
