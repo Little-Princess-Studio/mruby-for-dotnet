@@ -47,6 +47,7 @@
     </Content>
     <None Include="../../README.md" Pack="true" PackagePath="\"/>
     <None Include="../../LICENSE" Pack="true" PackagePath="\"/>
+    <Folder Include="Mapper\" />
     <Folder Include="obj\Debug\" />
   </ItemGroup>
 

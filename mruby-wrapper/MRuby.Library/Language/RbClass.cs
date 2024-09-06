@@ -31,6 +31,17 @@ namespace MRuby.Library.Language
             return RbHelper.CallMethod(this.RbState, classObj, methodName, args);
         }
         
+        public RbValue CallMethodWithBlock(string methodName, RbValue block, params RbValue[] args)
+        {
+            var classObj = this.ClassObject;
+            return RbHelper.CallMethodWithBlock(this.RbState, classObj, methodName, block, args);
+        }
+        
+        public RbValue CallMethodWithBlock(string methodName, RbProc block, params RbValue[] args)
+        {
+            return CallMethodWithBlock(methodName, block.ToRbValue(), args);
+        }
+        
         public void DefineMethod(string name, CSharpMethodFunc callback, uint parameterAspect)
         {
             var lambda = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);

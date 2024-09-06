@@ -59,7 +59,6 @@ namespace MRuby.Library.Language
             return result;
         }
 
-
         public RbClass DefineClassUnder(RbClass outer, string name, RbClass? super)
         {
             var classPtr = mrb_define_class_under(this.NativeHandler, outer.NativeHandler, name, super?.NativeHandler ?? IntPtr.Zero);
