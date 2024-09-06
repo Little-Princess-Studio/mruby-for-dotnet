@@ -54,19 +54,19 @@ namespace MRuby.Library.Language
             this.nativeHandler = nativeHandler;
         }
         
-        public static RbCompiler ParseString(RbState mrb, string code, RbContext ccontext)
+        internal static RbCompiler ParseString(RbState mrb, string code, RbContext ccontext)
         {
             var state = mrb_parse_string(mrb.NativeHandler, code, ccontext.NativeHandler);
             return new RbCompiler(mrb, state);
         }
         
-        public static RbCompiler ParserNew(RbState mrb)
+        internal static RbCompiler NewCompiler(RbState mrb)
         {
             var state = mrb_parser_new(mrb.NativeHandler);
             return new RbCompiler(mrb, state);
         }
         
-        public static RbContext NewContext(RbState mrb)
+        internal static RbContext NewContext(RbState mrb)
         {
             var state = mrb_ccontext_new(mrb.NativeHandler);
             return new RbContext(state, mrb);

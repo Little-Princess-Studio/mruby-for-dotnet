@@ -266,4 +266,38 @@ public class RbValueTest
         
         Assert.True(a);
     }
+
+    [Fact]
+    void TestTypeCheck()
+    {
+        using var state = Ruby.Open();
+
+        var intValue = state.BoxInt(123);
+        var symbolValue = state.BoxSymbol(state.GetInternSymbol("test_symbol"));
+        var floatValue = state.BoxFloat(123.45);
+        var arrayValue = state.NewArray(intValue, floatValue).Value;
+        var stringValue = state.BoxString("test_string");
+        var hashValue = state.NewHashFromDictionary(new Dictionary<RbValue, RbValue> { { intValue, stringValue } }).Value;
+        var exceptionValue = state.GenerateExceptionWithNewStr(state.GetClass("StandardError"), "");
+        var objectValue = state.GetClass("Object").NewObject();
+        var classValue = state.GetClass("Object").ClassObject;
+        var moduleValue = state.GetModule("Kernel").ClassObject;
+        var sclassValue = objectValue.SingletonClass.ClassObject;
+
+        var rangeCls = state.GetClass("Range");
+        var rangeValue = rangeCls.NewObject(state.BoxInt(0), state.BoxInt(10));
+
+        Assert.True(intValue.IsInteger);
+        Assert.True(symbolValue.IsSymbol);
+        Assert.True(floatValue.IsFloat);
+        Assert.True(arrayValue.IsArray);
+        Assert.True(stringValue.IsString);
+        Assert.True(hashValue.IsHash);
+        Assert.True(exceptionValue.IsException);
+        Assert.True(objectValue.IsObject);
+        Assert.True(classValue.IsClass);
+        Assert.True(moduleValue.IsModule);
+        Assert.True(sclassValue.IsSingletonClass);
+        Assert.True(rangeValue.IsRange);
+    }
 }

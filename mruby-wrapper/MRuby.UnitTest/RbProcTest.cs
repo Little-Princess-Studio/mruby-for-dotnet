@@ -38,6 +38,8 @@ public class RbProcTest
             self.SetInstanceVariable("@a", newA);
             return stat.RbTrue;
         });
+        
+        Assert.True(block.ToRbValue().IsProc);
 
         for (int i = 0; i < 5; i++)
         {
@@ -123,8 +125,8 @@ public class RbProcTest
     void TestSetProcToRuby()
     {
         using var state = Ruby.Open();
-        using var compiler = RbCompiler.ParserNew(state);
-        using var context = RbCompiler.NewContext(state);
+        using var compiler = state.NewCompiler();
+        using var context = state.NewCompileContext();
 
         var proc = state.NewProc((stat, self, args) =>
         {
@@ -143,17 +145,21 @@ public class RbProcTest
     void TestFiber()
     {
         using var state = Ruby.Open();
-        using var compiler = RbCompiler.ParserNew(state);
-        using var context = RbCompiler.NewContext(state);
+        using var compiler = state.NewCompiler();
+        using var context = state.NewCompileContext();
         string code = File.ReadAllText("test_scripts/fiber_test.rb");
 
         compiler.LoadString(code, context);
         var fiberProc0 = state.GetGlobalVariable("$p0");
         var fiberProc1 = state.GetGlobalVariable("$p1");
-
+        Assert.True(fiberProc0.IsProc);
+        Assert.True(fiberProc1.IsProc);
+        
         // the proc of a fiber must be a ruby-side proc not c-side proc
         var fiber0 = state.NewFiber(RbProc.FromRbValue(fiberProc0));
         var fiber1 = state.NewFiber(RbProc.FromRbValue(fiberProc1));
+        Assert.True(fiber0.IsFiber);
+        Assert.True(fiber1.IsFiber);
 
         Assert.True(state.CheckFiberAlive(fiber0) == state.RbTrue);
         Assert.True(state.CheckFiberAlive(fiber1) == state.RbTrue);
@@ -181,8 +187,8 @@ public class RbProcTest
     void TestFiberYield()
     {
         using var state = Ruby.Open();
-        using var compiler = RbCompiler.ParserNew(state);
-        using var context = RbCompiler.NewContext(state);
+        using var compiler = state.NewCompiler();
+        using var context = state.NewCompileContext();
         string code = File.ReadAllText("test_scripts/fiber_yield_test.rb");
 
         var topSelf = state.TopSelf;
@@ -193,6 +199,7 @@ public class RbProcTest
         }, RbHelper.MRB_ARGS_REQ(1));
 
         var fiber = compiler.LoadString(code, context);
+        Assert.True(fiber.IsFiber);
 
         var val = state.FiberResume(fiber);
         Assert.Equal(2, state.UnboxInt(val));

@@ -55,3 +55,18 @@ MRB_API void mrb_warn_ex(mrb_state *mrb, const char *msg);
 MRB_API mrb_int mrb_array_len(mrb_value array);
 
 MRB_API mrb_int mrb_obj_hash(mrb_state *mrb, mrb_value self);
+
+MRB_API mrb_bool mrb_check_type_integer(mrb_value obj);
+MRB_API mrb_bool mrb_check_type_symbol(mrb_value obj);
+MRB_API mrb_bool mrb_check_type_float(mrb_value obj);
+MRB_API mrb_bool mrb_check_type_array(mrb_value obj);
+MRB_API mrb_bool mrb_check_type_string(mrb_value obj);
+MRB_API mrb_bool mrb_check_type_hash(mrb_value obj);
+MRB_API mrb_bool mrb_check_type_exception(mrb_value obj);
+MRB_API mrb_bool mrb_check_type_object(mrb_value obj);
+MRB_API mrb_bool mrb_check_type_class(mrb_value obj);
+MRB_API mrb_bool mrb_check_type_moudle(mrb_value obj);
+MRB_API mrb_bool mrb_check_type_sclass(mrb_value obj);
+MRB_API mrb_bool mrb_check_type_proc(mrb_value obj);
+MRB_API mrb_bool mrb_check_type_range(mrb_value obj);
+MRB_API mrb_bool mrb_check_type_fiber(mrb_value obj);

@@ -85,5 +85,75 @@ namespace MRuby.Library.Language
             IntPtr mrb,
             [MarshalAs(UnmanagedType.LPStr)] string format,
             ref IntPtr[] ptr);
+        
+        // MRB_API mrb_bool mrb_check_type_integer(mrb_value obj);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern Boolean mrb_check_type_integer(UInt64 obj);
+        
+        // MRB_API mrb_bool mrb_check_type_symbol(mrb_value obj);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool mrb_check_type_symbol(UInt64 obj);
+
+        // MRB_API mrb_bool mrb_check_type_float(mrb_value obj);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool mrb_check_type_float(UInt64 obj);
+
+        // MRB_API mrb_bool mrb_check_type_array(mrb_value obj);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool mrb_check_type_array(UInt64 obj);
+
+        // MRB_API mrb_bool mrb_check_type_string(mrb_value obj);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool mrb_check_type_string(UInt64 obj);
+
+        // MRB_API mrb_bool mrb_check_type_hash(mrb_value obj);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool mrb_check_type_hash(UInt64 obj);
+
+        // MRB_API mrb_bool mrb_check_type_exception(mrb_value obj);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool mrb_check_type_exception(UInt64 obj);
+
+        // MRB_API mrb_bool mrb_check_type_object(mrb_value obj);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool mrb_check_type_object(UInt64 obj);
+
+        // MRB_API mrb_bool mrb_check_type_class(mrb_value obj);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool mrb_check_type_class(UInt64 obj);
+
+        // MRB_API mrb_bool mrb_check_type_moudle(mrb_value obj);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool mrb_check_type_moudle(UInt64 obj);
+
+        // MRB_API mrb_bool mrb_check_type_sclass(mrb_value obj);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool mrb_check_type_sclass(UInt64 obj);
+
+        // MRB_API mrb_bool mrb_check_type_proc(mrb_value obj);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool mrb_check_type_proc(UInt64 obj);
+
+        // MRB_API mrb_bool mrb_check_type_range(mrb_value obj);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool mrb_check_type_range(UInt64 obj);
+
+        // MRB_API mrb_bool mrb_check_type_fiber(mrb_value obj);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        private static extern bool mrb_check_type_fiber(UInt64 obj);
     }
 }

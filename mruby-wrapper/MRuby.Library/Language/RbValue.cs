@@ -6,9 +6,9 @@ namespace MRuby.Library.Language
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate UInt64 IvForeachFunc(IntPtr state, UInt64 sym, UInt64 val, IntPtr data);
-    
+
     public delegate RbValue CSharpIvForeachFunc(RbState state, string name, RbValue value);
-    
+
     public partial class RbValue
     {
         [StructLayout(LayoutKind.Sequential, Pack = 8)]
@@ -33,12 +33,41 @@ namespace MRuby.Library.Language
 
         public RbClass SingletonClass
         {
-            get {
+            get
+            {
                 var classPtr = mrb_singleton_class_ptr(this.RbState.NativeHandler, this.NativeValue);
                 return new RbClass(classPtr, this.RbState);
             }
         }
-        
+
+        public bool IsInteger => RbHelper.IsInteger(this);
+
+        public bool IsSymbol => RbHelper.IsSymbol(this);
+
+        public bool IsFloat => RbHelper.IsFloat(this);
+
+        public bool IsArray => RbHelper.IsArray(this);
+
+        public bool IsString => RbHelper.IsString(this);
+
+        public bool IsHash => RbHelper.IsHash(this);
+
+        public bool IsException => RbHelper.IsException(this);
+
+        public bool IsObject => RbHelper.IsObject(this);
+
+        public bool IsClass => RbHelper.IsClass(this);
+
+        public bool IsModule => RbHelper.IsModule(this);
+
+        public bool IsSingletonClass => RbHelper.IsSClass(this);
+
+        public bool IsProc => RbHelper.IsProc(this);
+
+        public bool IsRange => RbHelper.IsRange(this);
+
+        public bool IsFiber => RbHelper.IsFiber(this);
+
         public RbValue CallMethod(string name, params RbValue[] args)
             => RbHelper.CallMethod(this.RbState, this, name, args);
 
@@ -50,7 +79,7 @@ namespace MRuby.Library.Language
             var procObj = proc.ToRbValue();
             return this.CallMethodWithBlock(name, procObj, args);
         }
-        
+
         // Wrapper for mrb_obj_dup
         public RbValue Duplicate()
         {
@@ -112,14 +141,14 @@ namespace MRuby.Library.Language
             var result = mrb_obj_clone(this.RbState.NativeHandler, this.nativeValue.Value);
             return new RbValue(this.RbState, result);
         }
-        
+
         // public RbValue GetAttribute(string name)
         // {
         //     var symId = this.RbState.GetInternSymbol(name);
         //     var result = mrb_attr_get(this.RbState.NativeHandler, this.nativeValue.Value, symId);
         //     return new RbValue(this.RbState, result);
         // }
-        
+
         public static bool operator ==(RbValue left, RbValue right)
         {
             if (ReferenceEquals(left, null))
@@ -134,7 +163,7 @@ namespace MRuby.Library.Language
         {
             return !(left == right);
         }
-        
+
         public override bool Equals(object? obj)
         {
             if (obj is RbValue rbValue)
@@ -180,7 +209,7 @@ namespace MRuby.Library.Language
         }
 
         public void CopyInstanceVariables(RbValue dst) => mrb_iv_copy(this.RbState.NativeHandler, dst.nativeValue.Value, this.nativeValue.Value);
-        
+
         public void InstanceVariableForeach(CSharpIvForeachFunc func)
         {
             var nativeFunc = new IvForeachFunc((state, sym, val, _) =>
@@ -193,20 +222,20 @@ namespace MRuby.Library.Language
 
             mrb_iv_foreach(this.RbState.NativeHandler, this.nativeValue.Value, nativeFunc, IntPtr.Zero);
         }
-        
+
         public T? GetDataObject<T>(string typeName) where T : class
         {
             var type = RbHelper.GetOrCreateNewRbDataStructPtr(typeName);
             var ptr = mrb_data_object_get_ptr(this.RbState.NativeHandler, this.nativeValue.Value, type);
             return (T?)RbHelper.GetObjectFromIntPtr(ptr);
         }
-        
+
         public RbDataClassType GetDataObjectType()
         {
             var ptr = mrb_data_object_get_type(this.nativeValue.Value);
             return Marshal.PtrToStructure<RbDataClassType>(ptr);
         }
-        
+
         public void DefineSingletonMethod(string name, CSharpMethodFunc callback, uint parameterAspect)
         {
             var lambda = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);

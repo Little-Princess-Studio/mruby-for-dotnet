@@ -17,7 +17,7 @@ public class RbCompilerTest
             hello
          ";
 
-        using var compiler = RbCompiler.ParserNew(state);
+        using var compiler = state.NewCompiler();
         var res = compiler.LoadString(code);
         var unboxed = state.UnboxString(res);
         Assert.Equal("Hello, World!", unboxed);
@@ -29,8 +29,8 @@ public class RbCompilerTest
         using var state = Ruby.Open();
 
         var code = File.ReadAllText("test_scripts/test.rb");
-        using var context = RbCompiler.NewContext(state);
-        using var compiler = RbCompiler.ParseString(state, code, context);
+        using var context = state.NewCompileContext();
+        using var compiler = state.NewCompilerWithCodeString(code, context);
         compiler.SetFilename("main");
         Assert.Equal("main", compiler.GetFilename(0));
 
@@ -55,8 +55,8 @@ public class RbCompilerTest
             x = 2;
          ";
 
-        using var compiler = RbCompiler.ParserNew(state);
-        using var context = RbCompiler.NewContext(state);
+        using var compiler = state.NewCompiler();
+        using var context = state.NewCompileContext();
         var proc = compiler.LoadString(code, context);
         compiler.LoadString(code2, context);
 

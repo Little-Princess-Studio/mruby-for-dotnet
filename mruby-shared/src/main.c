@@ -93,3 +93,58 @@ mrb_int mrb_obj_hash(mrb_state *mrb, mrb_value self) {
   mrb_value hash_code = mrb_funcall(mrb, self, "hash", 0);
   return mrb_int(mrb, hash_code);
 }
+
+mrb_bool mrb_check_type_integer(mrb_value obj) {
+  return mrb_integer_p(obj) ? TRUE : FALSE;
+}
+
+mrb_bool mrb_check_type_symbol(mrb_value obj) {
+  return mrb_symbol_p(obj) ? TRUE : FALSE;
+}
+
+mrb_bool mrb_check_type_float(mrb_value obj) {
+  return mrb_float_p(obj) ? TRUE : FALSE;
+}
+
+mrb_bool mrb_check_type_array(mrb_value obj) {
+  return mrb_array_p(obj) ? TRUE : FALSE;
+}
+
+mrb_bool mrb_check_type_string(mrb_value obj) {
+  return mrb_string_p(obj) ? TRUE : FALSE;
+}
+
+mrb_bool mrb_check_type_hash(mrb_value obj) {
+  return mrb_hash_p(obj) ? TRUE : FALSE;
+}
+mrb_bool mrb_check_type_exception(mrb_value obj) {
+  return mrb_exception_p(obj) ? TRUE : FALSE;
+}
+
+mrb_bool mrb_check_type_object(mrb_value obj) {
+  return mrb_object_p(obj) ? TRUE : FALSE;
+}
+
+mrb_bool mrb_check_type_class(mrb_value obj) {
+  return mrb_class_p(obj) ? TRUE : FALSE;
+}
+
+mrb_bool mrb_check_type_moudle(mrb_value obj) {
+  return mrb_module_p(obj) ? TRUE : FALSE;
+}
+
+mrb_bool mrb_check_type_sclass(mrb_value obj) {
+  return mrb_sclass_p(obj) ? TRUE : FALSE;
+}
+
+mrb_bool mrb_check_type_proc(mrb_value obj) {
+  return mrb_proc_p(obj) ? TRUE : FALSE;
+}
+
+mrb_bool mrb_check_type_range(mrb_value obj) {
+  return mrb_range_p(obj) ? TRUE : FALSE;
+}
+
+mrb_bool mrb_check_type_fiber(mrb_value obj) {
+  return mrb_fiber_p(obj) ? TRUE : FALSE;
+}

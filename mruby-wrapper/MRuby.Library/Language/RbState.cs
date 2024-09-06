@@ -82,6 +82,12 @@ namespace MRuby.Library.Language
 
         // public string? GetSymbolDump(UInt64 sym) => RbHelper.GetSymbolDump(this, sym);
 
+        public RbCompiler NewCompiler() => RbCompiler.NewCompiler(this);
+
+        public RbCompiler NewCompilerWithCodeString(string code, RbContext context) => RbCompiler.ParseString(this, code, context);
+
+        public RbContext NewCompileContext() => RbCompiler.NewContext(this);
+        
         public RbClass NewClass(RbClass? super)
         {
             var classPtr = mrb_class_new(this.NativeHandler, super?.NativeHandler ?? IntPtr.Zero);
