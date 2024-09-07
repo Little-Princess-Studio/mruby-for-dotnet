@@ -311,7 +311,7 @@ public class RbClassTest
 
     private class MyData
     {
-        public Int64 Value { get; set; }
+        public List<long> Data { get; set; } = new ();
     }
 
     [Fact]
@@ -324,14 +324,14 @@ public class RbClassTest
         {
             var value = state.UnboxInt(args[0]);
             var obj = self.GetDataObject<MyData>("MyData")!;
-            obj.Value = value;
+            obj.Data.Add(value);;
             return self;
         }, RbHelper.MRB_ARGS_REQ(1));
 
         @class.DefineMethod("get_value", (stat, self, args) =>
         {
             var obj = self.GetDataObject<MyData>("MyData")!;
-            var boxed = stat.BoxInt(obj.Value);
+            var boxed = stat.BoxInt(obj.Data[0]);
             return boxed;
         }, RbHelper.MRB_ARGS_NONE());
 

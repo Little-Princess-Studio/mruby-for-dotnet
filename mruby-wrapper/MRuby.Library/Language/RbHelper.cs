@@ -50,7 +50,7 @@ namespace MRuby.Library.Language
         [ExcludeFromCodeCoverage]
         public static UInt32 MRB_ARGS_NONE() => 0U;
         
-        public static IntPtr GetIntPtrOfCSharpObject(object? obj) => GCHandle.ToIntPtr(GCHandle.Alloc(obj, GCHandleType.Pinned));
+        public static IntPtr GetIntPtrOfCSharpObject(object? obj) => GCHandle.ToIntPtr(GCHandle.Alloc(obj));
 
         public static void FreeIntPtrOfCSharpObject(IntPtr ptr) => GCHandle.FromIntPtr(ptr).Free();
 
