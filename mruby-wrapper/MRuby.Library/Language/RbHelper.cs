@@ -64,10 +64,25 @@ namespace MRuby.Library.Language
 
         private static bool RbDataStructExist(string name) => RbDataClassMapping.ContainsKey(name);
 
-        private static void RbDataStructAdd(string name)
+        private static void RbDataStructAdd(string name, Action<RbState, object?>? releaseFn)
         {
             var typeStruct = Marshal.AllocHGlobal(Marshal.SizeOf<RbDataClassType>());
-            var type = new RbDataClassType(name, NativeDataObjectFreeFunc);
+            RbDataClassType type;
+            if (releaseFn != null)
+            {
+                type = new RbDataClassType(name, (mrb, data) =>
+                {
+                    releaseFn(new RbState
+                    {
+                        NativeHandler = mrb
+                    }, GetObjectFromIntPtr(data));
+                    NativeDataObjectFreeFunc(mrb, data);
+                });
+            }
+            else
+            {
+                type = new RbDataClassType(name, NativeDataObjectFreeFunc);
+            }
             Marshal.StructureToPtr(type, typeStruct, false);
             RbDataClassMapping.Add(name, typeStruct);
         }
@@ -100,14 +115,14 @@ namespace MRuby.Library.Language
 
         internal static bool IsFiber(RbValue obj) => mrb_check_type_fiber(obj.NativeValue);
         
-        internal static IntPtr GetOrCreateNewRbDataStructPtr(string name)
+        internal static IntPtr GetOrCreateNewRbDataStructPtr(string name, Action<RbState, object?>? releseFn = null)
         {
             if (RbDataStructExist(name))
             {
                 return RbDataClassMapping[name];
             }
 
-            RbDataStructAdd(name);
+            RbDataStructAdd(name, releseFn);
             return RbDataClassMapping[name];
         }
 

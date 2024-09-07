@@ -11,7 +11,7 @@ namespace MRuby.Library.Language
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void NativeDataObjectFreeFunc(IntPtr mrb, IntPtr data);
-    
+
     public partial struct RbClass
     {
         public readonly IntPtr NativeHandler;
@@ -23,25 +23,25 @@ namespace MRuby.Library.Language
             this.RbState = rbState;
         }
 
-        public RbValue ClassObject => RbHelper.PtrToRbValue(this.RbState, this.NativeHandler); 
-        
+        public RbValue ClassObject => RbHelper.PtrToRbValue(this.RbState, this.NativeHandler);
+
         public RbValue CallMethod(string methodName, params RbValue[] args)
         {
             var classObj = this.ClassObject;
             return RbHelper.CallMethod(this.RbState, classObj, methodName, args);
         }
-        
+
         public RbValue CallMethodWithBlock(string methodName, RbValue block, params RbValue[] args)
         {
             var classObj = this.ClassObject;
             return RbHelper.CallMethodWithBlock(this.RbState, classObj, methodName, block, args);
         }
-        
+
         public RbValue CallMethodWithBlock(string methodName, RbProc block, params RbValue[] args)
         {
             return CallMethodWithBlock(methodName, block.ToRbValue(), args);
         }
-        
+
         public void DefineMethod(string name, CSharpMethodFunc callback, uint parameterAspect)
         {
             var lambda = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
@@ -53,7 +53,7 @@ namespace MRuby.Library.Language
             var lambda = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
             mrb_define_class_method(this.RbState.NativeHandler, this.NativeHandler, name, lambda, parameterAspect);
         }
-        
+
         public void DefineModuleMethod(string name, CSharpMethodFunc callback, uint parameterAspect)
         {
             var lambda = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
@@ -94,7 +94,7 @@ namespace MRuby.Library.Language
             return new RbValue(this.RbState, value);
         }
 
-        public RbValue NewObjectWithCSharpDataObject<T>(string dataName, T data, params RbValue[] args) where T: class
+        public RbValue NewObjectWithCSharpDataObject<T>(string dataName, T data, params RbValue[] args) where T : class
         {
             var dataType = RbHelper.GetOrCreateNewRbDataStructPtr(dataName);
             var dataPtr = RbHelper.GetIntPtrOfCSharpObject(data);
@@ -103,7 +103,17 @@ namespace MRuby.Library.Language
             ret.CallMethod("initialize", args);
             return ret;
         }
-        
+
+        public RbValue NewObjectWithCSharpDataObject<T>(string dataName, T data, Action<RbState, object?> releaseFn, params RbValue[] args) where T : class
+        {
+            var dataType = RbHelper.GetOrCreateNewRbDataStructPtr(dataName, releaseFn);
+            var dataPtr = RbHelper.GetIntPtrOfCSharpObject(data);
+            var obj = mrb_new_data_object(this.RbState.NativeHandler, this.NativeHandler, dataPtr, dataType);
+            var ret = new RbValue(this.RbState, obj);
+            ret.CallMethod("initialize", args);
+            return ret;
+        }
+
         public void IncludeModule(RbClass included)
             => mrb_include_module(this.RbState.NativeHandler, this.NativeHandler, included.NativeHandler);
 
@@ -166,7 +176,7 @@ namespace MRuby.Library.Language
             var sym = this.RbState.GetInternSymbol(name);
             mrb_const_remove(this.RbState.NativeHandler, this.NativeHandler, sym);
         }
-        
+
         public RbValue GetClassPath()
         {
             var result = mrb_class_path(this.RbState.NativeHandler, this.NativeHandler);
