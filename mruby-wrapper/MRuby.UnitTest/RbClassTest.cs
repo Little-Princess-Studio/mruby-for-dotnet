@@ -79,19 +79,19 @@ public class RbClassTest
         obj2.CopyInstanceVariables(obj3);
         Assert.True(obj3.GetInstanceVariable("@a") == obj2.GetInstanceVariable("@a"));
         Assert.True(obj3.GetInstanceVariable("@b") == obj2.GetInstanceVariable("@b"));
-        
+
         Assert.False(obj.IsInstanceVariableDefined("@a"));
         Assert.False(obj.IsInstanceVariableDefined("@b"));
-        
+
         Assert.True(obj2.IsInstanceVariableDefined("@a"));
         Assert.True(obj2.IsInstanceVariableDefined("@b"));
 
         Assert.True(obj2.IsKindOf(rbClass));
         Assert.True(obj2.IsKindOf(rbClass2));
-        
+
         Assert.Equal("MyClass2", obj2.GetClassName());
         Assert.Equal(obj2.GetClass().NativeHandler, rbClass2.NativeHandler);
-        
+
         Assert.True(res3 == boxed);
         var res4 = obj2.CallMethod("plus_new");
         Assert.True(res4 == state.BoxInt(7));
@@ -99,7 +99,7 @@ public class RbClassTest
         rbClass.UndefMethod("test");
         respondTo = rbClass.ObjRespondTo("test");
         Assert.False(respondTo);
-        
+
         obj2.RemoveInstanceVariable("@a");
         obj2.RemoveInstanceVariable("@b");
 
@@ -311,7 +311,7 @@ public class RbClassTest
 
     private class MyData
     {
-        public List<long> Data { get; set; } = new ();
+        public List<long> Data { get; set; } = new();
     }
 
     [Fact]
@@ -323,14 +323,16 @@ public class RbClassTest
         @class.DefineMethod("initialize", (stat, self, args) =>
         {
             var value = state.UnboxInt(args[0]);
-            var obj = self.GetDataObject<MyData>("MyData")!;
-            obj.Data.Add(value);;
+            var typeName = self.GetDataObjectType().Name;
+            var obj = self.GetDataObject<MyData>(typeName)!;
+            obj.Data.Add(value);
             return self;
         }, RbHelper.MRB_ARGS_REQ(1));
 
         @class.DefineMethod("get_value", (stat, self, args) =>
         {
-            var obj = self.GetDataObject<MyData>("MyData")!;
+            var typeName = self.GetDataObjectType().Name;
+            var obj = self.GetDataObject<MyData>(typeName)!;
             var boxed = stat.BoxInt(obj.Data[0]);
             return boxed;
         }, RbHelper.MRB_ARGS_NONE());
@@ -341,11 +343,29 @@ public class RbClassTest
 
         var dataObjectType = dataObj.GetDataObjectType();
         Assert.Equal("MyData", dataObjectType.Name);
-        
+
         var unboxed = state.UnboxInt(v);
         Assert.Equal(12345, unboxed);
 
+        var myData2 = new MyData();
+        var res = 0L;
+        var dataObj2 = @class.NewObjectWithCSharpDataObject("MyData2", myData2, (state, obj) =>
+        {
+            var toRelease = (obj as MyData)!;
+            res = toRelease.Data[0];
+        }, state.BoxInt(54321));
+
+        var v2 = dataObj2.CallMethod("get_value");
+
+        var dataObjectType2 = dataObj2.GetDataObjectType();
+        Assert.Equal("MyData2", dataObjectType2.Name);
+
+        var unboxed2 = state.UnboxInt(v2);
+        Assert.Equal(54321, unboxed2);
+
         Ruby.Close(state);
+
+        Assert.Equal(54321L, res);
     }
 
     [Fact]
@@ -399,7 +419,7 @@ public class RbClassTest
 
         Assert.True(state.BoxString("MyClass") == cls.GetClassPath());
         Assert.True(state.BoxString("MyClass::MyClass2") == cls2.GetClassPath());
-        
+
         Assert.False(state.ClassDefined("MyClass::MyClass2"));
         Assert.False(state.ClassDefined("MyModule::MyModule2"));
 
@@ -477,9 +497,9 @@ public class RbClassTest
     void TestGlobalConstance()
     {
         var state = Ruby.Open();
-        
+
         // state.DefineGlobalConst("G1", state.BoxInt(123));
-        
+
         Ruby.Close(state);
     }
 }
