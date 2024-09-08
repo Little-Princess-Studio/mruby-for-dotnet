@@ -30,27 +30,27 @@ public class RbArrayTests : IDisposable
     {
         var values = new List<RbValue>
         {
-            this.state.BoxInt(1),
-            this.state.BoxInt(2),
+            1.ToValue(this.state),
+            2.ToValue(this.state),
         };
         var array = this.state.NewArray(values);
         Assert.Equal(this.state, array.RbState);
         Assert.Equal(2, array.Size);
-        Assert.Equal(1, this.state.UnboxInt(array[0]));
-        Assert.Equal(2, this.state.UnboxInt(array[1]));
+        Assert.Equal(1, array[0].ToInt());
+        Assert.Equal(2, array[1].ToInt());
     }
 
     [Fact]
     public void TestCreateAssocArray()
     {
-        var car = this.state.BoxInt(1);
-        var cdr = this.state.BoxInt(2);
+        var car = 1.ToValue(this.state);
+        var cdr = 2.ToValue(this.state);
         var array = RbArray.AssocNew(this.state, car, cdr);
 
         Assert.Equal(this.state, array.RbState);
         Assert.Equal(2, array.Size);
-        Assert.Equal(1, this.state.UnboxInt(array[0]));
-        Assert.Equal(2, this.state.UnboxInt(array[1]));
+        Assert.Equal(1, array[0].ToInt());
+        Assert.Equal(2, array[1].ToInt());
     }
 
     [Fact]
@@ -58,14 +58,14 @@ public class RbArrayTests : IDisposable
     {
         var values0 = new List<RbValue>
         {
-            this.state.BoxInt(1),
-            this.state.BoxInt(2),
+            1.ToValue(this.state),
+            2.ToValue(this.state),
         };
 
         var values1 = new List<RbValue>
         {
-            this.state.BoxInt(3),
-            this.state.BoxInt(4),
+            3.ToValue(this.state),
+            4.ToValue(this.state),
         };
 
         var array1 = this.state.NewArray(values0);
@@ -73,10 +73,10 @@ public class RbArrayTests : IDisposable
         array1.Concat(array2);
 
         Assert.Equal(4, array1.Size);
-        Assert.Equal(1, this.state.UnboxInt(array1[0]));
-        Assert.Equal(2, this.state.UnboxInt(array1[1]));
-        Assert.Equal(3, this.state.UnboxInt(array1[2]));
-        Assert.Equal(4, this.state.UnboxInt(array1[3]));
+        Assert.Equal(1, array1[0].ToInt());
+        Assert.Equal(2, array1[1].ToInt());
+        Assert.Equal(3, array1[2].ToInt());
+        Assert.Equal(4, array1[3].ToInt());
     }
 
     [Fact]

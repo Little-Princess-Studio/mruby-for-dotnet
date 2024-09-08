@@ -39,7 +39,7 @@ namespace MRuby.Library.Language
 
         public RbValue CallMethodWithBlock(string methodName, RbProc block, params RbValue[] args)
         {
-            return CallMethodWithBlock(methodName, block.ToRbValue(), args);
+            return CallMethodWithBlock(methodName, block.ToValue(), args);
         }
 
         public void DefineMethod(string name, CSharpMethodFunc callback, uint parameterAspect)

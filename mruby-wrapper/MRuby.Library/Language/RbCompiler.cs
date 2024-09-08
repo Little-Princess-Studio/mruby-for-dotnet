@@ -6,17 +6,15 @@ namespace MRuby.Library.Language
 
     public struct RbProc
     {
-        private readonly RbState state;
+        internal readonly RbState State;
         internal readonly IntPtr NativeHandler;
 
         public RbProc(RbState state, IntPtr nativeHandler)
         {
             this.NativeHandler = nativeHandler;
-            this.state = state;
+            this.State = state;
         }
-
-        public RbValue ToRbValue() => RbHelper.PtrToRbValue(this.state, this.NativeHandler);
-
+        
         public static RbProc FromRbValue(RbValue value)
         {
             var ptr = RbHelper.GetRbObjectPtrFromValue(value);

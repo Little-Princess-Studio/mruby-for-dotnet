@@ -39,7 +39,7 @@ public class RbProcTest
             return stat.RbTrue;
         });
         
-        Assert.True(block.ToRbValue().IsProc);
+        Assert.True(block.ToValue().IsProc);
 
         for (int i = 0; i < 5; i++)
         {
@@ -133,7 +133,7 @@ public class RbProcTest
             var val = stat.UnboxInt(args[0]);
             return stat.BoxInt(1 + val);
         });
-        state.SetGlobalVariable("$proc", proc.ToRbValue());
+        state.SetGlobalVariable("$proc", proc.ToValue());
 
         var code = "$proc.call 1";
         var res = compiler.LoadString(code);
@@ -156,8 +156,8 @@ public class RbProcTest
         Assert.True(fiberProc1.IsProc);
         
         // the proc of a fiber must be a ruby-side proc not c-side proc
-        var fiber0 = state.NewFiber(RbProc.FromRbValue(fiberProc0));
-        var fiber1 = state.NewFiber(RbProc.FromRbValue(fiberProc1));
+        var fiber0 = state.NewFiber(fiberProc0.ToProc());
+        var fiber1 = state.NewFiber(fiberProc1.ToProc());
         Assert.True(fiber0.IsFiber);
         Assert.True(fiber1.IsFiber);
 

@@ -56,15 +56,15 @@ public class RbValueTest
         var obj = cls.NewObject();
 
         obj.Freeze();
-        Assert.True(obj.CallMethod("frozen?") == state.RbTrue);
+        Assert.True(obj.CallMethod("frozen?").IsTrue);
         Assert.True(obj.CheckFrozen());
 
         var dup = obj.Duplicate();
-        Assert.False(dup.CallMethod("frozen?") == state.RbTrue);
+        Assert.False(dup.CallMethod("frozen?").IsTrue);
         Assert.False(dup.CheckFrozen());
 
         var clone = obj.Clone();
-        Assert.True(clone.CallMethod("frozen?") == state.RbTrue);
+        Assert.True(clone.CallMethod("frozen?").IsTrue);
         Assert.True(clone.CheckFrozen());
 
         var @class = state.DefineClass("MyClass", null);
@@ -268,27 +268,37 @@ public class RbValueTest
     }
 
     [Fact]
-    void TestTypeCheck()
+    void TestTypeConvert()
     {
         using var state = Ruby.Open();
 
-        var intValue = state.BoxInt(123);
+        var nilValue = state.RbNil;
+        var trueValue = true.ToValue(state);
+        var falseValue = false.ToValue(state);
+        var intValue = 123.ToValue(state);
+        var longValue = 123L.ToValue(state);
         var symbolValue = state.BoxSymbol(state.GetInternSymbol("test_symbol"));
-        var floatValue = state.BoxFloat(123.45);
-        var arrayValue = state.NewArray(intValue, floatValue).Value;
-        var stringValue = state.BoxString("test_string");
-        var hashValue = state.NewHashFromDictionary(new Dictionary<RbValue, RbValue> { { intValue, stringValue } }).Value;
+        var doubleValue = 123.45.ToValue(state);
+        var floatValue = 123.45f.ToValue(state);
+        var arrayValue = state.NewArray(intValue, doubleValue).ToValue();
+        var stringValue = "test_string".ToValue(state);
+        var hashValue = state.NewHashFromDictionary(new Dictionary<RbValue, RbValue> { { intValue, stringValue } }).ToValue();
         var exceptionValue = state.GenerateExceptionWithNewStr(state.GetClass("StandardError"), "");
         var objectValue = state.GetClass("Object").NewObject();
-        var classValue = state.GetClass("Object").ClassObject;
-        var moduleValue = state.GetModule("Kernel").ClassObject;
+        var classValue = state.GetClass("Object").ToValue();
+        var moduleValue = state.GetModule("Kernel").ToValue();
         var sclassValue = objectValue.SingletonClass.ClassObject;
 
         var rangeCls = state.GetClass("Range");
         var rangeValue = rangeCls.NewObject(state.BoxInt(0), state.BoxInt(10));
 
+        Assert.True(nilValue.IsNil);
+        Assert.True(trueValue.IsTrue);
+        Assert.True(falseValue.IsFalse);
         Assert.True(intValue.IsInteger);
+        Assert.True(longValue.IsInteger);
         Assert.True(symbolValue.IsSymbol);
+        Assert.True(doubleValue.IsFloat);
         Assert.True(floatValue.IsFloat);
         Assert.True(arrayValue.IsArray);
         Assert.True(stringValue.IsString);
@@ -299,5 +309,23 @@ public class RbValueTest
         Assert.True(moduleValue.IsModule);
         Assert.True(sclassValue.IsSingletonClass);
         Assert.True(rangeValue.IsRange);
+        
+        Assert.Equal(123L, intValue.ToInt());
+        Assert.Equal(123L, longValue.ToInt());
+        Assert.True(Math.Abs(123.45 - doubleValue.ToFloat()) < 0.0001);
+        Assert.True(Math.Abs(123.45 - floatValue.ToFloat()) < 0.0001);
+        Assert.Equal("test_string", stringValue.ToString());
+
+        var cls = classValue.ToClass();
+        Assert.Equal("Object", cls.GetClassName());
+
+        var mod = moduleValue.ToModule();
+        Assert.Equal("Kernel", mod.GetClassName());
+
+        var arr = arrayValue.ToArray();
+        Assert.Equal(intValue, arr[0]);
+
+        var hash = hashValue.ToHash();
+        Assert.Equal(stringValue, hash[intValue]);
     }
 }
