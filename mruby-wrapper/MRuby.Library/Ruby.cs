@@ -36,6 +36,8 @@
             {
                 mrb_close(state.NativeHandler);
             }
+
+            RbNativeObjectLiveKeeper.ReleaseKeeper(state);
         }
     }
 }

@@ -122,7 +122,7 @@ public class RbMapperTest
         var cls = state.GetClass("TestClass");
         var obj = cls.NewObject();
 
-        var block = state.NewProc((stat, self, args) => stat.BoxInt(42));
+        var block = state.NewProc((stat, self, args) => stat.BoxInt(42), out _);
 
         var res = obj.CallMethodWithBlock("test_instance_method0", block);
         Assert.Equal(42, state.UnboxInt(res));
@@ -157,7 +157,7 @@ public class RbMapperTest
         Assert.True(TestModule.Initialized);
 
         var cls = state.GetModule("TestModule");
-        var block = state.NewProc((stat, self, args) => stat.BoxInt(42));
+        var block = state.NewProc((stat, self, args) => stat.BoxInt(42), out _);
 
         var res = cls.CallMethodWithBlock("test_module_method0", block);
         Assert.Equal(42, state.UnboxInt(res));

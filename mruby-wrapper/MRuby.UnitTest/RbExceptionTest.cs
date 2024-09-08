@@ -32,7 +32,7 @@ public class RbExceptionTest
             var excObj = stat.GenerateExceptionWithNewStr(excClass, errorMsg);
             stat.Raise(excObj);
             return stat.RbNil;
-        }, ref err);
+        }, ref err, out _);
         Assert.True(err);
         Assert.Equal("Exception", errObj.GetClassName());
 
@@ -41,7 +41,7 @@ public class RbExceptionTest
         {
             self.SetInstanceVariable("@a", stat.BoxString(""));
             return self;
-        }, RbHelper.MRB_ARGS_NONE());
+        }, RbHelper.MRB_ARGS_NONE(), out _);
         var obj = @class.NewObject();
 
         state.Protect((stat, userdata, _) =>
@@ -49,7 +49,7 @@ public class RbExceptionTest
             Assert.Equal("TestClass", userdata.GetClassName());
             userdata.SetInstanceVariable("@a", stat.BoxString(errorMsg));
             return stat.RbNil;
-        }, obj, ref err);
+        }, obj, ref err, out _);
         Assert.False(err);
 
         var str = state.UnboxString(obj.GetInstanceVariable("@a"));
@@ -99,14 +99,14 @@ public class RbExceptionTest
             Assert.True(userdata == stat.RbNil);
             rescueFlag1 = true;
             return stat.RbNil;
-        }, state.RbNil);
+        }, state.RbNil, out _, out _);
 
         state.RescueExceptions(funcThrowExc2, state.RbNil, (stat, userdata, _) =>
         {
             Assert.True(userdata == stat.RbNil);
             rescueFlag2 = true;
             return stat.RbNil;
-        }, state.RbNil, new[] { clsExc1 });
+        }, state.RbNil, new[] { clsExc1 }, out _, out _);
 
         Assert.True(excFlag1);
         Assert.True(excFlag2);
@@ -176,7 +176,7 @@ public class RbExceptionTest
             state.RbNil,
             excClsArray,
             funcEnsure,
-            state.RbNil);
+            state.RbNil, out _, out _, out _);
 
         Assert.True(mainFlag);
         Assert.True(rescueFlag);

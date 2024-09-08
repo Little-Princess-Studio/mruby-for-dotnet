@@ -294,10 +294,10 @@ namespace MRuby.Library.Language
 
         public Int64 GetArgs(string format, ref RbValue[] args) => RbHelper.GetArgs(this, format, ref args);
 
-        public RbProc NewProc(CSharpMethodFunc func)
+        public RbProc NewProc(CSharpMethodFunc func, out NativeMethodFunc delegateFunc)
         {
-            var cb = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(func);
-            var handler = mrb_proc_new_cfunc_with_env(this.NativeHandler, cb, 0, null);
+            delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(func);
+            var handler = mrb_proc_new_cfunc_with_env(this.NativeHandler, delegateFunc, 0, null);
 
             return new RbProc(this, handler);
         }

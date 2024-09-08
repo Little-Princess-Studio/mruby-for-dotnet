@@ -15,7 +15,7 @@ public class RbProcTest
         {
             self.SetInstanceVariable("@a", stat.BoxInt(1));
             return self;
-        }, RbHelper.MRB_ARGS_NONE());
+        }, RbHelper.MRB_ARGS_NONE(), out _);
 
         @class.DefineMethod("add", (stat, self, args) =>
         {
@@ -27,7 +27,7 @@ public class RbProcTest
             var res = stat.YieldWithClass(block, self, @class);
             Assert.True(res == stat.RbTrue);
             return stat.RbNil;
-        }, RbHelper.MRB_ARGS_BLOCK());
+        }, RbHelper.MRB_ARGS_BLOCK(), out _);
 
         var obj = @class.NewObject();
         var block = state.NewProc((stat, self, _) =>
@@ -37,7 +37,7 @@ public class RbProcTest
             var newA = stat.BoxInt(unboxed + 1);
             self.SetInstanceVariable("@a", newA);
             return stat.RbTrue;
-        });
+        }, out _);
         
         Assert.True(block.ToValue().IsProc);
 
@@ -63,7 +63,7 @@ public class RbProcTest
             self.SetInstanceVariable("@a", stat.BoxInt(0));
             self.SetInstanceVariable("@idx", stat.BoxInt(0));
             return self;
-        }, RbHelper.MRB_ARGS_NONE());
+        }, RbHelper.MRB_ARGS_NONE(), out _);
 
         var list = new int[] { 1, 2, 3, 4, 5 };
 
@@ -84,7 +84,7 @@ public class RbProcTest
             self.SetInstanceVariable("@idx", newIdx);
 
             return stat.RbNil;
-        }, RbHelper.MRB_ARGS_ANY() | RbHelper.MRB_ARGS_BLOCK());
+        }, RbHelper.MRB_ARGS_ANY() | RbHelper.MRB_ARGS_BLOCK(), out _);
 
         CSharpMethodFunc blockFunc = (stat, self, args) =>
         {
@@ -100,7 +100,7 @@ public class RbProcTest
             return stat.RbTrue;
         };
 
-        var block0 = state.NewProc(blockFunc);
+        var block0 = state.NewProc(blockFunc, out _);
 
         var obj1 = @class.NewObject();
         for (int i = 0; i < 5; i++)
@@ -132,7 +132,7 @@ public class RbProcTest
         {
             var val = stat.UnboxInt(args[0]);
             return stat.BoxInt(1 + val);
-        });
+        }, out _);
         state.SetGlobalVariable("$proc", proc.ToValue());
 
         var code = "$proc.call 1";
@@ -196,7 +196,7 @@ public class RbProcTest
         {
             var arg = args[0];
             return stat.FiberYield(stat.BoxInt(1 + stat.UnboxInt(arg)));
-        }, RbHelper.MRB_ARGS_REQ(1));
+        }, RbHelper.MRB_ARGS_REQ(1), out _);
 
         var fiber = compiler.LoadString(code, context);
         Assert.True(fiber.IsFiber);

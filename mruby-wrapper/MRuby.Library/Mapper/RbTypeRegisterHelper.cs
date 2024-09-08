@@ -6,6 +6,9 @@ using MRuby.Library.Language;
 
 namespace MRuby.Library.Mapper
 {
+    public class RbAutoRegisterKeeper
+    {
+    }
 
     [ExcludeFromCodeCoverage]
     public static class RbTypeRegisterHelper
@@ -14,7 +17,7 @@ namespace MRuby.Library.Mapper
         {
             // scan the assembly all the type attributed by RbClassAttribute
             // and register them to the RubyScriptManager
-            
+
             var classTypeList = GetAttributedTypes<RbClassAttribute>(assemblies);
             var clsPairList = classTypeList.Select(t => (t, DefineClass(stat, t))).ToArray();
             Array.ForEach(clsPairList, pair =>
@@ -50,7 +53,7 @@ namespace MRuby.Library.Mapper
         {
             var allTypes =
                 assemblies?.Select(assembly => assembly.GetTypes()
-                    .Where(t => t.GetCustomAttribute<TAttr>() != null))
+                        .Where(t => t.GetCustomAttribute<TAttr>() != null))
                     .SelectMany(type => type)
                 ?? Enumerable.Empty<Type>();
 
@@ -85,19 +88,29 @@ namespace MRuby.Library.Mapper
                 cls = stat.DefineClass(clsName, parClass);
             }
 
+            var keeper = RbNativeObjectLiveKeeper<RbAutoRegisterKeeper, NativeMethodFunc>.GetOrCreateKeeper(stat);
+            
             // scan methods attributed by RbClassMethodAttribute
             var methods = t.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             methods.Where(m => m.GetCustomAttribute<RbClassMethodAttribute>() != null)
                 .ToList().ForEach(
                     m => DefineMethod<RbClassMethodAttribute>(
-                        (name, fn, aspect) => cls.DefineClassMethod(name, fn, aspect),
+                        (name, fn, aspect) =>
+                        {
+                            cls.DefineClassMethod(name, fn, aspect, out var delegateFn);
+                            keeper.Keep($"{t.FullName}#{m.Name}", delegateFn);
+                        },
                         m));
 
             // scan methods attributed by RbInstanceMethodAttribute
             methods.Where(m => m.GetCustomAttribute<RbInstanceMethodAttribute>() != null)
                 .ToList().ForEach(
                     m => DefineMethod<RbInstanceMethodAttribute>(
-                        (name, fn, aspect) => cls.DefineMethod(name, fn, aspect),
+                        (name, fn, aspect) =>
+                        {
+                            cls.DefineMethod(name, fn, aspect, out var delegateFunc);
+                            keeper.Keep($"{t.FullName}#{m.Name}", delegateFunc);
+                        },
                         m));
 
             return cls;
@@ -120,24 +133,38 @@ namespace MRuby.Library.Mapper
                 mod = stat.DefineModule(moduleName);
             }
 
+            var keeper = RbNativeObjectLiveKeeper<RbAutoRegisterKeeper, NativeMethodFunc>.GetOrCreateKeeper(stat);
+            
             // scan methods attributed by RbClassMethodAttribute
             var methods = t.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             methods.Where(m => m.GetCustomAttribute<RbClassMethodAttribute>() != null)
                 .ToList().ForEach(
                     m => DefineMethod<RbClassMethodAttribute>(
-                        (name, fn, aspect) => mod.DefineClassMethod(name, fn, aspect),
+                        (name, fn, aspect) =>
+                        {
+                            mod.DefineClassMethod(name, fn, aspect, out var delegateFunc);
+                            keeper.Keep($"{t.FullName}#{m.Name}", delegateFunc);
+                        },
                         m));
 
             methods.Where(m => m.GetCustomAttribute<RbModuleMethodAttribute>() != null)
                 .ToList().ForEach(
                     m => DefineMethod<RbModuleMethodAttribute>(
-                        (name, fn, aspect) => mod.DefineModuleMethod(name, fn, aspect),
+                        (name, fn, aspect) =>
+                        {
+                            mod.DefineModuleMethod(name, fn, aspect, out var delegateFunc);
+                            keeper.Keep($"{t.FullName}#{m.Name}", delegateFunc);
+                        },
                         m));
 
             methods.Where(m => m.GetCustomAttribute<RbInstanceMethodAttribute>() != null)
                 .ToList().ForEach(
                     m => DefineMethod<RbInstanceMethodAttribute>(
-                        (name, fn, aspect) => mod.DefineMethod(name, fn, aspect),
+                        (name, fn, aspect) =>
+                        {
+                            mod.DefineMethod(name, fn, aspect, out var delegateFunc);
+                            keeper.Keep($"{t.FullName}#{m.Name}", delegateFunc);
+                        },
                         m));
 
             return mod;

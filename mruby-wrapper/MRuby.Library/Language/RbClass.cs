@@ -16,7 +16,7 @@ namespace MRuby.Library.Language
     {
         public readonly IntPtr NativeHandler;
         public readonly RbState RbState;
-
+        
         public RbClass(IntPtr nativeHandler, RbState rbState)
         {
             this.NativeHandler = nativeHandler;
@@ -42,22 +42,22 @@ namespace MRuby.Library.Language
             return CallMethodWithBlock(methodName, block.ToValue(), args);
         }
 
-        public void DefineMethod(string name, CSharpMethodFunc callback, uint parameterAspect)
+        public void DefineMethod(string name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
         {
-            var lambda = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
-            mrb_define_method(this.RbState.NativeHandler, this.NativeHandler, name, lambda, parameterAspect);
+            delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
+            mrb_define_method(this.RbState.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
         }
 
-        public void DefineClassMethod(string name, CSharpMethodFunc callback, uint parameterAspect)
+        public void DefineClassMethod(string name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
         {
-            var lambda = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
-            mrb_define_class_method(this.RbState.NativeHandler, this.NativeHandler, name, lambda, parameterAspect);
+            delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
+            mrb_define_class_method(this.RbState.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
         }
 
-        public void DefineModuleMethod(string name, CSharpMethodFunc callback, uint parameterAspect)
+        public void DefineModuleMethod(string name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
         {
-            var lambda = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
-            mrb_define_module_function(this.RbState.NativeHandler, this.NativeHandler, name, lambda, parameterAspect);
+            delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
+            mrb_define_module_function(this.RbState.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
         }
 
         public void DefineConstant(string name, RbValue value)

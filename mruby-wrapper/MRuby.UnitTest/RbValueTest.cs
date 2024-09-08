@@ -29,7 +29,7 @@ public class RbValueTest
         {
             self.SetInstanceVariable("@a", stat.BoxInt(1));
             return self;
-        }, RbHelper.MRB_ARGS_NONE());
+        }, RbHelper.MRB_ARGS_NONE(), out _);
 
         @class.DefineMethod("eql?", (stat, self, args) =>
         {
@@ -37,7 +37,7 @@ public class RbValueTest
             var a = self.GetInstanceVariable("@a");
             var b = other.GetInstanceVariable("@a");
             return a == b ? stat.RbTrue : stat.RbFalse;
-        }, RbHelper.MRB_ARGS_REQ(1));
+        }, RbHelper.MRB_ARGS_REQ(1), out _);
 
         var obj1 = @class.NewObject();
         var obj2 = @class.NewObject();
@@ -72,7 +72,7 @@ public class RbValueTest
         {
             self.SetInstanceVariable("@a", args[0]);
             return self;
-        }, RbHelper.MRB_ARGS_REQ(1));
+        }, RbHelper.MRB_ARGS_REQ(1), out _);
 
         @class.DefineMethod("eql?", (stat, self, args) =>
         {
@@ -80,7 +80,7 @@ public class RbValueTest
             var a = self.GetInstanceVariable("@a");
             var b = other.GetInstanceVariable("@a");
             return a == b ? stat.RbTrue : stat.RbFalse;
-        }, RbHelper.MRB_ARGS_REQ(1));
+        }, RbHelper.MRB_ARGS_REQ(1), out _);
 
         var obj1 = @class.NewObject(state.BoxInt(123));
         var obj2 = obj1.Duplicate();
@@ -171,7 +171,7 @@ public class RbValueTest
         {
             a = true;
             return stat.RbNil;
-        }, RbHelper.MRB_ARGS_NONE());
+        }, RbHelper.MRB_ARGS_NONE(), out _);
 
         top0.CallMethod("test");
 
@@ -196,7 +196,7 @@ public class RbValueTest
             self.SetInstanceVariable("@b", stat.BoxInt(2));
             self.SetInstanceVariable("@c", stat.BoxInt(3));
             return self;
-        }, RbHelper.MRB_ARGS_NONE());
+        }, RbHelper.MRB_ARGS_NONE(), out _);
 
         var obj = cls.NewObject();
 
@@ -260,7 +260,7 @@ public class RbValueTest
         {
             a = true;
             return stat.RbNil;
-        }, RbHelper.MRB_ARGS_NONE());
+        }, RbHelper.MRB_ARGS_NONE(), out _);
         
         obj.CallMethod("test");
         
