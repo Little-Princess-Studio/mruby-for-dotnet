@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <TargetFrameworks>net8.0;netstandard2.1</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>0.1.4</Version>
+    <Version>0.1.5</Version>
     <Title>A mruby binding for .Net Core Platform</Title>
     <PackageProjectUrl>https://github.com/Little-Princess-Studio/mruby-for-dotnet</PackageProjectUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
