@@ -42,9 +42,11 @@ namespace MRuby.Library.Language
 
         public bool IsInteger => RbHelper.IsInteger(this);
 
+        public long ToIntUnchecked() => this.RbState.UnboxInt(this);
+        
         public long ToInt()
         {
-            return this.IsInteger ? this.RbState.UnboxInt(this) : throw new Exception("Value is not an integer");
+            return this.IsInteger ?  this.ToIntUnchecked(): throw new Exception("Value is not an integer");
         }
         
         public bool IsNil => this == this.RbState.RbNil;
@@ -56,31 +58,39 @@ namespace MRuby.Library.Language
         public bool IsSymbol => RbHelper.IsSymbol(this);
 
         public bool IsFloat => RbHelper.IsFloat(this);
-        
+
+        public double ToFloatUnchecked() => this.RbState.UnboxFloat(this);
+
         public double ToFloat()
         {
-            return this.IsFloat ? this.RbState.UnboxFloat(this) : throw new Exception("Value is not a float");
+            return this.IsFloat ? this.ToFloatUnchecked(): throw new Exception("Value is not a float");
         }
 
         public bool IsArray => RbHelper.IsArray(this);
 
+        public RbArray ToArrayUnchecked() => this.RbState.NewArrayFromArrayObject(this);
+
         public RbArray ToArray()
         {
-            return this.IsArray ? this.RbState.NewArrayFromArrayObject(this) : throw new Exception("Value is not an array");
+            return this.IsArray ? this.ToArrayUnchecked() : throw new Exception("Value is not an array");
         }
 
         public bool IsString => RbHelper.IsString(this);
 
+        public string? ToStringUnchecked() => this.RbState.UnboxString(this);
+        
         public override string? ToString()
         {
-            return this.IsString ? this.RbState.UnboxString(this) : throw new Exception("Value is not a string");
+            return this.IsString ? this.ToStringUnchecked() : throw new Exception("Value is not a string");
         }
 
         public bool IsHash => RbHelper.IsHash(this);
 
+        public RbHash ToHashUnchecked() => this.RbState.NewHashFromHashObject(this);
+        
         public RbHash ToHash()
         {
-            return this.IsHash ? this.RbState.NewHashFromHashObject(this) : throw new Exception("Value is not a hash");
+            return this.IsHash ? this.ToHashUnchecked() : throw new Exception("Value is not a hash");
         }
         
         public bool IsException => RbHelper.IsException(this);
@@ -89,25 +99,31 @@ namespace MRuby.Library.Language
 
         public bool IsClass => RbHelper.IsClass(this);
 
+        public RbClass ToClassUnchecked() => RbHelper.GetRbClassFromValue(this.RbState, this);
+
         public RbClass ToClass()
         {
-            return this.IsClass ? RbHelper.GetRbClassFromValue(this.RbState, this) : throw new Exception("Value is not a class");
+            return this.IsClass ? this.ToClassUnchecked() : throw new Exception("Value is not a class");
         }
         
         public bool IsModule => RbHelper.IsModule(this);
 
+        public RbClass ToModuleUnchecked() => RbHelper.GetRbClassFromValue(this.RbState, this);
+        
         public RbClass ToModule()
         {
-            return this.IsModule ? RbHelper.GetRbClassFromValue(this.RbState, this) : throw new Exception("Value is not a module");
+            return this.IsModule ? this.ToModuleUnchecked() : throw new Exception("Value is not a module");
         }
         
         public bool IsSingletonClass => RbHelper.IsSClass(this);
 
         public bool IsProc => RbHelper.IsProc(this);
 
+        public RbProc ToProcUnchecked() => RbProc.FromRbValue(this);
+        
         public RbProc ToProc()
         {
-            return this.IsProc ? RbProc.FromRbValue(this) : throw new Exception("Value is not a proc");
+            return this.IsProc ? this.ToProcUnchecked() : throw new Exception("Value is not a proc");
         }
 
         public bool IsRange => RbHelper.IsRange(this);
