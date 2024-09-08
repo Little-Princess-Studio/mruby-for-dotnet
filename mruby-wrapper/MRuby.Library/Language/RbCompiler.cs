@@ -1,6 +1,8 @@
 namespace MRuby.Library.Language
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Runtime.InteropServices;
 
     public struct RbProc
     {
@@ -14,7 +16,7 @@ namespace MRuby.Library.Language
         }
 
         public RbValue ToRbValue() => RbHelper.PtrToRbValue(this.state, this.NativeHandler);
-        
+
         public static RbProc FromRbValue(RbValue value)
         {
             var ptr = RbHelper.GetRbObjectPtrFromValue(value);
@@ -33,6 +35,8 @@ namespace MRuby.Library.Language
             this.state = state;
         }
 
+        public string? SetFilename(string filename) => RbCompiler.SetContextFileName(this.state, this, filename);
+
         public void Dispose()
         {
             if (this.NativeHandler != IntPtr.Zero)
@@ -42,36 +46,42 @@ namespace MRuby.Library.Language
             }
         }
     }
-    
-    public partial class RbCompiler: IDisposable
+
+    public partial class RbCompiler : IDisposable
     {
         private readonly RbState rbState;
         private IntPtr nativeHandler;
-        
+
         private RbCompiler(RbState rbState, IntPtr nativeHandler)
         {
             this.rbState = rbState;
             this.nativeHandler = nativeHandler;
         }
-        
+
         internal static RbCompiler ParseString(RbState mrb, string code, RbContext ccontext)
         {
             var state = mrb_parse_string(mrb.NativeHandler, code, ccontext.NativeHandler);
             return new RbCompiler(mrb, state);
         }
-        
+
         internal static RbCompiler NewCompiler(RbState mrb)
         {
             var state = mrb_parser_new(mrb.NativeHandler);
             return new RbCompiler(mrb, state);
         }
-        
+
         internal static RbContext NewContext(RbState mrb)
         {
             var state = mrb_ccontext_new(mrb.NativeHandler);
             return new RbContext(state, mrb);
         }
-        
+
+        internal static string? SetContextFileName(RbState mrb, RbContext context, string filename)
+        {
+            var strPtr = mrb_ccontext_filename(mrb.NativeHandler, context.NativeHandler, filename);
+            return strPtr != IntPtr.Zero ? Marshal.PtrToStringAnsi(strPtr) : string.Empty;
+        }
+
         internal static void FreeContext(RbState mrb, RbContext context) => mrb_ccontext_free(mrb.NativeHandler, context.NativeHandler);
 
         private void Free() => mrb_parser_free(this.nativeHandler);
@@ -86,7 +96,7 @@ namespace MRuby.Library.Language
             var filename = this.rbState.GetSymbolName(sym);
             return filename!;
         }
-        
+
         public RbProc GenerateCode()
         {
             var nativeProc = mrb_generate_code(this.rbState.NativeHandler, this.nativeHandler);
@@ -110,7 +120,7 @@ namespace MRuby.Library.Language
             var nativeVal = mrb_load_string_cxt(this.rbState.NativeHandler, code, ccontext.NativeHandler);
             return new RbValue(this.rbState, nativeVal);
         }
-        
+
         public RbValue TopRun(RbProc proc, RbValue self, Int64 stackKeep)
         {
             var nativeVal = mrb_top_run(this.rbState.NativeHandler, proc.NativeHandler, self.NativeValue, stackKeep);

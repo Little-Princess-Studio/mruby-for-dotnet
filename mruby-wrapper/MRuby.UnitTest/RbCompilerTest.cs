@@ -26,12 +26,16 @@ public class RbCompilerTest
     [Fact]
     void TestParseString()
     {
-        using var state = Ruby.Open();
+        var state = Ruby.Open();
 
         var code = File.ReadAllText("test_scripts/test.rb");
-        using var context = state.NewCompileContext();
-        using var compiler = state.NewCompilerWithCodeString(code, context);
+        var context = state.NewCompileContext();
+        var compiler = state.NewCompilerWithCodeString(code, context);
+
         compiler.SetFilename("main");
+        var contextFileName = context.SetFilename("main");
+
+        // Assert.Equal("main", contextFileName);
         Assert.Equal("main", compiler.GetFilename(0));
 
         var proc = compiler.GenerateCode();
@@ -39,6 +43,10 @@ public class RbCompilerTest
         var unboxed = state.UnboxString(res);
 
         Assert.Equal("Hello, World!", unboxed);
+
+        context.Dispose();
+        compiler.Dispose();
+        state.Dispose();
     }
 
     [Fact]
