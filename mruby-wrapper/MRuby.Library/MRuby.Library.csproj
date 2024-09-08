@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <TargetFrameworks>net8.0;netstandard2.1</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>0.1.3</Version>
+    <Version>0.1.4</Version>
     <Title>A mruby binding for .Net Core Platform</Title>
     <PackageProjectUrl>https://github.com/Little-Princess-Studio/mruby-for-dotnet</PackageProjectUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
@@ -30,7 +30,7 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <Content Include="mruby_x64.dll" Condition="Exists('mruby_x64.dll')">
+    <Content Include="libmruby_x64.dll" Condition="Exists('mruby_x64.dll')">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <PackageCopyToOutput>true</PackageCopyToOutput>
       <pack>true</pack>

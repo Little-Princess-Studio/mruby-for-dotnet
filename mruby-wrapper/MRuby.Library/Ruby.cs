@@ -6,13 +6,7 @@
 
     public static class Ruby
     {
-#if PALTFORM_WINDOWS
-        internal const string MrubyLib = "mruby_x64.dll";
-#elif PALTFORM_UNIX
-        internal const string MrubyLib = "libmruby_x64.so";
-#elif PALTFORM_MACOS
-        internal const string MrubyLib = "libmruby.dylib";
-#endif
+        internal const string MrubyLib = "libmruby_x64";
 
         [DllImport(MrubyLib, CharSet = CharSet.Ansi)]
         private static extern IntPtr mrb_open();
