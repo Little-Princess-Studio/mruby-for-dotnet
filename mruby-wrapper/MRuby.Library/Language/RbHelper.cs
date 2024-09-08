@@ -60,7 +60,7 @@ namespace MRuby.Library.Language
 
         public static IntPtr GetRbObjectPtrFromValue(UInt64 nativeHandler) => mrb_value_to_obj_ptr(nativeHandler);
 
-        private static Dictionary<string, IntPtr> RbDataClassMapping { get; } = new Dictionary<string, IntPtr>();
+        private static Dictionary<string, (RbDataClassType, IntPtr)> RbDataClassMapping { get; } = new Dictionary<string, (RbDataClassType, IntPtr)>();
 
         private static bool RbDataStructExist(string name) => RbDataClassMapping.ContainsKey(name);
 
@@ -84,7 +84,7 @@ namespace MRuby.Library.Language
                 type = new RbDataClassType(name, NativeDataObjectFreeFunc);
             }
             Marshal.StructureToPtr(type, typeStruct, false);
-            RbDataClassMapping.Add(name, typeStruct);
+            RbDataClassMapping.Add(name, (type, typeStruct));
         }
 
         internal static bool IsInteger(RbValue obj) => mrb_check_type_integer(obj.NativeValue);
@@ -119,11 +119,11 @@ namespace MRuby.Library.Language
         {
             if (RbDataStructExist(name))
             {
-                return RbDataClassMapping[name];
+                return RbDataClassMapping[name].Item2;
             }
 
             RbDataStructAdd(name, releseFn);
-            return RbDataClassMapping[name];
+            return RbDataClassMapping[name].Item2;
         }
 
         internal static unsafe NativeMethodFunc BuildCSharpCallbackToNativeCallbackBridgeMethod(CSharpMethodFunc callback)
