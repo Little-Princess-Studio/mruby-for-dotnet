@@ -95,7 +95,7 @@ if os_name == "macosx" then
 else
     target("mruby_x64")
         set_arch("x64")
-        set_basename("libmruby_x64")
+        set_basename("mruby_x64")
         common_settings()
         after_build(copy_dll_to_target)
 end
