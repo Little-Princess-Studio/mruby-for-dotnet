@@ -1,9 +1,12 @@
-﻿namespace MRuby.Library.Language
-{
-    using System;
-    using System.Collections.Generic;
+﻿using System.Collections;
+using System.Linq;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
-    public partial class RbHash
+namespace MRuby.Library.Language
+{
+    public partial class RbHash : IEnumerable<KeyValuePair<RbValue, RbValue>>
     {
         public readonly RbValue Value;
         public readonly RbState State;
@@ -34,7 +37,7 @@
             return FromHashObject(new RbValue(state, hashPtr));
         }
 
-        public static RbHash FromDictionary(RbState state, Dictionary<RbValue, RbValue> dict)
+        public static RbHash FromDictionary(RbState state, IDictionary<RbValue, RbValue> dict)
         {
             var hash = NewWithCapacity(state, dict.Count);
             foreach (var (key, value) in dict)
@@ -100,6 +103,67 @@
         {
             get => this.Get(key);
             set => this.Set(key, value);
+        }
+        
+        [ExcludeFromCodeCoverage]
+        public IEnumerator<KeyValuePair<RbValue, RbValue>> GetEnumerator() => new RbHashEnumerator(this);
+
+        [ExcludeFromCodeCoverage]
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        [ExcludeFromCodeCoverage]
+        private class RbHashEnumerator : IEnumerator<KeyValuePair<RbValue, RbValue>>
+        {
+            private readonly RbHash hash;
+            private readonly RbValue[] keys;
+            private int currentKeyIndex;
+
+            public RbHashEnumerator(RbHash hash)
+            {
+                this.hash = hash;
+                this.keys = this.hash.Keys.Select(v => v).ToArray();
+                this.currentKeyIndex = -1;
+            }
+
+            public bool MoveNext()
+            {
+                if (this.currentKeyIndex >= this.keys.Length - 1)
+                {
+                    return false;
+                }
+
+                ++this.currentKeyIndex;
+                return true;
+            }
+
+            public void Reset()
+            {
+                this.currentKeyIndex = -1;
+            }
+
+            public KeyValuePair<RbValue, RbValue> Current
+            {
+                get
+                {
+                    var key = this.keys[this.currentKeyIndex];
+                    var value = this.hash[key];
+                    return new KeyValuePair<RbValue, RbValue>(key, value);
+                }
+            }
+
+            object IEnumerator.Current => Current;
+
+            public void Dispose()
+            {
+            }
+        }
+    }
+
+    public static class DictionaryExtension
+    {
+        public static RbHash ToRbHash(this IDictionary<RbValue, RbValue> self, RbState state)
+        {
+            return state.NewHashFromDictionary(self);
         }
     }
 }

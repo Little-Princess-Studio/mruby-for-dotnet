@@ -126,6 +126,7 @@ namespace MRuby.Library.Language
             return RbDataClassMapping[name].Item2;
         }
 
+        [ExcludeFromCodeCoverage]
         internal static unsafe NativeMethodFunc BuildCSharpCallbackToNativeCallbackBridgeMethod(CSharpMethodFunc callback)
         {
             UInt64 Lambda(IntPtr state, ulong self)
@@ -148,8 +149,19 @@ namespace MRuby.Library.Language
                     NativeHandler = state
                 };
                 var csharpSelf = new RbValue(csharpState, self);
-                var csharpRes = callback(csharpState, csharpSelf, args);
-                return csharpRes.NativeValue;
+                try
+                {
+                    var csharpRes = callback(csharpState, csharpSelf, args);
+                    return csharpRes.NativeValue;   
+                }
+                catch (Exception e)
+                {
+                    var totalMsg = $"Native Exception Message: {e.Message} \n Stacktrace: {e.StackTrace}";
+                    var excCls = csharpState.GetClass("Exception");
+                    var exc = csharpState.GenerateExceptionWithNewStr(excCls, totalMsg);
+                    csharpState.Raise(exc);
+                    return csharpState.RbNil.NativeValue;
+                }
             }
             return Lambda;
         }

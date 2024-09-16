@@ -308,7 +308,7 @@ namespace MRuby.Library.Language
 
         public RbArray NewArray() => RbArray.New(this);
 
-        public RbArray NewArray(IEnumerable<RbValue> array) => RbArray.FromValues(this, array);
+        public RbArray NewArrayWithIEnumerable(IEnumerable<RbValue> array) => RbArray.FromValues(this, array);
 
         public RbArray NewArray(params RbValue[] array) => RbArray.FromValues(this, array);
 
@@ -317,7 +317,7 @@ namespace MRuby.Library.Language
 
         public RbHash NewHash() => RbHash.New(this);
         
-        public RbHash NewHashFromDictionary(Dictionary<RbValue, RbValue> dict) => RbHash.FromDictionary(this, dict);
+        public RbHash NewHashFromDictionary(IDictionary<RbValue, RbValue> dict) => RbHash.FromDictionary(this, dict);
 
         [ExcludeFromCodeCoverage]
         public RbHash NewHashFromHashObject(RbValue hash) => RbHash.FromHashObject(hash);

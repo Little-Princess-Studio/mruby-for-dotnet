@@ -40,13 +40,13 @@ namespace MRuby.Library.Language
             }
         }
 
-        public bool IsInteger => RbHelper.IsInteger(this);
+        public bool IsInt => RbHelper.IsInteger(this);
 
         public long ToIntUnchecked() => this.RbState.UnboxInt(this);
         
         public long ToInt()
         {
-            return this.IsInteger ?  this.ToIntUnchecked(): throw new Exception("Value is not an integer");
+            return this.IsInt ?  this.ToIntUnchecked(): throw new Exception("Value is not an integer");
         }
         
         public bool IsNil => this == this.RbState.RbNil;

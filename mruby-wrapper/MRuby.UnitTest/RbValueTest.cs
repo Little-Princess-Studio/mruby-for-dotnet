@@ -295,8 +295,8 @@ public class RbValueTest
         Assert.True(nilValue.IsNil);
         Assert.True(trueValue.IsTrue);
         Assert.True(falseValue.IsFalse);
-        Assert.True(intValue.IsInteger);
-        Assert.True(longValue.IsInteger);
+        Assert.True(intValue.IsInt);
+        Assert.True(longValue.IsInt);
         Assert.True(symbolValue.IsSymbol);
         Assert.True(doubleValue.IsFloat);
         Assert.True(floatValue.IsFloat);

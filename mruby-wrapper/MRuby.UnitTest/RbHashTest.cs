@@ -242,5 +242,33 @@ namespace MRuby.UnitTest
                 Assert.Equal(value, hash1[key]);
             }
         }
+
+        [Fact]
+        void TestLinq()
+        {
+            var dict = new Dictionary<string, int>
+            {
+                ["a"] = 1,
+                ["b"] = 2,
+                ["c"] = 3,
+            };
+            
+            var rbDict = dict.ToDictionary(
+                pair => pair.Key.ToValue(this.state),
+                pair => pair.Value.ToValue(this.state))
+                .ToRbHash(this.state);
+
+            int iteration = 0;
+            foreach (var (k, v) in rbDict)
+            {
+                ++iteration;
+                Assert.True(k.IsString);
+                Assert.True(v.IsInt);
+                var sk = k.ToStringUnchecked()!;
+                Assert.Equal(dict[sk], v.ToIntUnchecked());
+            }
+            
+            Assert.Equal(3, iteration);
+        }
     }
 }
