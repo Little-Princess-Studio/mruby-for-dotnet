@@ -21,7 +21,7 @@ public class RbArrayTests : IDisposable
     public void TestCreateEmptyArray()
     {
         var array = this.state.NewArray();
-        Assert.Equal(this.state, array.RbState);
+        Assert.Equal(this.state, array.State);
         Assert.Equal(0, array.Size);
     }
 
@@ -33,8 +33,8 @@ public class RbArrayTests : IDisposable
             1.ToValue(this.state),
             2.ToValue(this.state),
         };
-        var array = this.state.NewArray(values);
-        Assert.Equal(this.state, array.RbState);
+        var array = this.state.NewArrayWithIEnumerable(values);
+        Assert.Equal(this.state, array.State);
         Assert.Equal(2, array.Size);
         Assert.Equal(1, array[0].ToInt());
         Assert.Equal(2, array[1].ToInt());
@@ -47,7 +47,7 @@ public class RbArrayTests : IDisposable
         var cdr = 2.ToValue(this.state);
         var array = RbArray.AssocNew(this.state, car, cdr);
 
-        Assert.Equal(this.state, array.RbState);
+        Assert.Equal(this.state, array.State);
         Assert.Equal(2, array.Size);
         Assert.Equal(1, array[0].ToInt());
         Assert.Equal(2, array[1].ToInt());
@@ -68,8 +68,8 @@ public class RbArrayTests : IDisposable
             4.ToValue(this.state),
         };
 
-        var array1 = this.state.NewArray(values0);
-        var array2 = this.state.NewArray(values1);
+        var array1 = this.state.NewArrayWithIEnumerable(values0);
+        var array2 = this.state.NewArrayWithIEnumerable(values1);
         array1.Concat(array2);
 
         Assert.Equal(4, array1.Size);
@@ -129,8 +129,8 @@ public class RbArrayTests : IDisposable
             this.state.BoxInt(4),
         };
 
-        var array1 = this.state.NewArray(values0);
-        var array2 = this.state.NewArray(values1);
+        var array1 = this.state.NewArrayWithIEnumerable(values0);
+        var array2 = this.state.NewArrayWithIEnumerable(values1);
 
         array1.Replace(array2);
 
@@ -148,7 +148,7 @@ public class RbArrayTests : IDisposable
             this.state.BoxInt(2),
         };
 
-        var array = this.state.NewArray(values0);
+        var array = this.state.NewArrayWithIEnumerable(values0);
         var value = this.state.BoxInt(3);
         array.Unshift(value);
 
@@ -262,5 +262,23 @@ public class RbArrayTests : IDisposable
         array.Resize(10);
 
         Assert.Equal(10, array.Size);
+    }
+
+    [Fact]
+    public void TestLinq()
+    {
+        var array = new String[] {"a", "b", "c", "d"};
+        var rbArray = array.Select(e => e.ToValue(this.state)).ToRbArray(this.state);
+
+        Assert.Equal(4, rbArray.Size);
+        int i = 0;
+        foreach (var val in rbArray)
+        {
+            Assert.True(val.IsString);
+            Assert.Equal(array[i], val.ToStringUnchecked());
+            ++i;
+        }
+        
+        Assert.Equal(4, i);
     }
 }
