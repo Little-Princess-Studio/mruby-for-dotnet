@@ -30,11 +30,11 @@ hello
 ";
 
 // compile code, run and get the result
-using var compiler = RbCompiler.ParserNew(state);
+using var compiler = state.NewCompiler();
 var res = compiler.LoadString(code);
 
 // unbox the ruby value
-var unboxed = state.UnboxString(res);
+var unboxed = res.ToString();
 Assert.Equal("Hello, World!", unboxed);
 
 ```
@@ -42,9 +42,10 @@ Assert.Equal("Hello, World!", unboxed);
 ## How to Build
 
 1. `git submodule update --init --recursive`
-2. `./build-mruby.bat` (for Windows, run this command under `VS x64 Command Prommpt)` or `./build-mruby.sh` for (*nix)
+2. `./build-mruby-win.bat` (for Windows, run this command under `VS x64 Command Prommpt)` or `./build-mruby-linux.sh` 
+   for (*nix) or `./build-mruby-mac.sh` for macos 
 3. `cd ../mruby-shared`
-4. `xmake f-m releasedbg`
+4. `xmake f -m releasedbg`
 5. `xmake`
 6. `cd ../mruby-wrapper`
 7. `dotnet build --configuration Release`
@@ -54,9 +55,9 @@ Assert.Equal("Hello, World!", unboxed);
 
 - [X] 100% Unittest Coverage
 - [X] Nuget package
-- [ ] Unity integral test
 - [X] Support Linux
-- [ ] macOS
+- [X] Support macOS
+- [ ] Unity integral test
 - [ ] Support Android
 - [ ] Support iOS
 - [ ] Documentation
