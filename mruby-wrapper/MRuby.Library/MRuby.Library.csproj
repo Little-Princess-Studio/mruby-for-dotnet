@@ -30,7 +30,7 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <Content Include="libmruby_x64.dll" Condition="Exists('mruby_x64.dll')">
+    <Content Include="libmruby_x64.dll" Condition="Exists('libmruby_x64.dll')">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <PackageCopyToOutput>true</PackageCopyToOutput>
       <pack>true</pack>

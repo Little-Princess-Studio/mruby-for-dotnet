@@ -23,7 +23,7 @@
 
     <ItemGroup>
         <Using Include="Xunit" />
-        <Content Include="mruby_x64.dll" Condition=" '$(OS)' == 'Windows_NT' ">
+        <Content Include="libmruby_x64.dll" Condition=" '$(OS)' == 'Windows_NT' ">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
             <pack>true</pack>
