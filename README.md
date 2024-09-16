@@ -1,6 +1,6 @@
 # mruby-for-dotnet
 
-This is a mruby-wrapper for .NET, current for Windows and will come to other platform soon.
+This is a mruby-wrapper for .NET, current for Windows/Linux/MacOS and will come to other platform soon.
 
 ## How to Install
 
