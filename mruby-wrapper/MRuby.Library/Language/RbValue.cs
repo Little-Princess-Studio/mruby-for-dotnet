@@ -304,6 +304,12 @@ namespace MRuby.Library.Language
             var objPtr = RbHelper.GetRbObjectPtrFromValue(this);
             mrb_define_singleton_method(this.RbState.NativeHandler, objPtr, name, delegateFunc, parameterAspect);
         }
+
+        public  RbValue this[string name]
+        {
+            get => this.GetInstanceVariable(name);
+            set => this.SetInstanceVariable(name, value);
+        }
     }
 
     public static class CSharpValueExtension

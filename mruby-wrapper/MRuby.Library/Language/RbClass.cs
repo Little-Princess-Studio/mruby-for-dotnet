@@ -182,5 +182,11 @@ namespace MRuby.Library.Language
             var result = mrb_class_path(this.RbState.NativeHandler, this.NativeHandler);
             return new RbValue(this.RbState, result);
         }
+
+        public RbValue this[string name]
+        {
+            get => this.GetClassVariable(name);
+            set => this.SetClassVariable(name, value);
+        }
     }
 }

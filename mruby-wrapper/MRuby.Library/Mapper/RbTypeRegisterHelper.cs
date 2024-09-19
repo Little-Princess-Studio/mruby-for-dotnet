@@ -182,26 +182,26 @@ namespace MRuby.Library.Mapper
             var paramInfos = methodInfo.GetParameters();
             if (paramInfos.Length < 2)
             {
-                throw new Exception("Method must have at least 2 parameters");
+                throw new Exception($"Method must have at least 2 parameters for {methodInfo.Name}");
             }
 
             var returnType = methodInfo.ReturnType;
             if (returnType != typeof(RbValue))
             {
-                throw new Exception("Return type must be RbValue");
+                throw new Exception($"Return type must be RbValue for {methodInfo.Name}");
             }
 
             var firstParam = paramInfos[0];
 
             if (firstParam.ParameterType != typeof(RbState))
             {
-                throw new Exception("First parameter must be RbState");
+                throw new Exception($"First parameter must be RbState for {methodInfo.Name}");
             }
 
             var secondParam = paramInfos[1];
             if (secondParam.ParameterType != typeof(RbValue))
             {
-                throw new Exception("Second parameter must be RbValue");
+                throw new Exception($"Second parameter must be RbValue for {methodInfo.Name}");
             }
 
             var argNumToScan = paramInfos.Length;
@@ -222,7 +222,7 @@ namespace MRuby.Library.Mapper
 
                 if (param.ParameterType != typeof(RbValue))
                 {
-                    throw new Exception("Parameter must be RbValue");
+                    throw new Exception($"Parameter must be RbValue for {methodInfo.Name}");
                 }
 
                 ++reqArgCnt;

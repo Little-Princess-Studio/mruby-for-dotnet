@@ -4,6 +4,7 @@ namespace MRuby.Library.Language
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using System.Reflection;
     using System.Runtime.InteropServices;
 
     public struct RbDataClassType
@@ -49,7 +50,7 @@ namespace MRuby.Library.Language
 
         [ExcludeFromCodeCoverage]
         public static UInt32 MRB_ARGS_NONE() => 0U;
-        
+
         public static IntPtr GetIntPtrOfCSharpObject(object? obj) => GCHandle.ToIntPtr(GCHandle.Alloc(obj));
 
         public static void FreeIntPtrOfCSharpObject(IntPtr ptr) => GCHandle.FromIntPtr(ptr).Free();
@@ -114,7 +115,7 @@ namespace MRuby.Library.Language
         internal static bool IsRange(RbValue obj) => mrb_check_type_range(obj.NativeValue);
 
         internal static bool IsFiber(RbValue obj) => mrb_check_type_fiber(obj.NativeValue);
-        
+
         internal static IntPtr GetOrCreateNewRbDataStructPtr(string name, Action<RbState, object?>? releseFn = null)
         {
             if (RbDataStructExist(name))
@@ -152,7 +153,15 @@ namespace MRuby.Library.Language
                 try
                 {
                     var csharpRes = callback(csharpState, csharpSelf, args);
-                    return csharpRes.NativeValue;   
+                    return csharpRes.NativeValue;
+                }
+                catch (TargetInvocationException e)
+                {
+                    var totalMsg = $"Native Exception Message: {e.InnerException?.Message ?? e.Message} \n Stacktrace: {e.InnerException?.StackTrace ?? e.Message}";
+                    var excCls = csharpState.GetClass("Exception");
+                    var exc = csharpState.GenerateExceptionWithNewStr(excCls, totalMsg);
+                    csharpState.Raise(exc);
+                    return csharpState.RbNil.NativeValue;
                 }
                 catch (Exception e)
                 {
@@ -165,7 +174,7 @@ namespace MRuby.Library.Language
             }
             return Lambda;
         }
-        
+
         private static void NativeDataObjectFreeFunc(IntPtr state, IntPtr data) => FreeIntPtrOfCSharpObject(data);
 
         internal static UInt64 GetInternSymbol(RbState state, string str) => mrb_intern_cstr(state.NativeHandler, str);
@@ -242,7 +251,7 @@ namespace MRuby.Library.Language
             var ptr = mrb_get_class_ptr(value.NativeValue);
             return new RbClass(ptr, state);
         }
-        
+
         internal static RbValue GetConst(RbState state, RbValue scope, string name)
         {
             var sym = state.GetInternSymbol(name);
