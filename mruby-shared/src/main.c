@@ -148,3 +148,14 @@ mrb_bool mrb_check_type_range(mrb_value obj) {
 mrb_bool mrb_check_type_fiber(mrb_value obj) {
   return mrb_fiber_p(obj) ? TRUE : FALSE;
 }
+
+MRB_API void mrb_get_raw_bytes_from_string(mrb_value value, char **bytes,
+                                           size_t *len) {
+  if (mrb_string_p(value)) {
+    *bytes = RSTRING_PTR(value);
+    *len = RSTRING_LEN(value);
+  } else {
+    *bytes = NULL;
+    *len = 0;
+  }
+}

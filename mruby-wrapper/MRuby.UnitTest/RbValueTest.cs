@@ -1,5 +1,6 @@
 ﻿namespace MRuby.UnitTest;
 
+using System.Text;
 using Library;
 using Library.Language;
 
@@ -27,15 +28,15 @@ public class RbValueTest
         var @class = state.DefineClass("MyClass", null);
         @class.DefineMethod("initialize", (stat, self, args) =>
         {
-            self.SetInstanceVariable("@a", stat.BoxInt(1));
+            self["@a"] = stat.BoxInt(1);
             return self;
         }, RbHelper.MRB_ARGS_NONE(), out _);
 
         @class.DefineMethod("eql?", (stat, self, args) =>
         {
             var other = args[0];
-            var a = self.GetInstanceVariable("@a");
-            var b = other.GetInstanceVariable("@a");
+            var a = self["@a"];
+            var b = other["@a"];
             return a == b ? stat.RbTrue : stat.RbFalse;
         }, RbHelper.MRB_ARGS_REQ(1), out _);
 
@@ -70,15 +71,15 @@ public class RbValueTest
         var @class = state.DefineClass("MyClass", null);
         @class.DefineMethod("initialize", (stat, self, args) =>
         {
-            self.SetInstanceVariable("@a", args[0]);
+            self["@a"] = args[0];
             return self;
         }, RbHelper.MRB_ARGS_REQ(1), out _);
 
         @class.DefineMethod("eql?", (stat, self, args) =>
         {
             var other = args[0];
-            var a = self.GetInstanceVariable("@a");
-            var b = other.GetInstanceVariable("@a");
+            var a = self["@a"];
+            var b = other["@a"];
             return a == b ? stat.RbTrue : stat.RbFalse;
         }, RbHelper.MRB_ARGS_REQ(1), out _);
 
@@ -192,9 +193,9 @@ public class RbValueTest
         var cls = state.DefineClass("MyClass", null);
         cls.DefineMethod("initialize", (stat, self, args) =>
         {
-            self.SetInstanceVariable("@a", stat.BoxInt(1));
-            self.SetInstanceVariable("@b", stat.BoxInt(2));
-            self.SetInstanceVariable("@c", stat.BoxInt(3));
+            self["@a"] = stat.BoxInt(1);
+            self["@b"] = stat.BoxInt(2);
+            self["@c"] =  stat.BoxInt(3);
             return self;
         }, RbHelper.MRB_ARGS_NONE(), out _);
 
@@ -327,5 +328,21 @@ public class RbValueTest
 
         var hash = hashValue.ToHash();
         Assert.Equal(stringValue, hash[intValue]);
+    }
+
+    [Fact]
+    void TestGetRawBytesDataFromRubyString()
+    {
+        using var state = Ruby.Open();
+        var str = "1234567890".ToValue(state);
+        var bytes = RbHelper.GetRawBytesFromRbStringObject(str);
+
+        Assert.Equal(10, bytes.Length);
+        // bytes to string
+        Assert.Equal("1234567890", Encoding.UTF8.GetString(bytes));
+        
+        var intObj = 123.ToValue(state);
+        var intBytes = RbHelper.GetRawBytesFromRbStringObject(intObj);
+        Assert.Empty(intBytes);
     }
 }

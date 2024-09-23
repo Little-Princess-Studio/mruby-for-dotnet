@@ -16,7 +16,7 @@ namespace MRuby.Library.Language
         private RbHash(RbValue value)
         {
             this.Value = value;
-            this.State = value.RbState;
+            this.State = value.State;
         }
 
         public static RbHash FromHashObject(RbValue value)

@@ -70,3 +70,5 @@ MRB_API mrb_bool mrb_check_type_sclass(mrb_value obj);
 MRB_API mrb_bool mrb_check_type_proc(mrb_value obj);
 MRB_API mrb_bool mrb_check_type_range(mrb_value obj);
 MRB_API mrb_bool mrb_check_type_fiber(mrb_value obj);
+
+MRB_API void mrb_get_raw_bytes_from_string(mrb_value value, char **bytes, size_t *len);

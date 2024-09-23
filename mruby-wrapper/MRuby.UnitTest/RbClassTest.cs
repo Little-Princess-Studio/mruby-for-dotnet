@@ -140,11 +140,11 @@ public class RbClassTest
             return boxedRes;
         }, RbHelper.MRB_ARGS_REQ(3), out _);
 
-        class2.SetClassVariable("@@cls_var", state.BoxInt(123));
+        class2["@@cls_var"] = state.BoxInt(123);
 
         Assert.True(class2.ClassVariableDefined("@@cls_var"));
 
-        var cv = class2.GetClassVariable("@@cls_var");
+        var cv = class2["@@cls_var"];
         var unboxedInt = state.UnboxInt(cv);
         Assert.True(123 == unboxedInt);
 
@@ -192,14 +192,14 @@ public class RbClassTest
             var str1 = stat.UnboxString(args[0]);
             var str2 = stat.UnboxString(args[1]);
 
-            var cv = mod.GetClassVariable("@@mod_var");
+            var cv = mod["@@mod_var"];
             var str3 = stat.UnboxString(cv);
 
             var boxed = stat.BoxString($"{str1} - {str2} - {str3}");
             return boxed;
         }, RbHelper.MRB_ARGS_REQ(2), out _);
 
-        module.SetClassVariable("@@mod_var", state.BoxString(string3));
+        module["@@mod_var"] = state.BoxString(string3);
 
         var callRes = module.CallMethod("test_with_string", state.BoxString(string1), state.BoxString(string2));
         var unboxedRes = state.UnboxString(callRes);

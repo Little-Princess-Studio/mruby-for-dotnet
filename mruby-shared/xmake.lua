@@ -4,33 +4,13 @@ local os_name = os.host()
 local mruby_dir = "../mruby"
 
 function common_settings()
+    set_arch("x64")
     set_kind("shared")
     add_files("src/*.c")
-
-    if os_name == "windows" then
-        add_files("tools/mruby.def")
-    end
 
     add_includedirs("src/", mruby_dir .. "/build/host/include")
     add_defines("MRB_CORE", "MRB_LIB")
     add_defines("MRB_INT64")
-
-    if os_name == "windows" then
-        set_basename("libmruby_x64")
-        add_defines("MRB_BUILD_AS_DLL")
-        set_runtimes("MD")
-        add_links("Ws2_32.lib",
-            mruby_dir .. "/build/host/lib/libmruby.lib",
-            mruby_dir .. "/build/host/lib/libmruby_core.lib")
-    elseif os_name == "linux" then
-        set_basename("mruby_x64")
-        add_links(
-            mruby_dir .. "/build/host/lib/libmruby.a",
-            mruby_dir .. "/build/host/lib/libmruby_core.a")
-    elseif os_name ~= "macosx" then
-        -- error: not support platform
-        print("unsupported platform")
-    end
 end
 
 function copy_dll_to_target(target)
@@ -59,15 +39,30 @@ function after_build_macos(target)
     copy_dylib_to_target(path.join(output_dir, "libmruby_x64.dylib"), os)
 end
 
-if os_name == "macosx" then
+target("libmruby_x64")
+if os_name == "windows" then
+    common_settings()
+
+    add_defines("MRB_BUILD_AS_DLL")
+    set_basename("libmruby_x64")
+    add_files("tools/mruby_x64.def")
+    set_runtimes("MD")
+    add_links("Ws2_32.lib",
+        mruby_dir .. "/build/host/lib/libmruby.lib",
+        mruby_dir .. "/build/host/lib/libmruby_core.lib")
+    after_build(copy_dll_to_target)
+elseif os_name == "linux" then
+    common_settings()
+
+    set_basename("mruby_x64")
+    add_links(
+        mruby_dir .. "/build/host/lib/libmruby.a",
+        mruby_dir .. "/build/host/lib/libmruby_core.a")
+    after_build(copy_dll_to_target)
+elseif os_name == "macosx" then
     -- Build for x86_64
     target("mruby_mac_x86_64")
-        set_kind("shared")
-        add_files("src/*.c")
-
-        add_includedirs("src/", mruby_dir .. "/build/host/include")
-        add_defines("MRB_CORE", "MRB_LIB")
-        add_defines("MRB_INT64")
+        common_settings()
 
         set_basename("mruby_x86_64")
         set_arch("x86_64")
@@ -76,12 +71,7 @@ if os_name == "macosx" then
             mruby_dir .. "/build/x86_64/lib/libmruby_core.a")
 
     target("mruby_mac_arm64")
-        set_kind("shared")
-        add_files("src/*.c")
-
-        add_includedirs("src/", mruby_dir .. "/build/host/include")
-        add_defines("MRB_CORE", "MRB_LIB")
-        add_defines("MRB_INT64")
+        common_settings()
 
         set_basename("mruby_arm64")
         set_arch("arm64")
@@ -90,15 +80,13 @@ if os_name == "macosx" then
             mruby_dir .. "/build/arm64/lib/libmruby_core.a")
     
     -- Combine into a universal binary
-    target("mruby_universal")
+    target("libmruby_x64")
         set_kind("phony")
         add_deps("mruby_mac_x86_64", "mruby_mac_arm64")
         after_build(after_build_macos)
 else
-    target("mruby_x64")
-        set_arch("x64")
-        common_settings()
-        after_build(copy_dll_to_target)
+    -- error: not support platform
+    print("unsupported platform")
 end
 
 -- target("mruby_x86")
