@@ -66,7 +66,7 @@
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern UInt64 mrb_protect_error(IntPtr mrb,  [MarshalAs(UnmanagedType.FunctionPtr)] NativeProtectErrorFunc body, IntPtr userdata, [MarshalAs(UnmanagedType.U1)] ref Boolean error);
 
-        // MRB_API mrb_value mrb_protect(mrb_state *mrb, mrb_func_t body, mrb_value data, mrb_bool *state);
+        // MRB_API mrb_value mrb_protect(mrb_state *mrb, mrb_func_t body, mrb_value data, mrb_bool *State);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern UInt64 mrb_protect(IntPtr mrb, [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc body, UInt64 data, [MarshalAs(UnmanagedType.U1)] ref Boolean state);
 

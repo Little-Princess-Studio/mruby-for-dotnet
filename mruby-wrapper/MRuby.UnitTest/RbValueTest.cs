@@ -1,5 +1,6 @@
 ﻿namespace MRuby.UnitTest;
 
+using System.Text;
 using Library;
 using Library.Language;
 
@@ -327,5 +328,21 @@ public class RbValueTest
 
         var hash = hashValue.ToHash();
         Assert.Equal(stringValue, hash[intValue]);
+    }
+
+    [Fact]
+    void TestGetRawBytesDataFromRubyString()
+    {
+        using var state = Ruby.Open();
+        var str = "1234567890".ToValue(state);
+        var bytes = RbHelper.GetRawBytesFromRbStringObject(str);
+
+        Assert.Equal(10, bytes.Length);
+        // bytes to string
+        Assert.Equal("1234567890", Encoding.UTF8.GetString(bytes));
+        
+        var intObj = 123.ToValue(state);
+        var intBytes = RbHelper.GetRawBytesFromRbStringObject(intObj);
+        Assert.Empty(intBytes);
     }
 }

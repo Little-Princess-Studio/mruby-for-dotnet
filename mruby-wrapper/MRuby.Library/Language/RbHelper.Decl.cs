@@ -155,5 +155,9 @@ namespace MRuby.Library.Language
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
         [return: MarshalAs(UnmanagedType.U1)]
         private static extern bool mrb_check_type_fiber(UInt64 obj);
+        
+        // MRB_API void mrb_get_raw_bytes_from_string(mrb_value value, const char **bytes, size_t *len);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        private static extern void mrb_get_raw_bytes_from_string(UInt64 value, ref IntPtr bytes, ref UInt64 len);
     }
 }

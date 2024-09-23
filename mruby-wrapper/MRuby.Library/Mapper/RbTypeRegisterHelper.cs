@@ -195,7 +195,7 @@ namespace MRuby.Library.Mapper
 
             if (firstParam.ParameterType != typeof(RbState))
             {
-                throw new Exception($"First parameter must be RbState for {methodInfo.Name}");
+                throw new Exception($"First parameter must be State for {methodInfo.Name}");
             }
 
             var secondParam = paramInfos[1];
@@ -229,10 +229,10 @@ namespace MRuby.Library.Mapper
             }
 
             // valid method signatures:
-            // RbValue Foo(RbState state, RbValue self)
-            // RbValue Foo(RbState state, RbValue self, RbValue arg0) 
-            // RbValue Foo(RbState state, RbValue self, RbValue arg0, RbValue[] varArgs)
-            // RbValue Foo(RbState state, RbValue self, RbValue[] varArgs)
+            // RbValue Foo(State State, RbValue self)
+            // RbValue Foo(State State, RbValue self, RbValue arg0) 
+            // RbValue Foo(State State, RbValue self, RbValue arg0, RbValue[] varArgs)
+            // RbValue Foo(State State, RbValue self, RbValue[] varArgs)
 
             if (reqArgCnt == 0)
             {

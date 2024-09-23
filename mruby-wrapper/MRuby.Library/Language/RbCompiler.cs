@@ -6,8 +6,8 @@ namespace MRuby.Library.Language
 
     public struct RbProc
     {
-        internal readonly RbState State;
-        internal readonly IntPtr NativeHandler;
+        public readonly RbState State;
+        public  readonly IntPtr NativeHandler;
 
         public RbProc(RbState state, IntPtr nativeHandler)
         {
@@ -18,28 +18,28 @@ namespace MRuby.Library.Language
         public static RbProc FromRbValue(RbValue value)
         {
             var ptr = RbHelper.GetRbObjectPtrFromValue(value);
-            return new RbProc(value.RbState, ptr);
+            return new RbProc(value.State, ptr);
         }
     }
 
     public struct RbContext : IDisposable
     {
-        private readonly RbState state;
-        internal IntPtr NativeHandler;
+        public readonly RbState State;
+        public IntPtr NativeHandler;
 
         public RbContext(IntPtr nativeHandler, RbState state)
         {
             this.NativeHandler = nativeHandler;
-            this.state = state;
+            this.State = state;
         }
 
-        public string? SetFilename(string filename) => RbCompiler.SetContextFileName(this.state, this, filename);
+        public string? SetFilename(string filename) => RbCompiler.SetContextFileName(this.State, this, filename);
 
         public void Dispose()
         {
             if (this.NativeHandler != IntPtr.Zero)
             {
-                RbCompiler.FreeContext(this.state, this);
+                RbCompiler.FreeContext(this.State, this);
                 this.NativeHandler = IntPtr.Zero;
             }
         }
@@ -47,13 +47,13 @@ namespace MRuby.Library.Language
 
     public partial class RbCompiler : IDisposable
     {
-        private readonly RbState rbState;
-        private IntPtr nativeHandler;
+        public readonly RbState State;
+        public IntPtr NativeHandler;
 
-        private RbCompiler(RbState rbState, IntPtr nativeHandler)
+        private RbCompiler(RbState state, IntPtr nativeHandler)
         {
-            this.rbState = rbState;
-            this.nativeHandler = nativeHandler;
+            this.State = state;
+            this.NativeHandler = nativeHandler;
         }
 
         internal static RbCompiler ParseString(RbState mrb, string code, RbContext ccontext)
@@ -82,55 +82,55 @@ namespace MRuby.Library.Language
 
         internal static void FreeContext(RbState mrb, RbContext context) => mrb_ccontext_free(mrb.NativeHandler, context.NativeHandler);
 
-        private void Free() => mrb_parser_free(this.nativeHandler);
+        private void Free() => mrb_parser_free(this.NativeHandler);
 
-        // public void Parse(RbContext ccontext) => mrb_parser_parse(this.nativeHandler, ccontext.NativeHandler);
+        // public void Parse(RbContext ccontext) => mrb_parser_parse(this.NativeHandler, ccontext.NativeHandler);
 
-        public void SetFilename(string filename) => mrb_parser_set_filename(this.nativeHandler, filename);
+        public void SetFilename(string filename) => mrb_parser_set_filename(this.NativeHandler, filename);
 
         public string GetFilename(UInt16 idx)
         {
-            var sym = mrb_parser_get_filename(this.nativeHandler, idx);
-            var filename = this.rbState.GetSymbolName(sym);
+            var sym = mrb_parser_get_filename(this.NativeHandler, idx);
+            var filename = this.State.GetSymbolName(sym);
             return filename!;
         }
 
         public RbProc GenerateCode()
         {
-            var nativeProc = mrb_generate_code(this.rbState.NativeHandler, this.nativeHandler);
-            return new RbProc(this.rbState, nativeProc);
+            var nativeProc = mrb_generate_code(this.State.NativeHandler, this.NativeHandler);
+            return new RbProc(this.State, nativeProc);
         }
 
         // public RbValue LoadAndRun(RbContext ccontext)
         // {
-        //     var nativeVal = mrb_load_exec(this.rbState.NativeHandler, this.nativeHandler, ccontext.NativeHandler);
-        //     return new RbValue(this.rbState, nativeVal);
+        //     var nativeVal = mrb_load_exec(this.State.NativeHandler, this.NativeHandler, ccontext.NativeHandler);
+        //     return new RbValue(this.State, nativeVal);
         // }
 
         public RbValue LoadString(string code)
         {
-            var nativeVal = mrb_load_string(this.rbState.NativeHandler, code);
-            return new RbValue(this.rbState, nativeVal);
+            var nativeVal = mrb_load_string(this.State.NativeHandler, code);
+            return new RbValue(this.State, nativeVal);
         }
 
         public RbValue LoadString(string code, RbContext ccontext)
         {
-            var nativeVal = mrb_load_string_cxt(this.rbState.NativeHandler, code, ccontext.NativeHandler);
-            return new RbValue(this.rbState, nativeVal);
+            var nativeVal = mrb_load_string_cxt(this.State.NativeHandler, code, ccontext.NativeHandler);
+            return new RbValue(this.State, nativeVal);
         }
 
         public RbValue TopRun(RbProc proc, RbValue self, Int64 stackKeep)
         {
-            var nativeVal = mrb_top_run(this.rbState.NativeHandler, proc.NativeHandler, self.NativeValue, stackKeep);
-            return new RbValue(this.rbState, nativeVal);
+            var nativeVal = mrb_top_run(this.State.NativeHandler, proc.NativeHandler, self.NativeValue, stackKeep);
+            return new RbValue(this.State, nativeVal);
         }
 
         public void Dispose()
         {
-            if (this.nativeHandler != IntPtr.Zero)
+            if (this.NativeHandler != IntPtr.Zero)
             {
                 this.Free();
-                this.nativeHandler = IntPtr.Zero;
+                this.NativeHandler = IntPtr.Zero;
             }
         }
     }

@@ -61,6 +61,28 @@ namespace MRuby.Library.Language
 
         public static IntPtr GetRbObjectPtrFromValue(UInt64 nativeHandler) => mrb_value_to_obj_ptr(nativeHandler);
 
+        public static byte[] GetRawBytesFromRbStringObject(RbValue value)
+        {
+            unsafe
+            {
+                IntPtr bytes = IntPtr.Zero;
+                ulong length = 0;
+                mrb_get_raw_bytes_from_string(value.NativeValue, ref bytes, ref length);
+
+                if (length <= 0)
+                {
+                    return Array.Empty<byte>();
+                }
+
+                var result = new byte[length];
+                for (ulong i = 0; i < length; ++i)
+                {
+                    result[i] = ((byte*)bytes)[i];
+                }
+                return result;
+            }
+        }
+
         private static Dictionary<string, (RbDataClassType, IntPtr)> RbDataClassMapping { get; } = new Dictionary<string, (RbDataClassType, IntPtr)>();
 
         private static bool RbDataStructExist(string name) => RbDataClassMapping.ContainsKey(name);
@@ -222,9 +244,9 @@ namespace MRuby.Library.Language
             return Marshal.PtrToStringAnsi(ptr);
         }
 
-        // internal static string? GetSymbolDump(RbState state, UInt64 sym)
+        // internal static string? GetSymbolDump(State State, UInt64 sym)
         // {
-        //     var ptr = mrb_sym_dump(state.NativeHandler, sym);
+        //     var ptr = mrb_sym_dump(State.NativeHandler, sym);
         //     return Marshal.PtrToStringAnsi(ptr);
         // }
 

@@ -16,7 +16,7 @@ namespace MRuby.Library.Language
         private RbArray(RbValue value)
         {
             this.Value = value;
-            this.State = value.RbState;
+            this.State = value.State;
         }
 
         internal static RbArray FromArrayObject(RbValue value)
