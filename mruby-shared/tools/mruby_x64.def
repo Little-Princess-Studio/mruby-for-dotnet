@@ -343,3 +343,6 @@ EXPORTS
 	mrb_true_value_boxing
 	mrb_false_value_boxing
 	mrb_undef_value_boxing
+	mrb_obj_instance_variables
+	mrb_mod_cv_get
+	mrb_mod_cv_defined
