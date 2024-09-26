@@ -31,7 +31,7 @@ namespace MRuby.Library.Language
 
         // MRB_API struct mrb_parser_state* mrb_parse_string(mrb_state*,const char*,mrb_ccontext*);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
-        internal static extern IntPtr mrb_parse_string(IntPtr mrb, [MarshalAs(UnmanagedType.LPStr)] string code, IntPtr ccontext);
+        internal static extern IntPtr mrb_parse_string(IntPtr mrb, [MarshalAs(UnmanagedType.LPUTF8Str)] string code, IntPtr ccontext);
 
         // MRB_API struct RProc* mrb_generate_code(mrb_state*, struct mrb_parser_state*);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
@@ -43,11 +43,11 @@ namespace MRuby.Library.Language
 
         // MRB_API mrb_value mrb_load_string(mrb_state *mrb, const char *s);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
-        internal static extern UInt64 mrb_load_string(IntPtr mrb, [MarshalAs(UnmanagedType.LPStr)] string code);
+        internal static extern UInt64 mrb_load_string(IntPtr mrb, [MarshalAs(UnmanagedType.LPUTF8Str)] string code);
 
         // MRB_API mrb_value mrb_load_string_cxt(mrb_state *mrb, const char *s, mrb_ccontext *cxt);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
-        internal static extern UInt64 mrb_load_string_cxt(IntPtr mrb, [MarshalAs(UnmanagedType.LPStr)] string code, IntPtr ccontext);
+        internal static extern UInt64 mrb_load_string_cxt(IntPtr mrb, [MarshalAs(UnmanagedType.LPUTF8Str)] string code, IntPtr ccontext);
 
         // MRB_API mrb_value mrb_top_run(mrb_state *mrb, const struct RProc *proc, mrb_value self, mrb_int stack_keep);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]

@@ -258,7 +258,7 @@ namespace MRuby.Library.Language
 
         public UInt64 UnboxSymbol(RbValue value) => mrb_symbol_value_unboxing(value.NativeValue);
 
-        public string? UnboxString(RbValue value) => Marshal.PtrToStringAnsi(mrb_string_value_unboxing(this.NativeHandler, value.NativeValue));
+        public string? UnboxString(RbValue value) => Marshal.PtrToStringUTF8(mrb_string_value_unboxing(this.NativeHandler, value.NativeValue));
 
         // public Boolean IsInstanceVariableNameSymP(UInt64 sym) => mrb_iv_name_sym_p(this.NativeHandler, sym);
         //

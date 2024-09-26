@@ -27,7 +27,7 @@ MRuby::Build.new do |conf|
     #   cc.compile_options = %Q[%{flags} -MMD -o %{outfile} -c %{infile}]
     # end
     conf.cc do cc
-      cc.defines = %w(MRB_CORE MRB_INT64 MRB_LIB)
+      cc.defines = %w(MRB_CORE MRB_INT64 MRB_UTF8_STRING MRB_LIB)
     end
 
     # mrbc settings
