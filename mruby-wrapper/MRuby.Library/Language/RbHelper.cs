@@ -83,6 +83,12 @@ namespace MRuby.Library.Language
             }
         }
 
+        public static RbValue BuildRbStringObjectFromRawBytes(RbState state, byte[] bytes)
+        {
+            var v = mrb_str_new(state.NativeHandler, bytes, bytes.Length);
+            return new RbValue(state, v);
+        }
+
         private static Dictionary<string, (RbDataClassType, IntPtr)> RbDataClassMapping { get; } = new Dictionary<string, (RbDataClassType, IntPtr)>();
 
         private static bool RbDataStructExist(string name) => RbDataClassMapping.ContainsKey(name);

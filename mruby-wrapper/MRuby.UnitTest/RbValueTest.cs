@@ -349,4 +349,16 @@ public class RbValueTest
         var intBytes = RbHelper.GetRawBytesFromRbStringObject(intObj);
         Assert.Empty(intBytes);
     }
+
+    [Fact]
+    void TestBuildRbStringObjectFromRawBytes()
+    {
+        using var state = Ruby.Open();
+        var bytes = Encoding.UTF8.GetBytes("1234567890\0123456789");
+        var strObj = RbHelper.BuildRbStringObjectFromRawBytes(state, bytes);
+        
+        var output = RbHelper.GetRawBytesFromRbStringObject(strObj);
+        
+        Assert.Equal(bytes, output);
+    }
 }
