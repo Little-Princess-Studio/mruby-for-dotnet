@@ -5,39 +5,39 @@ namespace MRuby.Library.Language
 
     public partial struct RbClass
     { 
-        // MRB_API void mrb_define_method(mrb_state *mrb, struct RClass *cla, const char *name, mrb_func_t func, mrb_aspec aspec);
+        // MRB_API void mrb_define_method_id(mrb_state *mrb, struct RClass *cla, mrb_sym name, mrb_func_t func, mrb_aspec aspec);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
-        private static extern void mrb_define_method(
+        private static extern void mrb_define_method_id(
             IntPtr mrb,
             IntPtr @class,
-            [MarshalAs(UnmanagedType.LPStr)] string name,
+            UInt64 name,
             [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc nativeMethod,
             uint parameterAspect);
 
-        // MRB_API void mrb_define_class_method(mrb_state *mrb, struct RClass *cla, const char *name, mrb_func_t fun, mrb_aspec aspec);
+        // MRB_API void mrb_define_class_method_id(mrb_state *mrb, struct RClass *cla, mrb_sym name, mrb_func_t fun, mrb_aspec aspec);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
-        private static extern void mrb_define_class_method(
+        private static extern void mrb_define_class_method_id(
             IntPtr mrb,
             IntPtr @class,
-            [MarshalAs(UnmanagedType.LPStr)] string name,
+            UInt64 name,
             [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc nativeMethod,
             uint parameterAspect);
         
-        // MRB_API void mrb_define_module_function(mrb_state *mrb, struct RClass *cla, const char *name, mrb_func_t fun, mrb_aspec aspec);
+        // MRB_API void mrb_define_module_function_id(mrb_state *mrb, struct RClass *cla, mrb_sym name, mrb_func_t fun, mrb_aspec aspec);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
-        private static extern void mrb_define_module_function(
+        private static extern void mrb_define_module_function_id(
             IntPtr mrb,
             IntPtr @class,
-            [MarshalAs(UnmanagedType.LPStr)] string name,
+            UInt64 name,
             [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc nativeMethod,
             uint parameterAspect);
 
-        // MRB_API void mrb_define_const(mrb_state* mrb, struct RClass* cla, const char *name, mrb_value val);
+        // MRB_API void mrb_define_const_id(mrb_state* mrb, struct RClass* cla, mrb_sym name, mrb_value val);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
-        private static extern void mrb_define_const(
+        private static extern void mrb_define_const_id(
             IntPtr mrb,
             IntPtr @class,
-            [MarshalAs(UnmanagedType.LPStr)] string name,
+            UInt64 name,
             UInt64 value);
 
         // MRB_API mrb_value mrb_obj_new(mrb_state *mrb, struct RClass *c, mrb_int argc, const mrb_value *argv);
@@ -52,27 +52,19 @@ namespace MRuby.Library.Language
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern void mrb_prepend_module(IntPtr mrb, IntPtr cla, IntPtr prepended);
 
-        // MRB_API void mrb_undef_method(mrb_state *mrb, struct RClass *cla, const char *name);
+        // MRB_API void mrb_undef_method_id(mrb_state *mrb, struct RClass *cla, mrb_sym *name);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern void mrb_undef_method(IntPtr mrb, IntPtr cla, [MarshalAs(UnmanagedType.LPStr)] string name);
+        private static extern void mrb_undef_method_id(IntPtr mrb, IntPtr cla, UInt64 name);
 
-        // MRB_API void mrb_undef_class_method(mrb_state *mrb, struct RClass *cls, const char *name);
+        // MRB_API void mrb_undef_class_method_id(mrb_state *mrb, struct RClass *cls, const char *name);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern void mrb_undef_class_method(IntPtr mrb, IntPtr cla, [MarshalAs(UnmanagedType.LPStr)] string name);
+        private static extern void mrb_undef_class_method_id(IntPtr mrb, IntPtr cla, UInt64 name);
         
         // MRB_API mrb_bool mrb_obj_respond_to(mrb_state *mrb, struct RClass* c, mrb_sym mid);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.U1)]
         private static extern Boolean mrb_obj_respond_to(IntPtr mrb, IntPtr c, UInt64 mid);
         
-        // MRB_API void mrb_define_alias(mrb_state *mrb, struct RClass *c, const char *a, const char *b);
-        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
-        private static extern void mrb_define_alias(
-            IntPtr mrb,
-            IntPtr @class,
-            [MarshalAs(UnmanagedType.LPStr)] string a,
-            [MarshalAs(UnmanagedType.LPStr)] string b);
-
         // MRB_API void mrb_define_alias_id(mrb_state *mrb, struct RClass *c, mrb_sym a, mrb_sym b);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
         private static extern void mrb_define_alias_id(IntPtr mrb, IntPtr @class, UInt64 a, UInt64 b);

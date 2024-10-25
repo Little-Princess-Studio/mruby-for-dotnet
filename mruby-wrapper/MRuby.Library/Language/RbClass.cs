@@ -44,31 +44,67 @@ namespace MRuby.Library.Language
 
         public void DefineMethod(string name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
         {
+            var sym = this.State.GetInternSymbol(name);
+            this.DefineMethod(sym, callback, parameterAspect, out delegateFunc);
+        }
+        
+        public void DefineMethod(UInt64 name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
+        {
             delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
-            mrb_define_method(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
+            mrb_define_method_id(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
         }
 
         public void DefineClassMethod(string name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
         {
+            var sym = this.State.GetInternSymbol(name);
+            this.DefineClassMethod(sym, callback, parameterAspect, out delegateFunc);
+        }
+        
+        public void DefineClassMethod(UInt64 name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
+        {
             delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
-            mrb_define_class_method(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
+            mrb_define_class_method_id(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
         }
 
         public void DefineModuleMethod(string name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
         {
+            var sym = this.State.GetInternSymbol(name);
+            this.DefineModuleMethod(sym, callback, parameterAspect, out delegateFunc);
+        }
+        
+        public void DefineModuleMethod(UInt64 name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
+        {
             delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
-            mrb_define_module_function(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
+            mrb_define_module_function_id(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
         }
 
         public void DefineConstant(string name, RbValue value)
-            => mrb_define_const(this.State.NativeHandler, this.NativeHandler, name, value.NativeValue);
+        {
+            var sym = this.State.GetInternSymbol(name);
+            this.DefineConstant(sym, value);
+        }
+        
+        public void DefineConstant(UInt64 name, RbValue value)
+            => mrb_define_const_id(this.State.NativeHandler, this.NativeHandler, name, value.NativeValue);
 
         public void UndefMethod(string name)
-            => mrb_undef_method(this.State.NativeHandler, this.NativeHandler, name);
+        {
+            var sym = this.State.GetInternSymbol(name);
+            this.UndefMethod(sym);
+        }
 
+        public void UndefMethod(UInt64 name)
+            => mrb_undef_method_id(this.State.NativeHandler, this.NativeHandler, name);
+        
         public void UndefClassMethod(string name)
-            => mrb_undef_class_method(this.State.NativeHandler, this.NativeHandler, name);
+        {
+            var sym = this.State.GetInternSymbol(name);
+            this.UndefClassMethod(sym);
+        }
 
+        public void UndefClassMethod(UInt64 name)
+            => mrb_undef_method_id(this.State.NativeHandler, this.NativeHandler, name);
+        
         public RbValue NewObject(params RbValue[] args)
         {
             int length = args.Length;
@@ -124,7 +160,9 @@ namespace MRuby.Library.Language
 
         public void DefineAlias(string a, string b)
         {
-            mrb_define_alias(this.State.NativeHandler, this.NativeHandler, a, b);
+            var aSym = this.State.GetInternSymbol(a);
+            var bSym = this.State.GetInternSymbol(b);
+            mrb_define_alias_id(this.State.NativeHandler, this.NativeHandler, aSym, bSym);
         }
 
         public void DefineAliasId(UInt64 a, UInt64 b)
