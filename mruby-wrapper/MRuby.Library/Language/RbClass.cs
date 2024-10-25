@@ -103,7 +103,7 @@ namespace MRuby.Library.Language
         }
 
         public void UndefClassMethod(UInt64 name)
-            => mrb_undef_method_id(this.State.NativeHandler, this.NativeHandler, name);
+            => mrb_undef_class_method_id(this.State.NativeHandler, this.NativeHandler, name);
         
         public RbValue NewObject(params RbValue[] args)
         {
