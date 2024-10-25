@@ -61,13 +61,25 @@ namespace MRuby.Library.Language
 
         public RbClass DefineClassUnder(RbClass outer, string name, RbClass? super)
         {
-            var classPtr = mrb_define_class_under(this.NativeHandler, outer.NativeHandler, name, super?.NativeHandler ?? IntPtr.Zero);
+            var sym = RbHelper.GetInternSymbol(this, name);
+            return this.DefineClassUnder(outer, sym, super);
+        }
+        
+        public RbClass DefineClassUnder(RbClass outer, UInt64 sym, RbClass? super)
+        {
+            var classPtr = mrb_define_class_under_id(this.NativeHandler, outer.NativeHandler, sym, super?.NativeHandler ?? IntPtr.Zero);
             return new RbClass(classPtr, this);
         }
 
         public RbClass DefineModuleUnder(RbClass outer, string name)
         {
-            var modulePtr = mrb_define_module_under(this.NativeHandler, outer.NativeHandler, name);
+            var sym = RbHelper.GetInternSymbol(this, name);
+            return this.DefineModuleUnder(outer, sym);
+        }
+        
+        public RbClass DefineModuleUnder(RbClass outer, UInt64 sym)
+        {
+            var modulePtr = mrb_define_module_under_id(this.NativeHandler, outer.NativeHandler, sym);
             return new RbClass(modulePtr, this);
         }
 
@@ -101,21 +113,45 @@ namespace MRuby.Library.Language
 
         public RbClass DefineClass(string name, RbClass? @class)
         {
-            var classPtr = mrb_define_class(this.NativeHandler, name, @class?.NativeHandler ?? IntPtr.Zero);
-            return new RbClass(classPtr, this);
+            var sym = RbHelper.GetInternSymbol(this, name);
+            return this.DefineClass(sym, @class);
         }
 
+        public RbClass DefineClass(UInt64 sym, RbClass? @class)
+        {
+            var classPtr = mrb_define_class_id(this.NativeHandler, sym, @class?.NativeHandler ?? IntPtr.Zero);
+            return new RbClass(classPtr, this);
+        }
+        
         public RbClass DefineModule(string name)
         {
-            var modulePtr = mrb_define_module(this.NativeHandler, name);
+            var sym = RbHelper.GetInternSymbol(this, name);
+            return this.DefineModule(sym);
+        }
+        
+        public RbClass DefineModule(UInt64 sym)
+        {
+            var modulePtr = mrb_define_module_id(this.NativeHandler, sym);
             return new RbClass(modulePtr, this);
         }
 
-        public bool ClassDefined(string name) => mrb_class_defined(this.NativeHandler, name);
+        public bool ClassDefined(string name)
+        {
+            var sym = RbHelper.GetInternSymbol(this, name);
+            return this.ClassDefined(sym);
+        }
+        
+        public bool ClassDefined(UInt64 name) => mrb_class_defined_id(this.NativeHandler, name);
 
         public RbClass GetClass(string name)
         {
-            var classPtr = mrb_class_get(this.NativeHandler, name);
+            var sym = RbHelper.GetInternSymbol(this, name);
+            return this.GetClass(sym);
+        }
+        
+        public RbClass GetClass(UInt64 name)
+        {
+            var classPtr = mrb_class_get_id(this.NativeHandler, name);
             return new RbClass(classPtr, this);
         }
 
@@ -127,23 +163,47 @@ namespace MRuby.Library.Language
 
         public RbValue TopSelf => new RbValue(this, mrb_top_self(this.NativeHandler));
 
-        public Boolean ClassDefinedUnder(RbClass outer, string name) => mrb_class_defined_under(this.NativeHandler, outer.NativeHandler, name);
+        public Boolean ClassDefinedUnder(RbClass outer, string name)
+        {
+            var sym = RbHelper.GetInternSymbol(this, name);
+            return this.ClassDefinedUnder(outer, sym);
+        }
 
+        public Boolean ClassDefinedUnder(RbClass outer, UInt64 name) => mrb_class_defined_under_id(this.NativeHandler, outer.NativeHandler, name);
+        
         public RbClass GetClassUnder(RbClass outer, string name)
         {
-            var classPtr = mrb_class_get_under(this.NativeHandler, outer.NativeHandler, name);
+            var sym = RbHelper.GetInternSymbol(this, name);
+            return this.GetClassUnder(outer, sym);
+        }
+
+        public RbClass GetClassUnder(RbClass outer, UInt64 name)
+        {
+            var classPtr = mrb_class_get_under_id(this.NativeHandler, outer.NativeHandler, name);
             return new RbClass(classPtr, this);
         }
 
         public RbClass GetModuleUnder(RbClass outer, string name)
         {
-            var classPtr = mrb_module_get_under(this.NativeHandler, outer.NativeHandler, name);
+            var sym = RbHelper.GetInternSymbol(this, name);
+            return this.GetModuleUnder(outer, sym);
+        }
+
+        public RbClass GetModuleUnder(RbClass outer, UInt64 name)
+        {
+            var classPtr = mrb_module_get_under_id(this.NativeHandler, outer.NativeHandler, name);
             return new RbClass(classPtr, this);
         }
 
         public RbClass GetModule(string name)
         {
-            var modulePtr = mrb_module_get(this.NativeHandler, name);
+            var sym = RbHelper.GetInternSymbol(this, name);
+            return this.GetModule(sym);
+        }
+        
+        public RbClass GetModule(UInt64 name)
+        {
+            var modulePtr = mrb_module_get_id(this.NativeHandler, name);
             return new RbClass(modulePtr, this);
         }
 

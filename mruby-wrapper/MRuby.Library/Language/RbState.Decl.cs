@@ -13,31 +13,31 @@ namespace MRuby.Library.Language
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern IntPtr mrb_module_new(IntPtr mrb);
 
-        // MRB_API struct RClass *mrb_define_class(mrb_state *mrb, const char *name, struct RClass *super);
+        // MRB_API struct RClass *mrb_define_class_id(mrb_state *mrb, mrb_sym name, struct RClass *super);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_define_class(
+        private static extern IntPtr mrb_define_class_id(
             IntPtr mrb,
-            [MarshalAs(UnmanagedType.LPStr)] string name,
+            UInt64 name,
             IntPtr @class);
 
-        // MRB_API struct RClass *mrb_define_module(mrb_state *mrb, const char *name);
+        // MRB_API struct RClass *mrb_define_module(mrb_state *mrb, mrb_sym name);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_define_module(
+        private static extern IntPtr mrb_define_module_id(
             IntPtr state,
-            [MarshalAs(UnmanagedType.LPStr)] string name);
+            UInt64 name);
 
-        // MRB_API mrb_bool mrb_class_defined(mrb_state *mrb, const char *name);
+        // MRB_API mrb_bool mrb_class_defined(mrb_state *mrb, mrb_sym name);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.U1)]
-        private static extern Boolean mrb_class_defined(
+        private static extern Boolean mrb_class_defined_id(
             IntPtr mrb,
-            [MarshalAs(UnmanagedType.LPStr)] string name);
+            UInt64 name);
 
-        // MRB_API struct RClass* mrb_class_get(mrb_state *mrb, const char *name);
+        // MRB_API struct RClass* mrb_class_get(mrb_state *mrb, mrb_sym name);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_class_get(
+        private static extern IntPtr mrb_class_get_id(
             IntPtr mrb,
-            [MarshalAs(UnmanagedType.LPStr)] string name);
+            UInt64 name);
 
         // MRB_API struct RClass* mrb_exc_get_id(mrb_state *mrb, mrb_sym name);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
@@ -45,33 +45,33 @@ namespace MRuby.Library.Language
             IntPtr mrb,
             UInt64 sym);
 
-        // MRB_API mrb_bool mrb_class_defined_under(mrb_state *mrb, struct RClass *outer, const char *name);
+        // MRB_API mrb_bool mrb_class_defined_under(mrb_state *mrb, struct RClass *outer, mrb_sym name);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.U1)]
-        private static extern Boolean mrb_class_defined_under(
+        private static extern Boolean mrb_class_defined_under_id(
             IntPtr mrb,
             IntPtr outer,
-            [MarshalAs(UnmanagedType.LPStr)] string name);
+            UInt64 name);
 
-        // MRB_API struct RClass * mrb_class_get_under(mrb_state *mrb, struct RClass *outer, const char *name);
+        // MRB_API struct RClass * mrb_class_get_under(mrb_state *mrb, struct RClass *outer, mrb_sym name);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_class_get_under(
+        private static extern IntPtr mrb_class_get_under_id(
             IntPtr mrb,
             IntPtr outer,
-            [MarshalAs(UnmanagedType.LPStr)] string name);
+            UInt64 name);
 
-        // MRB_API struct RClass * mrb_module_get_under(mrb_state *mrb, struct RClass *outer, const char *name);
+        // MRB_API struct RClass * mrb_module_get_under(mrb_state *mrb, struct RClass *outer, mrb_sym name);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_module_get_under(
+        private static extern IntPtr mrb_module_get_under_id(
             IntPtr mrb,
             IntPtr outer,
-            [MarshalAs(UnmanagedType.LPStr)] string name);
+            UInt64 name);
 
-        // MRB_API struct RClass * mrb_module_get(mrb_state *mrb, const char *name);
+        // MRB_API struct RClass * mrb_module_get(mrb_state *mrb, mrb_sym name);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_module_get(
+        private static extern IntPtr mrb_module_get_id(
             IntPtr mrb,
-            [MarshalAs(UnmanagedType.LPStr)] string name);
+            UInt64 name);
 
         // MRB_API void mrb_notimplement(mrb_state*);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
@@ -210,15 +210,15 @@ namespace MRuby.Library.Language
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern void mrb_gv_remove(IntPtr mrb, UInt64 sym);
 
-        // MRB_API struct RClass* mrb_define_class_under(mrb_state *mrb, struct RClass *outer, const char *name, struct RClass *super);
+        // MRB_API struct RClass* mrb_define_class_under(mrb_state *mrb, struct RClass *outer, mrb_sym name, struct RClass *super);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_define_class_under(
-            IntPtr mrb, IntPtr outer, [MarshalAs(UnmanagedType.LPStr)] string name, IntPtr super);
+        private static extern IntPtr mrb_define_class_under_id(
+            IntPtr mrb, IntPtr outer, UInt64 name, IntPtr super);
 
-        // MRB_API struct RClass* mrb_define_module_under(mrb_state *mrb, struct RClass *outer, const char *name);
+        // MRB_API struct RClass* mrb_define_module_under(mrb_state *mrb, struct RClass *outer, mrb_sym name);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
-        private static extern IntPtr mrb_define_module_under(
-            IntPtr mrb, IntPtr outer, [MarshalAs(UnmanagedType.LPStr)] string name);
+        private static extern IntPtr mrb_define_module_under_id(
+            IntPtr mrb, IntPtr outer, UInt64 name);
 
         // MRB_API struct RProc *mrb_proc_new_cfunc_with_env(mrb_state *mrb, mrb_func_t func, mrb_int argc, const mrb_value *argv);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
