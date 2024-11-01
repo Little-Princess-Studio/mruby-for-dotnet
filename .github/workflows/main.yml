@@ -101,18 +101,15 @@ jobs:
     #   with:
     #     arch: "x64"
 
-    - name: Initialize VS2022 environment
-      run: |
-        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-
     - uses: xmake-io/github-action-setup-xmake@v1
       with:
         xmake-version: "2.9.6"
 
     - name: Compile mruby
       run: |
-        cd ./mruby
-        rake MRUBY_CONFIG=../costumized-build-conf-win.rb all test --trace
+        cmd
+        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        build-mruby-win.bat
 
     - name: Build with XMake
       run: |
