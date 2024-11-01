@@ -113,9 +113,11 @@ jobs:
 
     - name: Build with XMake
       run: |
+        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         cd mruby-shared
         xmake f -m release
         xmake
+      shell: cmd
 
     - name: Download binaries from Linux
       uses: actions/download-artifact@v3
