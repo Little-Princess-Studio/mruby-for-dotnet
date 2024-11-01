@@ -104,7 +104,9 @@ jobs:
         xmake-version: "2.9.6"
 
     - name: Compile mruby
-      run: ./build-mruby-win.bat
+      run: |
+        cd ./mruby
+        rake MRUBY_CONFIG=../costumized-build-conf-win.rb all test --trace
 
     - name: Build with XMake
       run: |
@@ -145,9 +147,21 @@ jobs:
       run: |
         cd ./mruby-wrapper
         dotnet restore
-        dotnet build --no-restore
+        dotnet build --no-restore --configuration=release
 
     - name: Test .NET project
       run: |
         cd mruby-wrapper
         dotnet test --no-build --verbosity normal
+
+    - name: Pack
+      run: |
+        cd mruby-wrapper
+        dotnet pack --configuration=release
+
+    - name: Archive code coverage results
+      uses: actions/upload-artifact@v3
+      with:
+        name: mruby-for-dotnet
+        path: ./mruby-wrapper/MRuby.Library/bin/Release
+
