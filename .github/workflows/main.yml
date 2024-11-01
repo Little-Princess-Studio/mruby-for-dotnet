@@ -54,21 +54,19 @@ jobs:
         cd mruby-wrapper
         dotnet test --no-build --verbosity normal
 
-    - name: Upload binaries
+    - name: Upload binaries for Linux
+      if: contains(matrix.os, 'ubuntu')
       uses: actions/upload-artifact@v3
       with:
-        name: >
-          ${{ if contains(matrix.os, 'ubuntu') }} 
-          libmruby-linux-latest
-          ${{ else if contains(matrix.os, 'macos') }}
-          libmruby-macos-latest
-          ${{ end }}
-        path: >
-          ${{ if contains(matrix.os, 'ubuntu') }} 
-          ./mruby-shared/build/linux/x64/release/libmruby_x64.so
-          ${{ else if contains(matrix.os, 'macos') }}
-          ./mruby-shared/build/macosx/universal/release/libmruby_x64.dylib
-          ${{ end }}
+        name: libmruby-linux-latest
+        path: ./mruby-shared/build/linux/x64/release/libmruby_x64.so
+
+    - name: Upload binaries for macOS
+      if: contains(matrix.os, 'macos')
+      uses: actions/upload-artifact@v3
+      with:
+        name: libmruby-macos-latest
+        path: ./mruby-shared/build/macosx/universal/release/libmruby_x64.dylib
 
   build-windows:
     runs-on: windows-2022
