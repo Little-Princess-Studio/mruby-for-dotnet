@@ -48,7 +48,7 @@ jobs:
     - name: Build with XMake
       run: |
         cd mruby-shared
-        xmake f -m x64 -r release
+        xmake f -m release
         xmake
 
     - name: Setup .NET
@@ -104,7 +104,7 @@ jobs:
     - name: Build with XMake
       run: |
         cd mruby-shared
-        xmake f -m x64 -r release
+        xmake f -m release
         xmake
 
     - name: Download binaries from Linux
