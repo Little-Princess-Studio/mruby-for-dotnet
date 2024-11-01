@@ -28,12 +28,10 @@ jobs:
         version: '18.1.8'
         platform: x64
 
-    - name: Set up gcc
-      if: contains(matrix.os, 'ubuntu')
-      uses: egor-tensin/setup-gcc@v1
+    - name: Setup GCC
+      uses: Dup4/actions-setup-gcc@v1
       with:
         version: '13.2.0'
-        platform: x64
 
     - name: Compile mruby for linux
       if: contains(matrix.os, 'ubuntu')
