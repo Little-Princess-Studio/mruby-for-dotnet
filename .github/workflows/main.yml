@@ -35,14 +35,15 @@ jobs:
         version: '13.2.0'
         platform: x64
 
-    - name: Compile mruby
+    - name: Compile mruby for linux
+      if: contains(matrix.os, 'linux')
       run: |
-        if [ "${{ runner.os }}" == "Linux" ]; then
           cd ./mruby
           rake MRUBY_CONFIG=../costumized-build-conf-linux.rb all test
-        elif [ "${{ runner.os }}" == "macOS" ]; then
-          rake
-        fi
+
+    - name: Compile mruby for macos
+      if: contains(matrix.os, 'macos')
+      run: rake
 
     - name: Build with XMake
       run: |
