@@ -1,0 +1,137 @@
+name: Cross-Platform Build and Test
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-linux-macos:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3'
+        bundler-cache: true
+    - uses: KyleMayes/install-llvm-action@v2
+      with:
+        version: "10.0"
+    - uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: "2.9.6"
+
+    - name: Compile mruby
+      run: |
+        if [ "${{ runner.os }}" == "Linux" ]; then
+          sh build-mruby-linux.sh
+        elif [ "${{ runner.os }}" == "macOS" ]; then
+          sh build-mruby-mac.sh
+        fi
+
+    - name: Build with XMake
+      run: |
+        cd mruby-shared
+        xmake f -m x64 -r release
+        xmake
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.108'
+
+    - name: Restore dependencies
+      run: |
+        cd mruby-wrapper
+        dotnet restore
+        dotnet build --no-restore
+
+    - name: Test .NET project
+      run: |
+        cd mruby-wrapper
+        dotnet test --no-build --verbosity normal
+
+    - name: Upload binaries
+      uses: actions/upload-artifact@v3
+      with:
+        name: >
+          ${{ if contains(matrix.os, 'ubuntu') }} 
+          libmruby-linux-latest
+          ${{ else if contains(matrix.os, 'macos') }}
+          libmruby-macos-latest
+          ${{ end }}
+        path: >
+          ${{ if contains(matrix.os, 'ubuntu') }} 
+          ./mruby-shared/build/linux/x64/release/libmruby_x64.so
+          ${{ else if contains(matrix.os, 'macos') }}
+          ./mruby-shared/build/macosx/universal/release/libmruby_x64.dylib
+          ${{ end }}
+
+  build-windows:
+    runs-on: windows-2022
+    needs: build-linux-macos
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3'
+        bundler-cache: true
+    - uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: "x64"
+    - uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: "2.9.6"
+
+    - name: Compile mruby
+      run: ./build-mruby-win.bat
+
+    - name: Build with XMake
+      run: |
+        cd mruby-shared
+        xmake f -m x64 -r release
+        xmake
+
+    - name: Download binaries from Linux
+      uses: actions/download-artifact@v3
+      with:
+        name: libmruby-linux-latest
+        path: ./mruby-wrapper/MRuby.Library
+
+    - name: Download binaries from macos
+      uses: actions/download-artifact@v3
+      with:
+        name: libmruby-macos-latest
+        path: ./mruby-wrapper/MRuby.Library
+
+    - name: Extract artifact from linux
+      uses: ihiroky/extract-action@v1
+      with:
+        file_path: ./mruby-wrapper/MRuby.Library/libmruby-linux-latest.zip
+        extract_dir: ./mruby-wrapper/MRuby.Library
+
+    - name: Extract artifact from macos
+      uses: ihiroky/extract-action@v1
+      with:
+        file_path: ./mruby-wrapper/MRuby.Library/libmruby-macos-latest.zip
+        extract_dir: ./mruby-wrapper/MRuby.Library
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.108'
+
+    - name: Restore dependencies
+      run: |
+        cd ./mruby-wrapper
+        dotnet restore
+        dotnet build --no-restore
+
+    - name: Test .NET project
+      run: |
+        cd mruby-wrapper
+        dotnet test --no-build --verbosity normal
