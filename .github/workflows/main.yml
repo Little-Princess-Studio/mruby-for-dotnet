@@ -38,9 +38,10 @@ jobs:
     - name: Compile mruby
       run: |
         if [ "${{ runner.os }}" == "Linux" ]; then
-          sh build-mruby-linux.sh
+          cd ./mruby
+          rake MRUBY_CONFIG=../costumized-build-conf-linux.rb all test
         elif [ "${{ runner.os }}" == "macOS" ]; then
-          sh build-mruby-mac.sh
+          rake
         fi
 
     - name: Build with XMake
