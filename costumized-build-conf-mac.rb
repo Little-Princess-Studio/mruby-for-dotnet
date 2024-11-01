@@ -35,7 +35,6 @@ MRuby::Build.new do |conf|
       conf.archiver.command = 'ar'
       conf.archiver.archive_options = 'rs %{outfile} %{objs}'
       conf.gembox 'default'
-      conf.gem :github => 'mattn/mruby-onig-regexp'
 
       conf.enable_bintest
       conf.enable_test  
