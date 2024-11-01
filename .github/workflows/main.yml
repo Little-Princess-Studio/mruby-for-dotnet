@@ -114,7 +114,7 @@ jobs:
     - name: Build with XMake
       run: |
         cd mruby-shared
-        xmake f -m release --toolchain=msvc
+        xmake f -p windows -a x64 -m release --toolchain=msvc
         xmake
 
     - name: Download binaries from Linux
