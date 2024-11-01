@@ -29,9 +29,10 @@ jobs:
         platform: x64
 
     - name: Setup GCC
-      uses: Dup4/actions-setup-gcc@v1
-      with:
-        version: '13.2.0'
+      if: contains(matrix.os, 'ubuntu')
+      run: |
+        sudo apt update
+        sudo apt install build-essential
 
     - name: Compile mruby for linux
       if: contains(matrix.os, 'ubuntu')
