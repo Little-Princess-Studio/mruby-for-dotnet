@@ -17,12 +17,23 @@ jobs:
       with:
         ruby-version: '3.3'
         bundler-cache: true
-    - uses: KyleMayes/install-llvm-action@v2
-      with:
-        version: "10.0"
     - uses: xmake-io/github-action-setup-xmake@v1
       with:
         xmake-version: "2.9.6"
+
+    - name: Set up Clang
+      if: contains(matrix.os, 'macos')
+      uses: egor-tensin/setup-clang@v1
+      with:
+        version: '18.1.8'
+        platform: x64
+
+    - name: Set up gcc
+      if: contains(matrix.os, 'linux')
+      uses: egor-tensin/setup-gcc@v1
+      with:
+        version: '13.2.0'
+        platform: x64
 
     - name: Compile mruby
       run: |
