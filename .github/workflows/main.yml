@@ -96,9 +96,15 @@ jobs:
       with:
         ruby-version: '3.3'
         bundler-cache: true
-    - uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: "x64"
+
+    # - uses: ilammy/msvc-dev-cmd@v1
+    #   with:
+    #     arch: "x64"
+
+    - name: Initialize VS2022 environment
+      run: |
+        call "C:\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+
     - uses: xmake-io/github-action-setup-xmake@v1
       with:
         xmake-version: "2.9.6"
