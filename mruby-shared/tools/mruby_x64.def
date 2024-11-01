@@ -161,10 +161,6 @@ EXPORTS
 	mrb_fiber_yield
 	mrb_fiber_alive_p
 	mrb_stack_extend
-	mrb_pool_open
-	mrb_pool_close
-	mrb_pool_alloc
-	mrb_pool_realloc
 	mrb_pool_can_realloc
 	mrb_alloca
 	mrb_state_atexit

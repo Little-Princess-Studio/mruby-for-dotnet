@@ -10,7 +10,7 @@ function common_settings()
 
     add_includedirs("src/", mruby_dir .. "/build/host/include")
     add_defines("MRB_CORE", "MRB_LIB")
-    add_defines("MRB_INT64")
+    add_defines("MRB_INT64", "MRB_UTF8_STRING")
 end
 
 function copy_dll_to_target(target)

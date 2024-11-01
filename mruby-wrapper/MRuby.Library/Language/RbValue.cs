@@ -43,12 +43,12 @@ namespace MRuby.Library.Language
         public bool IsInt => RbHelper.IsInteger(this);
 
         public long ToIntUnchecked() => this.State.UnboxInt(this);
-        
+
         public long ToInt()
         {
-            return this.IsInt ?  this.ToIntUnchecked(): throw new Exception("Value is not an integer");
+            return this.IsInt ? this.ToIntUnchecked() : throw new Exception("Value is not an integer");
         }
-        
+
         public bool IsNil => this == this.State.RbNil;
 
         public bool IsTrue => this == this.State.RbTrue;
@@ -63,7 +63,7 @@ namespace MRuby.Library.Language
 
         public double ToFloat()
         {
-            return this.IsFloat ? this.ToFloatUnchecked(): throw new Exception("Value is not a float");
+            return this.IsFloat ? this.ToFloatUnchecked() : throw new Exception("Value is not a float");
         }
 
         public bool IsArray => RbHelper.IsArray(this);
@@ -78,7 +78,7 @@ namespace MRuby.Library.Language
         public bool IsString => RbHelper.IsString(this);
 
         public string? ToStringUnchecked() => this.State.UnboxString(this);
-        
+
         public override string? ToString()
         {
             return this.IsString ? this.ToStringUnchecked() : throw new Exception("Value is not a string");
@@ -87,12 +87,12 @@ namespace MRuby.Library.Language
         public bool IsHash => RbHelper.IsHash(this);
 
         public RbHash ToHashUnchecked() => this.State.NewHashFromHashObject(this);
-        
+
         public RbHash ToHash()
         {
             return this.IsHash ? this.ToHashUnchecked() : throw new Exception("Value is not a hash");
         }
-        
+
         public bool IsException => RbHelper.IsException(this);
 
         public bool IsObject => RbHelper.IsObject(this);
@@ -105,22 +105,22 @@ namespace MRuby.Library.Language
         {
             return this.IsClass ? this.ToClassUnchecked() : throw new Exception("Value is not a class");
         }
-        
+
         public bool IsModule => RbHelper.IsModule(this);
 
         public RbClass ToModuleUnchecked() => RbHelper.GetRbClassFromValue(this.State, this);
-        
+
         public RbClass ToModule()
         {
             return this.IsModule ? this.ToModuleUnchecked() : throw new Exception("Value is not a module");
         }
-        
+
         public bool IsSingletonClass => RbHelper.IsSClass(this);
 
         public bool IsProc => RbHelper.IsProc(this);
 
         public RbProc ToProcUnchecked() => RbProc.FromRbValue(this);
-        
+
         public RbProc ToProc()
         {
             return this.IsProc ? this.ToProcUnchecked() : throw new Exception("Value is not a proc");
@@ -305,7 +305,7 @@ namespace MRuby.Library.Language
             mrb_define_singleton_method(this.State.NativeHandler, objPtr, name, delegateFunc, parameterAspect);
         }
 
-        public  RbValue this[string name]
+        public RbValue this[string name]
         {
             get => this.GetInstanceVariable(name);
             set => this.SetInstanceVariable(name, value);

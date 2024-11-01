@@ -7,7 +7,7 @@ This is a mruby-wrapper for .NET, current for Windows/Linux/MacOS and will come 
 From nuget: https://www.nuget.org/packages/MRuby.Library/
 
 ```bash
-dotnet add package MRuby.Library --version 0.1.7
+dotnet add package MRuby.Library --version 0.1.8
 ```
 
 ## How to Use

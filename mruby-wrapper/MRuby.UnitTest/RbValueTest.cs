@@ -282,7 +282,7 @@ public class RbValueTest
         var doubleValue = 123.45.ToValue(state);
         var floatValue = 123.45f.ToValue(state);
         var arrayValue = state.NewArray(intValue, doubleValue).ToValue();
-        var stringValue = "test_string".ToValue(state);
+        var stringValue = "你好，世界！".ToValue(state);
         var hashValue = state.NewHashFromDictionary(new Dictionary<RbValue, RbValue> { { intValue, stringValue } }).ToValue();
         var exceptionValue = state.GenerateExceptionWithNewStr(state.GetClass("StandardError"), "");
         var objectValue = state.GetClass("Object").NewObject();
@@ -310,12 +310,16 @@ public class RbValueTest
         Assert.True(moduleValue.IsModule);
         Assert.True(sclassValue.IsSingletonClass);
         Assert.True(rangeValue.IsRange);
-        
+
         Assert.Equal(123L, intValue.ToInt());
         Assert.Equal(123L, longValue.ToInt());
         Assert.True(Math.Abs(123.45 - doubleValue.ToFloat()) < 0.0001);
         Assert.True(Math.Abs(123.45 - floatValue.ToFloat()) < 0.0001);
-        Assert.Equal("test_string", stringValue.ToString());
+        
+        var slice = stringValue.CallMethod("[]", state.BoxInt(0));
+        Assert.Equal("你", slice.ToString());
+
+        Assert.Equal("你好，世界！", stringValue.ToString());
 
         var cls = classValue.ToClass();
         Assert.Equal("Object", cls.GetClassName());
@@ -344,5 +348,17 @@ public class RbValueTest
         var intObj = 123.ToValue(state);
         var intBytes = RbHelper.GetRawBytesFromRbStringObject(intObj);
         Assert.Empty(intBytes);
+    }
+
+    [Fact]
+    void TestBuildRbStringObjectFromRawBytes()
+    {
+        using var state = Ruby.Open();
+        var bytes = Encoding.UTF8.GetBytes("1234567890\0123456789");
+        var strObj = RbHelper.BuildRbStringObjectFromRawBytes(state, bytes);
+        
+        var output = RbHelper.GetRawBytesFromRbStringObject(strObj);
+        
+        Assert.Equal(bytes, output);
     }
 }

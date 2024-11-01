@@ -49,7 +49,7 @@ namespace MRuby.Library.Language
 
         // MRB_API mrb_value mrb_str_new_cstr(mrb_state*, const char*);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
-        private static extern UInt64 mrb_str_new_cstr(IntPtr mrb, [MarshalAs(UnmanagedType.LPStr)] string str);
+        private static extern UInt64 mrb_str_new_cstr(IntPtr mrb, [MarshalAs(UnmanagedType.LPUTF8Str)] string str);
         
         // MRB_API mrb_value mrb_ptr_to_mrb_value(void *p);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
@@ -159,5 +159,9 @@ namespace MRuby.Library.Language
         // MRB_API void mrb_get_raw_bytes_from_string(mrb_value value, const char **bytes, size_t *len);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
         private static extern void mrb_get_raw_bytes_from_string(UInt64 value, ref IntPtr bytes, ref UInt64 len);
+        
+        // MRB_API mrb_value mrb_str_new(mrb_state *mrb, const char *p, mrb_int len);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        private static extern UInt64 mrb_str_new(IntPtr mrb, byte[] p, Int64 len);
     }
 }

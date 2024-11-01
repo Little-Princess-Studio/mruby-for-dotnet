@@ -5,7 +5,7 @@ MRuby::Build.new do |conf|
     # Define build settings for x86_64
     MRuby::CrossBuild.new('x86_64') do |conf|
       conf.cc do cc
-        cc.defines = %w(MRB_CORE MRB_INT64 MRB_LIB)
+        cc.defines = %w(MRB_CORE MRB_INT64 MRB_UTF8_STRING MRB_LIB)
       end
   
       toolchain :clang
@@ -24,7 +24,7 @@ MRuby::Build.new do |conf|
     # Define build settings for arm64
     MRuby::CrossBuild.new('arm64') do |conf|
       conf.cc do cc
-        cc.defines = %w(MRB_CORE MRB_INT64 MRB_LIB)
+        cc.defines = %w(MRB_CORE MRB_INT64 MRB_UTF8_STRING MRB_LIB)
       end
   
       toolchain :clang
@@ -52,7 +52,7 @@ MRuby::Build.new do |conf|
     # conf.gem git = 'git@github.commattnmruby-onig-regexp.git', branch = 'master', options = '-v'
   
     # include the GEM box
-    conf.gembox 'default'
+    # conf.gembox 'default'
   
     # C compiler settings
     # conf.cc do cc

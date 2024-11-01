@@ -152,7 +152,7 @@ public class RbMapperTest
     }
 
     [Fact]
-    void TestModuleMappint()
+    void TestModuleMapping()
     {
         using var state = Ruby.Open();
         RbTypeRegisterHelper.Init(state, new []{typeof(TestModule).Assembly});
