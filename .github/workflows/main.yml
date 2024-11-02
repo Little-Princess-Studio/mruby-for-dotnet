@@ -1,0 +1,170 @@
+name: Cross-Platform Build and Test
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-linux-macos:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3'
+        bundler-cache: true
+    - uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: "2.9.6"
+
+    # - name: Set up Clang
+    #   if: contains(matrix.os, 'macos')
+    #   uses: egor-tensin/setup-clang@v1
+    #   with:
+    #     version: '18.1.8'
+    #     platform: x64
+
+    - name: Setup GCC
+      if: contains(matrix.os, 'ubuntu')
+      run: |
+        sudo apt update
+        sudo apt install build-essential
+
+    - name: Compile mruby for linux
+      if: contains(matrix.os, 'ubuntu')
+      run: |
+          cd ./mruby
+          rake MRUBY_CONFIG=../costumized-build-conf-linux.rb all test
+
+    - name: Compile mruby for macos
+      if: contains(matrix.os, 'macos')
+      run: rake
+
+    - name: Build with XMake
+      run: |
+        cd mruby-shared
+        xmake f -m release
+        xmake
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.108'
+
+    - name: Restore dependencies & Build
+      run: |
+        cd mruby-wrapper
+        dotnet restore
+        dotnet build
+
+    - name: Test .NET project
+      run: |
+        cd mruby-wrapper
+        dotnet test
+
+    - name: Upload binaries for Linux
+      if: contains(matrix.os, 'ubuntu')
+      uses: actions/upload-artifact@v3
+      with:
+        name: libmruby-linux-latest
+        path: ./mruby-shared/build/linux/x64/release/libmruby_x64.so
+
+    - name: Upload binaries for macOS
+      if: contains(matrix.os, 'macos')
+      uses: actions/upload-artifact@v3
+      with:
+        name: libmruby-macos-latest
+        path: ./mruby-shared/build/macosx/universal/release/libmruby_x64.dylib
+
+  build-windows:
+    runs-on: windows-2022
+    needs: build-linux-macos
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3'
+        bundler-cache: true
+
+    # - uses: ilammy/msvc-dev-cmd@v1
+    #   with:
+    #     arch: "x64"
+
+    - uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: "2.9.6"
+
+    - name: Compile mruby
+      run: |
+        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        build-mruby-win.bat
+      shell: cmd
+
+    - name: Build with XMake
+      run: |
+        cd mruby-shared
+        xmake f -p windows -a x64 -m release --toolchain=msvc
+        xmake
+
+    - name: Download binaries from Linux
+      uses: actions/download-artifact@v3
+      with:
+        name: libmruby-linux-latest
+        path: ./mruby-wrapper/MRuby.Library
+
+    - name: Download binaries from macos
+      uses: actions/download-artifact@v3
+      with:
+        name: libmruby-macos-latest
+        path: ./mruby-wrapper/MRuby.Library
+
+    - name: Extract artifact from linux
+      uses: ihiroky/extract-action@v1
+      with:
+        file_path: ./mruby-wrapper/MRuby.Library/libmruby-linux-latest.zip
+        extract_dir: ./mruby-wrapper/MRuby.Library
+
+    - name: Extract artifact from macos
+      uses: ihiroky/extract-action@v1
+      with:
+        file_path: ./mruby-wrapper/MRuby.Library/libmruby-macos-latest.zip
+        extract_dir: ./mruby-wrapper/MRuby.Library
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.108'
+
+    - name: Restore dependencies & Build
+      run: |
+        cd ./mruby-wrapper
+        dotnet restore
+        dotnet build --configuration=release
+
+    - name: Test .NET project
+      run: |
+        cd mruby-wrapper
+        dotnet test
+
+    - name: Pack
+      run: |
+        cd mruby-wrapper
+        dotnet pack --configuration=release
+
+    - name: Archive code coverage results
+      uses: actions/upload-artifact@v3
+      with:
+        name: mruby-for-dotnet
+        path: ./mruby-wrapper/MRuby.Library/bin/Release
+
