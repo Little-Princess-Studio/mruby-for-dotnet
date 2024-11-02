@@ -84,6 +84,14 @@ elseif os_name == "macosx" then
         set_kind("phony")
         add_deps("mruby_mac_x86_64", "mruby_mac_arm64")
         after_build(after_build_macos)
+        on_clean(function(target)
+            local mode = is_mode("debug") and "debug" or "release"
+            local output_dir = path.join(os.projectdir(), string.format("build/macosx/universal/%s/", mode))
+            local bin_file = path.join(output_dir, "libmruby_x64.dylib")
+            if os.isfile(bin_file) then
+                os.rm(bin_file)
+            end
+        end)
 else
     -- error: not support platform
     print("unsupported platform")
