@@ -4,7 +4,11 @@ local os_name = os.host()
 local mruby_dir = "../mruby"
 
 function common_settings()
-    set_arch("x64")
+    if is_arch("x86_64") then
+        set_arch("x64")
+    else
+	set_arch("arm64")
+    end
     set_kind("shared")
     add_files("src/*.c")
 
