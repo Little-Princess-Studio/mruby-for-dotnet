@@ -1,14 +1,16 @@
-name: Cross-Platform Build and Test
+name: Publish NuGet Package
 
+# Tag-triggered release: push a tag like `v0.1.9` to build all three native
+# libs, pack a single cross-platform NuGet, and publish it to nuget.org.
+# Requires repo secret NUGET_API_KEY.
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
-  build-linux-macos:
+  build-native-linux-macos:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -50,22 +52,6 @@ jobs:
         xmake f -m release
         xmake
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
-
-    - name: Restore dependencies & Build
-      run: |
-        cd mruby-wrapper
-        dotnet restore
-        dotnet build --configuration=release
-
-    - name: Test .NET project
-      run: |
-        cd mruby-wrapper
-        dotnet test --configuration=release
-
     - name: Upload binaries for Linux
       if: contains(matrix.os, 'ubuntu')
       uses: actions/upload-artifact@v4
@@ -82,9 +68,9 @@ jobs:
         path: ./mruby-shared/build/macosx/universal/release/libmruby_x64.dylib
         if-no-files-found: error
 
-  build-windows:
+  publish-windows:
     runs-on: windows-2022
-    needs: build-linux-macos
+    needs: build-native-linux-macos
 
     steps:
     - uses: actions/checkout@v4
@@ -112,9 +98,6 @@ jobs:
         xmake f -p windows -a x64 -m release --toolchain=msvc
         xmake
 
-    # download-artifact@v4 extracts contents directly into `path`
-    # (no separate unzip step needed), placing the native libs next to
-    # the Windows .dll so `dotnet pack` bundles all three platforms.
     - name: Download binaries from Linux
       uses: actions/download-artifact@v4
       with:
@@ -146,11 +129,17 @@ jobs:
     - name: Pack
       run: |
         cd mruby-wrapper
-        dotnet pack --configuration=release
+        dotnet pack --configuration=release --output ../nupkgs
 
-    - name: Archive NuGet package and binaries
+    - name: Publish to NuGet.org
+      run: |
+        dotnet nuget push "nupkgs/*.nupkg" --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
+    - name: Archive built package
       uses: actions/upload-artifact@v4
       with:
-        name: mruby-for-dotnet
-        path: ./mruby-wrapper/MRuby.Library/bin/Release
+        name: nuget-package
+        path: ./nupkgs/*.nupkg
         if-no-files-found: error
