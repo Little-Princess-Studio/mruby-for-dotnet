@@ -6,6 +6,7 @@ namespace MRuby.Library.Language
     using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
+    using MRuby.Library;
 
     public struct RbDataClassType
     {
@@ -91,6 +92,12 @@ namespace MRuby.Library.Language
 
         private static Dictionary<string, (RbDataClassType, IntPtr)> RbDataClassMapping { get; } = new Dictionary<string, (RbDataClassType, IntPtr)>();
 
+        // Guards the process-wide RbDataClassMapping. The check-then-add in
+        // GetOrCreateNewRbDataStructPtr must be atomic: concurrent registration of the
+        // same data-class name would otherwise double-call Dictionary.Add (throwing
+        // ArgumentException) and leak the Marshal.AllocHGlobal allocation.
+        private static readonly object RbDataClassMappingLock = new object();
+
         private static bool RbDataStructExist(string name) => RbDataClassMapping.ContainsKey(name);
 
         private static void RbDataStructAdd(string name, Action<RbState, object?>? releaseFn)
@@ -146,13 +153,16 @@ namespace MRuby.Library.Language
 
         internal static IntPtr GetOrCreateNewRbDataStructPtr(string name, Action<RbState, object?>? releseFn = null)
         {
-            if (RbDataStructExist(name))
+            lock (RbDataClassMappingLock)
             {
+                if (RbDataStructExist(name))
+                {
+                    return RbDataClassMapping[name].Item2;
+                }
+
+                RbDataStructAdd(name, releseFn);
                 return RbDataClassMapping[name].Item2;
             }
-
-            RbDataStructAdd(name, releseFn);
-            return RbDataClassMapping[name].Item2;
         }
 
         [ExcludeFromCodeCoverage]
@@ -188,19 +198,47 @@ namespace MRuby.Library.Language
                     var totalMsg = $"Native Exception Message: {e.InnerException?.Message ?? e.Message} \n Stacktrace: {e.InnerException?.StackTrace ?? e.Message}";
                     var excCls = csharpState.GetClass("Exception");
                     var exc = csharpState.GenerateExceptionWithNewStr(excCls, totalMsg);
-                    csharpState.Raise(exc);
-                    return csharpState.RbNil.NativeValue;
+                    return RaiseNativeCallbackException(csharpState, exc);
                 }
                 catch (Exception e)
                 {
                     var totalMsg = $"Native Exception Message: {e.Message} \n Stacktrace: {e.StackTrace}";
                     var excCls = csharpState.GetClass("Exception");
                     var exc = csharpState.GenerateExceptionWithNewStr(excCls, totalMsg);
-                    csharpState.Raise(exc);
-                    return csharpState.RbNil.NativeValue;
+                    return RaiseNativeCallbackException(csharpState, exc);
                 }
             }
             return Lambda;
+        }
+
+        // Builds the native callback bridge AND roots it for the lifetime of the
+        // owning RbState. mruby keeps only the raw function pointer of the delegate
+        // (in the method table, a proc, etc.); the managed NativeMethodFunc itself has
+        // no other GC root once the caller discards the `out` value (the idiomatic
+        // `out _`). Without rooting, the next GC collects the delegate and mruby later
+        // calls through a freed function pointer -> hard native crash. Rooting into the
+        // per-state keeper ties the delegate's lifetime to Ruby.Close(state).
+        internal static NativeMethodFunc BuildAndRootNativeCallback(RbState state, CSharpMethodFunc callback)
+        {
+            var nativeFunc = BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
+            RootNativeCallback(state, nativeFunc);
+            return nativeFunc;
+        }
+
+        // Roots an already-built native callback delegate to the RbState lifetime so
+        // mruby's retained function pointer never dangles. Safe to call for transient
+        // callbacks too (they are simply released at Ruby.Close).
+        internal static void RootNativeCallback(RbState state, NativeMethodFunc nativeFunc)
+        {
+            var keeper = RbNativeObjectLiveKeeper<RbCallbackKeeper, NativeMethodFunc>.GetOrCreateKeeper(state);
+            keeper.Keep(nativeFunc);
+        }
+
+        [ExcludeFromCodeCoverage]
+        private static UInt64 RaiseNativeCallbackException(RbState state, RbValue exc)
+        {
+            state.Raise(exc);
+            return state.RbNil.NativeValue;
         }
 
         private static void NativeDataObjectFreeFunc(IntPtr state, IntPtr data) => FreeIntPtrOfCSharpObject(data);

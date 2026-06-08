@@ -50,8 +50,20 @@ namespace MRuby.Library.Language
         
         public void DefineMethod(UInt64 name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
         {
-            delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
+            delegateFunc = RbHelper.BuildAndRootNativeCallback(this.State, callback);
             mrb_define_method_id(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
+        }
+
+        public void DefinePrivateMethod(string name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
+        {
+            var sym = this.State.GetInternSymbol(name);
+            this.DefinePrivateMethod(sym, callback, parameterAspect, out delegateFunc);
+        }
+
+        public void DefinePrivateMethod(UInt64 name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
+        {
+            delegateFunc = RbHelper.BuildAndRootNativeCallback(this.State, callback);
+            mrb_define_private_method_id(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
         }
 
         public void DefineClassMethod(string name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
@@ -62,7 +74,7 @@ namespace MRuby.Library.Language
         
         public void DefineClassMethod(UInt64 name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
         {
-            delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
+            delegateFunc = RbHelper.BuildAndRootNativeCallback(this.State, callback);
             mrb_define_class_method_id(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
         }
 
@@ -74,7 +86,7 @@ namespace MRuby.Library.Language
         
         public void DefineModuleMethod(UInt64 name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
         {
-            delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
+            delegateFunc = RbHelper.BuildAndRootNativeCallback(this.State, callback);
             mrb_define_module_function_id(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
         }
 
@@ -175,6 +187,9 @@ namespace MRuby.Library.Language
             var result = mrb_class_name(this.State.NativeHandler, this.NativeHandler);
             return Marshal.PtrToStringAnsi(result);
         }
+
+        public RbClass GetOuterClass()
+            => new RbClass(mrb_class_outer(this.State.NativeHandler, this.NativeHandler), this.State);
 
         public RbValue GetClassVariable(string name)
         {

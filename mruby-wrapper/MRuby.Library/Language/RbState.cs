@@ -223,6 +223,8 @@ namespace MRuby.Library.Language
         [ExcludeFromCodeCoverage]
         public void IncrementalGc() => mrb_incremental_gc(this.NativeHandler);
 
+        public void ClearMethodCache() => mrb_method_cache_clear(this.NativeHandler);
+
         [ExcludeFromCodeCoverage]
         public void GcProtect(RbValue value)
         {
@@ -356,7 +358,7 @@ namespace MRuby.Library.Language
 
         public RbProc NewProc(CSharpMethodFunc func, out NativeMethodFunc delegateFunc)
         {
-            delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(func);
+            delegateFunc = RbHelper.BuildAndRootNativeCallback(this, func);
             var handler = mrb_proc_new_cfunc_with_env(this.NativeHandler, delegateFunc, 0, null);
 
             return new RbProc(this, handler);

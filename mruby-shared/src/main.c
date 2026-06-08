@@ -56,6 +56,7 @@ mrb_value mrb_ptr_to_mrb_value(void *p) { return mrb_obj_value(p); }
 struct RObject* mrb_value_to_obj_ptr(mrb_value value) { return mrb_obj_ptr(value); }
 
 mrb_value mrb_new_data_object(struct mrb_state *mrb, struct RClass *klass, void *datap, struct mrb_data_type *type) {
+  MRB_SET_INSTANCE_TT(klass, MRB_TT_CDATA);
   return mrb_obj_value(Data_Wrap_Struct(mrb, klass, type, datap));
 }
 
@@ -158,4 +159,11 @@ MRB_API void mrb_get_raw_bytes_from_string(mrb_value value, char **bytes,
     *bytes = NULL;
     *len = 0;
   }
+}
+
+// mruby 4.0: mrb_open() may return a non-NULL state with mrb->exc set on
+// initialization failure. MRB_OPEN_FAILURE wraps that check; expose it so the
+// managed Ruby.Open() can detect a poisoned state (mrb_state is opaque in C#).
+MRB_API mrb_bool mrb_open_failure_p(struct mrb_state *mrb) {
+  return MRB_OPEN_FAILURE(mrb) ? TRUE : FALSE;
 }

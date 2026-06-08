@@ -40,14 +40,14 @@
 
         public RbValue Protect(CSharpMethodFunc body, ref bool error, out NativeMethodFunc delegateFunc)
         {
-            delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(body);
+            delegateFunc = RbHelper.BuildAndRootNativeCallback(this, body);
             var result = mrb_protect(this.NativeHandler, delegateFunc, this.RbNil.NativeValue, ref error);
             return new RbValue(this, result);
         }
 
         public RbValue Protect(CSharpMethodFunc body, RbValue data, ref bool error, out NativeMethodFunc delegateFunc)
         {
-            delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(body);
+            delegateFunc = RbHelper.BuildAndRootNativeCallback(this, body);
             var result = mrb_protect(this.NativeHandler, delegateFunc, data.NativeValue, ref error);
             return new RbValue(this, result);
         }
@@ -55,8 +55,8 @@
         public RbValue Ensure(CSharpMethodFunc body, RbValue userdata, CSharpMethodFunc ensureBody, RbValue eData,
             out NativeMethodFunc delegateBodyFunc, out NativeMethodFunc delegateEnsureFunc)
         {
-            delegateBodyFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(body);
-            delegateEnsureFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(ensureBody);
+            delegateBodyFunc = RbHelper.BuildAndRootNativeCallback(this, body);
+            delegateEnsureFunc = RbHelper.BuildAndRootNativeCallback(this, ensureBody);
             var result = mrb_ensure(this.NativeHandler, delegateBodyFunc, userdata.NativeValue, delegateEnsureFunc, eData.NativeValue);
             return new RbValue(this, result);
         }
@@ -64,8 +64,8 @@
         public RbValue Rescue(CSharpMethodFunc body, RbValue userdata, CSharpMethodFunc rescueBody, RbValue rData,
             out NativeMethodFunc delegateFunc, out NativeMethodFunc delegateRescueFunc)
         {
-            delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(body);
-            delegateRescueFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(rescueBody);
+            delegateFunc = RbHelper.BuildAndRootNativeCallback(this, body);
+            delegateRescueFunc = RbHelper.BuildAndRootNativeCallback(this, rescueBody);
             var result = mrb_rescue(this.NativeHandler, delegateFunc, userdata.NativeValue, delegateRescueFunc, rData.NativeValue);
             return new RbValue(this, result);
         }
@@ -73,8 +73,8 @@
         public RbValue RescueExceptions(CSharpMethodFunc body, RbValue bData, CSharpMethodFunc rescue, RbValue rData, RbClass[] classes,
             out NativeMethodFunc delegateFunc, out NativeMethodFunc delegateRescueFunc)
         {
-            delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(body);
-            delegateRescueFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(rescue);
+            delegateFunc = RbHelper.BuildAndRootNativeCallback(this, body);
+            delegateRescueFunc = RbHelper.BuildAndRootNativeCallback(this, rescue);
             var nativeExcClasses = classes.Select(c => c.NativeHandler).ToArray();
             var result = mrb_rescue_exceptions(this.NativeHandler, delegateFunc, bData.NativeValue, delegateRescueFunc, rData.NativeValue, classes.Length, nativeExcClasses);
             return new RbValue(this, result);

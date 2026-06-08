@@ -129,6 +129,10 @@ namespace MRuby.Library.Language
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern void mrb_incremental_gc(IntPtr mrb);
 
+        // MRB_API void mrb_method_cache_clear(mrb_state *mrb);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern void mrb_method_cache_clear(IntPtr mrb);
+
         // MRB_API void mrb_gc_protect(mrb_state *mrb, mrb_value obj);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern void mrb_gc_protect(IntPtr mrb, UInt64 obj);
