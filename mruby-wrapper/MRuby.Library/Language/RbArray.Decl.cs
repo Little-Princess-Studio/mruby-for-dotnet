@@ -21,6 +21,10 @@
         [DllImport(Ruby.MrubyLib, CallingConvention = CallingConvention.Cdecl)]
         private static extern void mrb_ary_concat(IntPtr mrb, UInt64 self, UInt64 other);
 
+        // MRB_API mrb_value mrb_ary_dup(mrb_state*, mrb_value ary);
+        [DllImport(Ruby.MrubyLib, CallingConvention = CallingConvention.Cdecl)]
+        private static extern UInt64 mrb_ary_dup(IntPtr mrb, UInt64 ary);
+
         // MRB_API void mrb_ary_push(mrb_state *mrb, mrb_value array, mrb_value value);
         [DllImport(Ruby.MrubyLib, CallingConvention = CallingConvention.Cdecl)]
         private static extern void mrb_ary_push(IntPtr mrb, UInt64 array, UInt64 value);

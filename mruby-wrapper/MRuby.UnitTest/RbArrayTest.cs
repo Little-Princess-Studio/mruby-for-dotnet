@@ -80,6 +80,25 @@ public class RbArrayTests : IDisposable
     }
 
     [Fact]
+    public void TestDuplicateArray()
+    {
+        var values = new RbValue[]
+        {
+            this.state.BoxInt(1),
+            this.state.BoxInt(2),
+            this.state.BoxInt(3),
+        };
+
+        var array = this.state.NewArray(values);
+        var duplicated = array.Dup();
+        duplicated.Push(this.state.BoxInt(4));
+
+        Assert.Equal(3, array.Size);
+        Assert.Equal(4, duplicated.Size);
+        Assert.Equal(4, this.state.UnboxInt(duplicated[3]));
+    }
+
+    [Fact]
     public void TestAddValueToArray()
     {
         var array = this.state.NewArray();

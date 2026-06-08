@@ -1,7 +1,6 @@
 ﻿namespace MRuby.UnitTest;
 
 using Library;
-using Library.Language;
 
 public class RbCompilerTest
 {
@@ -9,6 +8,8 @@ public class RbCompilerTest
     void TestCompileCodeString()
     {
         using var state = Ruby.Open();
+        Assert.NotEqual(IntPtr.Zero, state.NativeHandler);
+
         var code = @"
             def hello
                 'Hello, World!'
