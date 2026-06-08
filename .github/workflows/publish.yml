@@ -132,8 +132,19 @@ jobs:
         dotnet pack --configuration=release --output ../nupkgs
 
     - name: Publish to NuGet.org
+      shell: pwsh
       run: |
-        dotnet nuget push "nupkgs/*.nupkg" --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+        # dotnet nuget push does not expand wildcards under pwsh (it treats
+        # "nupkgs/*.nupkg" as a literal path), so resolve the package(s) explicitly.
+        $packages = Get-ChildItem -Path nupkgs -Filter *.nupkg -File
+        if ($packages.Count -eq 0) {
+          Write-Error "No .nupkg found in nupkgs/"
+          exit 1
+        }
+        foreach ($pkg in $packages) {
+          Write-Host "Pushing $($pkg.FullName)"
+          dotnet nuget push $pkg.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+        }
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
