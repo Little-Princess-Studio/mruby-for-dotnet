@@ -49,21 +49,27 @@ safe to open and close states from multiple threads. If you store C# objects in 
 data objects, their release callback runs during `Ruby.Close`/GC on the thread performing
 that close.
 
-### macOS on .NET 8: best-effort under heavy lifecycle churn
+### macOS: best-effort under heavy lifecycle churn
 
-On **macOS with .NET 8**, the CoreCLR garbage collector suspends managed threads using
-POSIX signals. If the GC suspends a thread that is currently inside a native mruby
-callback (for example `Ruby.Close` driving `mrb_close`, which calls your data-object
-release callback back across the native boundary), the runtime can hard-exit the process.
-This is a known CoreCLR limitation (dotnet/runtime#44498, #102887) that is fixed in
-**.NET 9+**; it is not a defect in this library.
+On **macOS**, the CoreCLR garbage collector suspends managed threads using POSIX signals.
+If the GC suspends a thread that is currently parked inside a native mruby callback (for
+example `Ruby.Close` driving `mrb_close`, which calls your data-object release callback
+back across the native boundary), the activation signal can land at a point the runtime
+cannot safely resume and it hard-exits the process. This is a CoreCLR/macOS limitation in
+how it suspends threads stopped in native frames, not a defect in this library.
 
-In practice this only surfaces under *sustained* churn - e.g. opening and closing many
-states in a tight loop while allocating managed data objects. Ordinary usage is unaffected.
-If you target macOS on .NET 8 and do heavy `Ruby.Open`/`Ruby.Close` cycling, prefer
-**reusing a single `RbState`** instead of rapidly recreating it, or run on **.NET 9+**
-where the runtime fix is present. The standalone GC (`DOTNET_GCName=libclrgc.dylib`) with
-`DOTNET_gcConcurrent=0` also reduces the window.
+This only surfaces under *sustained, tight* churn - e.g. opening and closing many states
+in a fast loop while allocating managed data objects each iteration. Ordinary usage (a
+single state, or open/close scattered among real work) is unaffected. If you do heavy
+`Ruby.Open`/`Ruby.Close` cycling on macOS, prefer **reusing a single `RbState`** instead
+of rapidly recreating it. The standalone GC (`DOTNET_GCName=libclrgc.dylib`) with
+`DOTNET_gcConcurrent=0` reduces - but does not eliminate - the window.
+
+Note: this was verified to reproduce on both **.NET 8 and .NET 10** on macOS, so it is not
+tied to a specific runtime version. (It is distinct from dotnet/runtime#102887, which fixed
+a *different* macOS activation-signal case for libdispatch queue threads in .NET 9.) The
+library's own regression tests deliberately keep this synthetic storm off macOS/Linux CI
+for that reason; see `RbConcurrencyTest`.
 
 ## How to Build
 

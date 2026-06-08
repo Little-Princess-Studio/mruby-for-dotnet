@@ -32,8 +32,9 @@ using Library.Mapper;
 //   2. A heavy single-threaded 200-cycle Open/Close storm, also [WindowsOnlyFact]: even
 //      with zero cross-thread stress, sustained mrb_open/mrb_close churn keeps the lone
 //      test thread parked in mrb_close's reverse-P/Invoke dfree callback long enough that
-//      an unrelated process GC can signal-suspend it and hard-exit the macOS .NET 8 host
-//      (observed on CI ~iteration 139/200 on a fraction of runs). Stable on Windows.
+//      an unrelated process GC can signal-suspend it and hard-exit the macOS CoreCLR host
+//      (observed on CI ~iteration 139/200 on a fraction of runs; reproduced on both .NET 8
+//      and .NET 10, so it is not runtime-version-specific). Stable on Windows.
 //   3. A small all-platform smoke test (a handful of cycles) asserting the same mappings
 //      populate and clear correctly, with zero cross-thread stress - cheap enough that the
 //      macOS/Linux host carries it reliably, keeping cross-platform coverage of the path.
@@ -226,8 +227,9 @@ public class RbConcurrencyTest
     // wall-time a thread spends parked in mrb_close's reverse-P/Invoke dfree callback*:
     // tight BACK-TO-BACK Open/Close churn (even a handful of cycles) keeps the lone test
     // thread in that native window often enough that an unrelated process GC (vstest IPC,
-    // the finalizer) can signal-suspend it there and hard-exit the macOS .NET 8 host. A
-    // single scattered cycle does not. The HEAVY 200-cycle storm version lives in the
+    // the finalizer) can signal-suspend it there and hard-exit the macOS CoreCLR host
+    // (reproduced on both .NET 8 and .NET 10). A single scattered cycle does not. The
+    // HEAVY 200-cycle storm version lives in the
     // [WindowsOnlyFact] below, where the runtime can host that synthetic churn reliably.
     // See WindowsOnlyFactAttribute and TestStaticMappingsAreStableUnderHeavySequentialOpenCloseStorm.
     [Fact]

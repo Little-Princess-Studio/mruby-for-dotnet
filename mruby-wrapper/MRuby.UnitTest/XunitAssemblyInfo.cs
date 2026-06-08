@@ -15,9 +15,11 @@
 // a thread that is parked INSIDE such a native callback, the activation signal can land
 // at a non-interruptible point and PROCAbort()s the whole test host. mruby 4.0 widened
 // this window (MRB_TT_CDATA teardown does more native work during mrb_close) which is
-// why mruby 3.3 never tripped it. It is a known macOS CoreCLR limitation, only fully
-// fixed in .NET 9 (dotnet/runtime#44498, #102887; xamarin-macios#13962) - NOT a defect
-// in this library's managed code.
+// why mruby 3.3 never tripped it. It is a macOS CoreCLR limitation in suspending threads
+// stopped in native frames (related issues: dotnet/runtime#44498, #58111; xamarin-
+// macios#13962) - NOT a defect in this library's managed code. NOTE: this was empirically
+// verified to STILL reproduce on .NET 10, so it is not tied to a runtime version;
+// dotnet/runtime#102887 (.NET 9) fixed a DIFFERENT macOS case (libdispatch queue threads).
 //
 // THE FIX: the crash needs TWO coincident conditions - a GC in flight AND a thread
 // parked in a native mruby callback. xUnit's default per-class parallelism put several

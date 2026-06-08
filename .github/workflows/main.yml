@@ -91,9 +91,11 @@ jobs:
         #      alone still left a ~25% residual flake from ONE synthetic test that churns
         #      200 Ruby.Open/Close cycles in a tight loop (crashed ~iteration 139/200 on the
         #      CI runner): sustained reverse-callback teardown lets an unrelated process GC
-        #      suspend the lone test thread mid-mrb_close. That synthetic storm is outside
-        #      the macOS/.NET 8 test-host contract (the runtime fix landed in .NET 9), so it
-        #      is asserted Windows-only; a light all-platform smoke test keeps coverage.
+        #      suspend the lone test thread mid-mrb_close. This synthetic storm hard-exits
+        #      the macOS CoreCLR test host regardless of runtime version (empirically
+        #      reproduced on both .NET 8 AND .NET 10 - it is NOT the libdispatch-queue case
+        #      that dotnet/runtime#102887 fixed in .NET 9), so it is asserted Windows-only;
+        #      a light all-platform smoke test keeps coverage.
         #
         # The env vars below are DEFENSE-IN-DEPTH for the residual single-thread window:
         # the standalone GC (clrgc) + non-concurrent GC have better-behaved macOS thread
