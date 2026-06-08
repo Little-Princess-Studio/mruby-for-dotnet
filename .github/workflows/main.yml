@@ -64,7 +64,15 @@ jobs:
     - name: Test .NET project
       run: |
         cd mruby-wrapper
-        dotnet test --configuration=release
+        dotnet test --configuration=release --blame-crash --blame-hang-timeout 5m --logger "console;verbosity=detailed"
+
+    - name: Upload crash dumps
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: crash-dump-${{ matrix.os }}
+        path: mruby-wrapper/MRuby.UnitTest/TestResults/**
+        if-no-files-found: warn
 
     - name: Upload binaries for Linux
       if: contains(matrix.os, 'ubuntu')
