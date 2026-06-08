@@ -67,9 +67,11 @@ of rapidly recreating it. The standalone GC (`DOTNET_GCName=libclrgc.dylib`) wit
 
 Note: this was verified to reproduce on both **.NET 8 and .NET 10** on macOS, so it is not
 tied to a specific runtime version. (It is distinct from dotnet/runtime#102887, which fixed
-a *different* macOS activation-signal case for libdispatch queue threads in .NET 9.) The
-library's own regression tests deliberately keep this synthetic storm off macOS/Linux CI
-for that reason; see `RbConcurrencyTest`.
+a *different* macOS activation-signal case for libdispatch queue threads in .NET 9.) Because
+it is a macOS test-*host* limitation and not a library defect, CI runs the xUnit suite on
+**Linux and Windows** (Linux exercises the identical CoreCLR signal-based-GC + native
+reverse-callback design and is consistently green); the macOS CI job builds and packages the
+native universal `.dylib` but does not run the managed test host. See `RbConcurrencyTest`.
 
 ## How to Build
 
