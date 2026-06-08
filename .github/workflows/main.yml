@@ -75,10 +75,24 @@ jobs:
         # (e.g. mrb_close running data-object dfree callbacks) and another thread triggers
         # GC, the activation signal can land at a fatal point and PROCAbort()s the test
         # host. This is a known macOS-only CoreCLR issue (dotnet/runtime#44498, #97186,
-        # xamarin-macios#13962); the Roslyn team hit the identical xUnit/macOS/CI-only
-        # crash and mitigated it with the standalone GC (clrgc) plus non-concurrent GC.
-        # mruby 4.0 widened the window (more native work during teardown) so it began
-        # failing where 3.3 did not.
+        # #102887; xamarin-macios#13962); mruby 4.0 widened the window (more native work
+        # during MRB_TT_CDATA teardown) so it began failing where 3.3 did not.
+        #
+        # ROOT FIX is in the test project itself: MRuby.UnitTest/XunitAssemblyInfo.cs
+        # serializes the whole assembly
+        # ([assembly: CollectionBehavior(DisableTestParallelization = true)]). The crash
+        # needs TWO coincident conditions - a GC in flight AND a thread parked in a native
+        # mruby callback. xUnit's default per-class parallelism put several threads in
+        # native callbacks at once and multiplied that coincidence into a ~50% CI flake;
+        # running collections strictly sequentially removes that multiplier. Verified on a
+        # macOS arm64 host: under DOTNET_GCStress=0x4 PARALLEL crashed on the very first
+        # test (0 completed) while SERIAL survived 7-65x longer, and under normal GC the
+        # serialized suite is consistently green.
+        #
+        # The env vars below are DEFENSE-IN-DEPTH for the residual single-thread window
+        # (the finalizer/GC thread can still collect while the one test thread is inside
+        # mrb_close): the standalone GC (clrgc) + non-concurrent GC have better-behaved
+        # macOS thread suspension. Serialization is the primary fix; these harden the rest.
         DOTNET_gcConcurrent: "0"
         DOTNET_GCName: "libclrgc.dylib"
       run: |
