@@ -216,32 +216,24 @@ public class RbConcurrencyTest
 
     // All-platform smoke check for the same two static mappings, with zero cross-thread
     // stress. It does not assert thread-safety (the [WindowsOnlyFact] tests above do that);
-    // it guards the ordinary lifecycle the dictionaries support on every platform: a few
-    // Open/Close cycles must keep StateMapper and RbDataClassMapping consistent - keepers
-    // are created then released, data-class registrations round-trip, and nothing throws
-    // or leaks a stale entry that breaks a later state.
+    // it guards the ordinary lifecycle the dictionaries support on every platform: a
+    // single Open/Close cycle must populate StateMapper and round-trip a data-class
+    // registration through RbDataClassMapping without throwing or leaking.
     //
-    // Deliberately only a HANDFUL of cycles so it is safe to host on macOS/Linux. The
-    // HEAVY 200-cycle version of this same loop is [WindowsOnlyFact] below: a long, tight
-    // Open/Close storm is a single-threaded GC stress case that the macOS .NET 8 test host
-    // cannot reliably host. Each Ruby.Close drives mrb_close's final GC sweep, which calls
-    // a managed data-object dfree callback back across the native boundary; under enough
-    // sustained churn an unrelated process thread (vstest IPC, the blame data collector,
-    // the finalizer) can trigger a GC that signal-suspends the single test thread exactly
-    // while it is parked inside that native->managed callback, and macOS CoreCLR's
-    // signal-based suspension hard-exits the host (the same runtime limit documented on
-    // WindowsOnlyFactAttribute; only fixed in .NET 9). That is a test-host stress limit,
-    // not a library defect - so the storm is asserted only where the runtime hosts it
-    // reliably, while this smoke test keeps cross-platform coverage of the normal path.
+    // Deliberately ONE cycle (no loop): this is indistinguishable from the dozens of
+    // existing single-Ruby.Open() [Fact]s across the suite that are stable on every
+    // platform. The crash this whole change addresses is driven by the *fraction of
+    // wall-time a thread spends parked in mrb_close's reverse-P/Invoke dfree callback*:
+    // tight BACK-TO-BACK Open/Close churn (even a handful of cycles) keeps the lone test
+    // thread in that native window often enough that an unrelated process GC (vstest IPC,
+    // the finalizer) can signal-suspend it there and hard-exit the macOS .NET 8 host. A
+    // single scattered cycle does not. The HEAVY 200-cycle storm version lives in the
+    // [WindowsOnlyFact] below, where the runtime can host that synthetic churn reliably.
+    // See WindowsOnlyFactAttribute and TestStaticMappingsAreStableUnderHeavySequentialOpenCloseStorm.
     [Fact]
     public void TestStaticMappingsAreStableAcrossSequentialOpenClose()
     {
-        const int cycles = 5;
-
-        for (var i = 0; i < cycles; i++)
-        {
-            RunSequentialOpenCloseCycle(i);
-        }
+        RunSequentialOpenCloseCycle(0);
     }
 
     // Heavy single-threaded Open/Close GC storm (200 cycles). Windows-only for the same
