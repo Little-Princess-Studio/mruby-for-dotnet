@@ -1,0 +1,17 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+
+# xmake
+.xmake/
+
+# Test results / coverage
+[Tt]est[Rr]esults/
+*.trx
+coverage*.xml
+*.cobertura.xml
+
+# IDE
+.vs/
+.idea/
+*.user
