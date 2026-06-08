@@ -6,6 +6,7 @@ namespace MRuby.Library.Language
     using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
+    using MRuby.Library;
 
     public struct RbDataClassType
     {
@@ -208,6 +209,29 @@ namespace MRuby.Library.Language
                 }
             }
             return Lambda;
+        }
+
+        // Builds the native callback bridge AND roots it for the lifetime of the
+        // owning RbState. mruby keeps only the raw function pointer of the delegate
+        // (in the method table, a proc, etc.); the managed NativeMethodFunc itself has
+        // no other GC root once the caller discards the `out` value (the idiomatic
+        // `out _`). Without rooting, the next GC collects the delegate and mruby later
+        // calls through a freed function pointer -> hard native crash. Rooting into the
+        // per-state keeper ties the delegate's lifetime to Ruby.Close(state).
+        internal static NativeMethodFunc BuildAndRootNativeCallback(RbState state, CSharpMethodFunc callback)
+        {
+            var nativeFunc = BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
+            RootNativeCallback(state, nativeFunc);
+            return nativeFunc;
+        }
+
+        // Roots an already-built native callback delegate to the RbState lifetime so
+        // mruby's retained function pointer never dangles. Safe to call for transient
+        // callbacks too (they are simply released at Ruby.Close).
+        internal static void RootNativeCallback(RbState state, NativeMethodFunc nativeFunc)
+        {
+            var keeper = RbNativeObjectLiveKeeper<RbCallbackKeeper, NativeMethodFunc>.GetOrCreateKeeper(state);
+            keeper.Keep(nativeFunc);
         }
 
         [ExcludeFromCodeCoverage]

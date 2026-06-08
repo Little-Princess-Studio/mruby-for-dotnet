@@ -5,6 +5,14 @@ using MRuby.Library.Language;
 
 namespace MRuby.Library
 {
+    // Keeper category marker for native callback delegates (NativeMethodFunc) handed to
+    // mruby by DefineMethod/DefineClassMethod/NewProc/etc. mruby retains only the raw
+    // function pointer, so the managed delegate must be rooted to the RbState lifetime.
+    [ExcludeFromCodeCoverage]
+    public sealed class RbCallbackKeeper
+    {
+    }
+
     [ExcludeFromCodeCoverage]
     public abstract class RbNativeObjectLiveKeeper
     {

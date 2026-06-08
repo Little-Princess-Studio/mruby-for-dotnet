@@ -50,7 +50,7 @@ namespace MRuby.Library.Language
         
         public void DefineMethod(UInt64 name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
         {
-            delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
+            delegateFunc = RbHelper.BuildAndRootNativeCallback(this.State, callback);
             mrb_define_method_id(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
         }
 
@@ -62,7 +62,7 @@ namespace MRuby.Library.Language
 
         public void DefinePrivateMethod(UInt64 name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
         {
-            delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
+            delegateFunc = RbHelper.BuildAndRootNativeCallback(this.State, callback);
             mrb_define_private_method_id(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
         }
 
@@ -74,7 +74,7 @@ namespace MRuby.Library.Language
         
         public void DefineClassMethod(UInt64 name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
         {
-            delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
+            delegateFunc = RbHelper.BuildAndRootNativeCallback(this.State, callback);
             mrb_define_class_method_id(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
         }
 
@@ -86,7 +86,7 @@ namespace MRuby.Library.Language
         
         public void DefineModuleMethod(UInt64 name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
         {
-            delegateFunc = RbHelper.BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
+            delegateFunc = RbHelper.BuildAndRootNativeCallback(this.State, callback);
             mrb_define_module_function_id(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
         }
 
