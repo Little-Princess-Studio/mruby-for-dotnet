@@ -239,6 +239,62 @@ public class RbClassTest
         Ruby.Close(state);
     }
 
+    [Fact]
+    void TestPrivateMethod()
+    {
+        var state = Ruby.Open();
+
+        var @class = state.DefineClass("PrivateMethodTest", null);
+        @class.DefinePrivateMethod("secret", (stat, self, args) => stat.BoxInt(42), RbHelper.MRB_ARGS_NONE(), out var secretFunc);
+        using var compiler = state.NewCompiler();
+        compiler.LoadString(@"
+            class PrivateMethodTest
+              def reveal
+                secret
+              end
+            end
+        ");
+
+        var obj = @class.NewObject();
+        var res = obj.CallMethod("reveal");
+        Assert.Equal(42, state.UnboxInt(res));
+
+        GC.KeepAlive(secretFunc);
+        Ruby.Close(state);
+    }
+
+    [Fact]
+    void TestGetOuterClass()
+    {
+        var state = Ruby.Open();
+
+        var outer = state.NewClass(null);
+        var inner = state.DefineClassUnder(outer, "InnerClass", null);
+        var innerOuter = inner.GetOuterClass();
+
+        Assert.Equal(outer.NativeHandler, innerOuter.NativeHandler);
+
+        Ruby.Close(state);
+    }
+
+    [Fact]
+    void TestClearMethodCache()
+    {
+        var state = Ruby.Open();
+
+        var @class = state.DefineClass("MethodCacheTest", null);
+        @class.DefineMethod("value", (stat, self, args) => stat.BoxInt(7), RbHelper.MRB_ARGS_NONE(), out var valueFunc);
+        var obj = @class.NewObject();
+
+        state.ClearMethodCache();
+
+        var res = obj.CallMethod("value");
+        Assert.Equal(7, state.UnboxInt(res));
+
+        GC.KeepAlive(valueFunc);
+        Ruby.Close(state);
+    }
+
     [Theory] [InlineData(false)] [InlineData(true)]
     void TestModuleMethod(bool anonymousDefine)
     {

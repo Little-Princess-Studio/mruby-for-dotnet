@@ -14,6 +14,15 @@ namespace MRuby.Library.Language
             [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc nativeMethod,
             uint parameterAspect);
 
+        // MRB_API void mrb_define_private_method_id(mrb_state *mrb, struct RClass *c, mrb_sym mid, mrb_func_t func, mrb_aspec aspec);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        private static extern void mrb_define_private_method_id(
+            IntPtr mrb,
+            IntPtr @class,
+            UInt64 name,
+            [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc nativeMethod,
+            uint parameterAspect);
+
         // MRB_API void mrb_define_class_method_id(mrb_state *mrb, struct RClass *cla, mrb_sym name, mrb_func_t fun, mrb_aspec aspec);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
         private static extern void mrb_define_class_method_id(
@@ -72,6 +81,10 @@ namespace MRuby.Library.Language
         // MRB_API const char *mrb_class_name(mrb_state *mrb, struct RClass* klass);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
         private static extern IntPtr mrb_class_name(IntPtr mrb, IntPtr klass);
+
+        // MRB_API struct RClass* mrb_class_outer(mrb_state *mrb, struct RClass *c);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        private static extern IntPtr mrb_class_outer(IntPtr mrb, IntPtr c);
 
         // MRB_API mrb_value mrb_cv_get(mrb_state *mrb, mrb_value mod, mrb_sym sym);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]

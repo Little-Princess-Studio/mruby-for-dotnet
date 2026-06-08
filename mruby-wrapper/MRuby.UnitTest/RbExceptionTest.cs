@@ -2,6 +2,7 @@
 
 using Library;
 using Library.Language;
+using System.Reflection;
 
 public class RbExceptionTest
 {
@@ -113,6 +114,38 @@ public class RbExceptionTest
         Assert.True(rescueFlag1);
         Assert.True(rescueFlag2);
 
+        Ruby.Close(state);
+    }
+
+    [Fact]
+    void TestNativeCallbackGenericExceptionRaisesRubyException()
+    {
+        var state = Ruby.Open();
+
+        bool err = false;
+        var errObj = state.Protect((stat, self, args) => throw new InvalidOperationException("generic callback failure"), ref err, out var boomFunc);
+        var message = state.UnboxString(errObj.CallMethod("message"));
+
+        Assert.True(err);
+        Assert.Contains("Native Exception Message: generic callback failure", message);
+
+        GC.KeepAlive(boomFunc);
+        Ruby.Close(state);
+    }
+
+    [Fact]
+    void TestNativeCallbackTargetInvocationExceptionRaisesRubyException()
+    {
+        var state = Ruby.Open();
+
+        bool err = false;
+        var errObj = state.Protect((stat, self, args) => throw new TargetInvocationException(new InvalidOperationException("target invocation callback failure")), ref err, out var boomFunc);
+        var message = state.UnboxString(errObj.CallMethod("message"));
+
+        Assert.True(err);
+        Assert.Contains("Native Exception Message: target invocation callback failure", message);
+
+        GC.KeepAlive(boomFunc);
         Ruby.Close(state);
     }
 

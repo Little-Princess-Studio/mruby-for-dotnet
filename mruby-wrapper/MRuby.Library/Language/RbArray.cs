@@ -55,6 +55,12 @@ namespace MRuby.Library.Language
 
         public void Concat(RbArray other) => mrb_ary_concat(this.State.NativeHandler, this.Value.NativeValue, other.Value.NativeValue);
 
+        public RbArray Dup()
+        {
+            var valuePtr = mrb_ary_dup(this.State.NativeHandler, this.Value.NativeValue);
+            return FromArrayObject(new RbValue(this.State, valuePtr));
+        }
+
         public void Push(RbValue value) => mrb_ary_push(this.State.NativeHandler, this.Value.NativeValue, value.NativeValue);
 
         public RbValue Pop()

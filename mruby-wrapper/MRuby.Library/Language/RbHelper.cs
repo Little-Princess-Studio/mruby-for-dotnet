@@ -188,19 +188,24 @@ namespace MRuby.Library.Language
                     var totalMsg = $"Native Exception Message: {e.InnerException?.Message ?? e.Message} \n Stacktrace: {e.InnerException?.StackTrace ?? e.Message}";
                     var excCls = csharpState.GetClass("Exception");
                     var exc = csharpState.GenerateExceptionWithNewStr(excCls, totalMsg);
-                    csharpState.Raise(exc);
-                    return csharpState.RbNil.NativeValue;
+                    return RaiseNativeCallbackException(csharpState, exc);
                 }
                 catch (Exception e)
                 {
                     var totalMsg = $"Native Exception Message: {e.Message} \n Stacktrace: {e.StackTrace}";
                     var excCls = csharpState.GetClass("Exception");
                     var exc = csharpState.GenerateExceptionWithNewStr(excCls, totalMsg);
-                    csharpState.Raise(exc);
-                    return csharpState.RbNil.NativeValue;
+                    return RaiseNativeCallbackException(csharpState, exc);
                 }
             }
             return Lambda;
+        }
+
+        [ExcludeFromCodeCoverage]
+        private static UInt64 RaiseNativeCallbackException(RbState state, RbValue exc)
+        {
+            state.Raise(exc);
+            return state.RbNil.NativeValue;
         }
 
         private static void NativeDataObjectFreeFunc(IntPtr state, IntPtr data) => FreeIntPtrOfCSharpObject(data);

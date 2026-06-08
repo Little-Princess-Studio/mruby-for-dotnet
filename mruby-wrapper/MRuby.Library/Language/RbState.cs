@@ -223,6 +223,8 @@ namespace MRuby.Library.Language
         [ExcludeFromCodeCoverage]
         public void IncrementalGc() => mrb_incremental_gc(this.NativeHandler);
 
+        public void ClearMethodCache() => mrb_method_cache_clear(this.NativeHandler);
+
         [ExcludeFromCodeCoverage]
         public void GcProtect(RbValue value)
         {
