@@ -39,6 +39,16 @@ Assert.Equal("Hello, World!", unboxed);
 
 ```
 
+## Threading
+
+An `RbState` (the value returned by `Ruby.Open()`) is **thread-affine**: mruby has no
+GIL, so a single state must never be accessed from more than one thread at a time. You
+**may** use *different* `RbState` instances concurrently, each on its own thread. VM
+creation and destruction (`Ruby.Open` / `Ruby.Close`) are serialized internally, so it is
+safe to open and close states from multiple threads. If you store C# objects in mruby
+data objects, their release callback runs during `Ruby.Close`/GC on the thread performing
+that close.
+
 ## How to Build
 
 1. `git submodule update --init --recursive`

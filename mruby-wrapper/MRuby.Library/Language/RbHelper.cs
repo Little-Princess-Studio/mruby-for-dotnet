@@ -91,6 +91,12 @@ namespace MRuby.Library.Language
 
         private static Dictionary<string, (RbDataClassType, IntPtr)> RbDataClassMapping { get; } = new Dictionary<string, (RbDataClassType, IntPtr)>();
 
+        // Guards the process-wide RbDataClassMapping. The check-then-add in
+        // GetOrCreateNewRbDataStructPtr must be atomic: concurrent registration of the
+        // same data-class name would otherwise double-call Dictionary.Add (throwing
+        // ArgumentException) and leak the Marshal.AllocHGlobal allocation.
+        private static readonly object RbDataClassMappingLock = new object();
+
         private static bool RbDataStructExist(string name) => RbDataClassMapping.ContainsKey(name);
 
         private static void RbDataStructAdd(string name, Action<RbState, object?>? releaseFn)
@@ -146,13 +152,16 @@ namespace MRuby.Library.Language
 
         internal static IntPtr GetOrCreateNewRbDataStructPtr(string name, Action<RbState, object?>? releseFn = null)
         {
-            if (RbDataStructExist(name))
+            lock (RbDataClassMappingLock)
             {
+                if (RbDataStructExist(name))
+                {
+                    return RbDataClassMapping[name].Item2;
+                }
+
+                RbDataStructAdd(name, releseFn);
                 return RbDataClassMapping[name].Item2;
             }
-
-            RbDataStructAdd(name, releseFn);
-            return RbDataClassMapping[name].Item2;
         }
 
         [ExcludeFromCodeCoverage]

@@ -1,4 +1,4 @@
-﻿namespace MRuby.Library
+namespace MRuby.Library
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
@@ -8,6 +8,18 @@
     public static class Ruby
     {
         internal const string MrubyLib = "libmruby_x64";
+
+        // Serializes mruby VM creation/teardown across managed threads.
+        //
+        // An mrb_state* is single-threaded by mruby's design (no GIL). Independent
+        // states isolate VM data, but mrb_open()/mrb_close() still touch
+        // process-global initialization paths, and mrb_close() drives a final GC
+        // sweep that calls managed data-object free callbacks back across the native
+        // boundary. Allowing many threads to open/close VMs simultaneously (e.g. xUnit
+        // runs test classes in parallel) races those global/teardown paths and can hard
+        // -crash the host process. Lifecycle is therefore serialized; concurrent *use*
+        // of two already-open, independent states on their own threads is still allowed.
+        private static readonly object VmLifecycleLock = new object();
 
         [DllImport(MrubyLib, CharSet = CharSet.Ansi)]
         private static extern IntPtr mrb_open();
@@ -21,8 +33,12 @@
 
         public static RbState Open()
         {
-            var ptr = mrb_open();
-            ThrowIfOpenFailed(ptr);
+            IntPtr ptr;
+            lock (VmLifecycleLock)
+            {
+                ptr = mrb_open();
+                ThrowIfOpenFailed(ptr);
+            }
 
             var state = new RbState()
             {
@@ -47,9 +63,12 @@
 
         public static void Close(RbState state)
         {
-            if (state.NativeHandler != IntPtr.Zero)
+            lock (VmLifecycleLock)
             {
-                mrb_close(state.NativeHandler);
+                if (state.NativeHandler != IntPtr.Zero)
+                {
+                    mrb_close(state.NativeHandler);
+                }
             }
 
             RbNativeObjectLiveKeeper.ReleaseKeeper(state);
