@@ -61,7 +61,26 @@ jobs:
         dotnet restore
         dotnet build --configuration=release
 
-    - name: Test .NET project
+    - name: Test .NET project (Linux)
+      if: contains(matrix.os, 'ubuntu')
+      run: |
+        cd mruby-wrapper
+        dotnet test --configuration=release --blame-crash --blame-hang-timeout 5m --logger "console;verbosity=detailed"
+
+    - name: Test .NET project (macOS)
+      if: contains(matrix.os, 'macos')
+      env:
+        # macOS CoreCLR uses signal-based GC thread suspension (PAL_InjectActivation ->
+        # pthread_kill SIGUSR1). When a managed thread is parked inside native mruby code
+        # (e.g. mrb_close running data-object dfree callbacks) and another thread triggers
+        # GC, the activation signal can land at a fatal point and PROCAbort()s the test
+        # host. This is a known macOS-only CoreCLR issue (dotnet/runtime#44498, #97186,
+        # xamarin-macios#13962); the Roslyn team hit the identical xUnit/macOS/CI-only
+        # crash and mitigated it with the standalone GC (clrgc) plus non-concurrent GC.
+        # mruby 4.0 widened the window (more native work during teardown) so it began
+        # failing where 3.3 did not.
+        DOTNET_gcConcurrent: "0"
+        DOTNET_GCName: "libclrgc.dylib"
       run: |
         cd mruby-wrapper
         dotnet test --configuration=release --blame-crash --blame-hang-timeout 5m --logger "console;verbosity=detailed"
