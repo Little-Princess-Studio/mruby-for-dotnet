@@ -146,6 +146,7 @@ namespace MRuby.Library.Language
         {
             var dataType = RbHelper.GetOrCreateNewRbDataStructPtr(dataName);
             var dataPtr = RbHelper.GetIntPtrOfCSharpObject(data);
+            RbHelper.RegisterDataObject(this.State.NativeHandler, dataPtr, null);
             var obj = mrb_new_data_object(this.State.NativeHandler, this.NativeHandler, dataPtr, dataType);
             var ret = new RbValue(this.State, obj);
             ret.CallMethod("initialize", args);
@@ -154,8 +155,9 @@ namespace MRuby.Library.Language
 
         public RbValue NewObjectWithCSharpDataObject<T>(string dataName, T data, Action<RbState, object?> releaseFn, params RbValue[] args) where T : class
         {
-            var dataType = RbHelper.GetOrCreateNewRbDataStructPtr(dataName, releaseFn);
+            var dataType = RbHelper.GetOrCreateNewRbDataStructPtr(dataName);
             var dataPtr = RbHelper.GetIntPtrOfCSharpObject(data);
+            RbHelper.RegisterDataObject(this.State.NativeHandler, dataPtr, releaseFn);
             var obj = mrb_new_data_object(this.State.NativeHandler, this.NativeHandler, dataPtr, dataType);
             var ret = new RbValue(this.State, obj);
             ret.CallMethod("initialize", args);

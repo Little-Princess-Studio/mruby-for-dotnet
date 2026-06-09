@@ -67,6 +67,7 @@ namespace MRuby.Library
             {
                 if (state.NativeHandler != IntPtr.Zero)
                 {
+                    RbHelper.DrainStateDataObjects(state);
                     mrb_close(state.NativeHandler);
                 }
             }
