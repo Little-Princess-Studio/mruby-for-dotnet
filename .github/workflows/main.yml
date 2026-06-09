@@ -71,7 +71,14 @@ jobs:
       if: contains(matrix.os, 'macos')
       run: |
         cd mruby-wrapper
-        dotnet test --configuration=release --logger "console;verbosity=detailed"
+        dotnet build --configuration=release
+        echo "::group::macOS 30x stress validation (no --blame)"
+        for i in $(seq 1 30); do
+          echo "==== macOS run $i/30 ===="
+          dotnet test --configuration=release --no-build --logger "console;verbosity=minimal" || { echo "CRASH on run $i"; exit 1; }
+        done
+        echo "::endgroup::"
+        echo "macOS: 30/30 runs passed with no host crash"
 
     - name: Upload binaries for Linux
       if: contains(matrix.os, 'ubuntu')
