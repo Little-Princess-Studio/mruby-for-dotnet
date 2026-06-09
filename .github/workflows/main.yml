@@ -86,6 +86,21 @@ jobs:
     # DO NOT re-add a macOS `dotnet test` step to this required job; if you want a signal,
     # add a SEPARATE non-required job with continue-on-error: true.
 
+    - name: Test .NET project (macOS) - EXPERIMENT ThreadSuspendInjection=0
+      if: contains(matrix.os, 'macos')
+      env:
+        DOTNET_INTERNAL_ThreadSuspendInjection: "0"
+      run: |
+        cd mruby-wrapper
+        dotnet build --configuration=release
+        echo "::group::macOS 30x stress (DOTNET_INTERNAL_ThreadSuspendInjection=0, no --blame)"
+        for i in $(seq 1 30); do
+          echo "==== macOS run $i/30 ===="
+          dotnet test --configuration=release --no-build --logger "console;verbosity=minimal" || { echo "CRASH on run $i"; exit 1; }
+        done
+        echo "::endgroup::"
+        echo "macOS: 30/30 passed with no host crash"
+
     - name: Upload crash dumps (Linux)
       if: failure() && contains(matrix.os, 'ubuntu')
       uses: actions/upload-artifact@v4
