@@ -49,30 +49,6 @@ safe to open and close states from multiple threads. If you store C# objects in 
 data objects, their release callback runs during `Ruby.Close`/GC on the thread performing
 that close.
 
-### macOS: best-effort under heavy lifecycle churn
-
-On **macOS**, the CoreCLR garbage collector suspends managed threads using POSIX signals.
-If the GC suspends a thread that is currently parked inside a native mruby callback (for
-example `Ruby.Close` driving `mrb_close`, which calls your data-object release callback
-back across the native boundary), the activation signal can land at a point the runtime
-cannot safely resume and it hard-exits the process. This is a CoreCLR/macOS limitation in
-how it suspends threads stopped in native frames, not a defect in this library.
-
-This only surfaces under *sustained, tight* churn - e.g. opening and closing many states
-in a fast loop while allocating managed data objects each iteration. Ordinary usage (a
-single state, or open/close scattered among real work) is unaffected. If you do heavy
-`Ruby.Open`/`Ruby.Close` cycling on macOS, prefer **reusing a single `RbState`** instead
-of rapidly recreating it. The standalone GC (`DOTNET_GCName=libclrgc.dylib`) with
-`DOTNET_gcConcurrent=0` reduces - but does not eliminate - the window.
-
-Note: this was verified to reproduce on both **.NET 8 and .NET 10** on macOS, so it is not
-tied to a specific runtime version. (It is distinct from dotnet/runtime#102887, which fixed
-a *different* macOS activation-signal case for libdispatch queue threads in .NET 9.) Because
-it is a macOS test-*host* limitation and not a library defect, CI runs the xUnit suite on
-**Linux and Windows** (Linux exercises the identical CoreCLR signal-based-GC + native
-reverse-callback design and is consistently green); the macOS CI job builds and packages the
-native universal `.dylib` but does not run the managed test host. See `RbConcurrencyTest`.
-
 ## How to Build
 
 1. `git submodule update --init --recursive`
