@@ -69,10 +69,14 @@ jobs:
 
     - name: Test .NET project (macOS)
       if: contains(matrix.os, 'macos')
+      env:
+        DOTNET_gcConcurrent: "0"
+        DOTNET_GCName: "libclrgc.dylib"
+        DOTNET_TieredCompilation: "0"
       run: |
         cd mruby-wrapper
         dotnet build --configuration=release
-        echo "::group::macOS 30x stress validation (no --blame)"
+        echo "::group::macOS 30x stress validation (Fix B + clrgc + gcConcurrent=0, no --blame)"
         for i in $(seq 1 30); do
           echo "==== macOS run $i/30 ===="
           dotnet test --configuration=release --no-build --logger "console;verbosity=minimal" || { echo "CRASH on run $i"; exit 1; }
