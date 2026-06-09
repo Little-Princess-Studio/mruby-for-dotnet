@@ -67,24 +67,19 @@ jobs:
         cd mruby-wrapper
         dotnet test --configuration=release --blame-crash --blame-hang-timeout 5m --logger "console;verbosity=detailed"
 
-    # NOTE: macOS deliberately does NOT run the xUnit suite. The managed/native interop is
-    # gated on Linux (above) and Windows (the build-windows job below); macOS validates the
-    # native build, the universal .dylib, the .NET compile, and the packaging input only.
-    #
-    # Why: macOS CoreCLR suspends managed threads for a GC using POSIX signals
-    # (PAL_InjectActivation -> pthread_kill). When the GC suspends a thread parked inside a
-    # native mruby reverse-P/Invoke callback (mrb_close running a data-object dfree across
-    # the boundary), the activation signal can land at an unsafe PC and hard-exit the test
-    # host. It is a macOS test-HOST limitation, not a library defect - Linux exercises the
-    # identical CoreCLR signal-based-GC + reverse-callback design and is 100% green, and the
-    # crash reproduces on BOTH .NET 8 and .NET 10 (so it is NOT dotnet/runtime#102887, which
-    # fixed a different libdispatch-queue case in .NET 9). No xUnit/GC config makes it
-    # deterministic (serialization + clrgc + de-hosting the GC-storm tests only reduced it
-    # from ~50% to a stubborn ~25% startup-window flake during framework bootstrap). Per the
-    # library's contract, synthetic GC/thread churn against native teardown is outside the
-    # macOS test-host's reliable envelope, so CI encodes that boundary instead of flaking.
-    # DO NOT re-add a macOS `dotnet test` step to this required job; if you want a signal,
-    # add a SEPARATE non-required job with continue-on-error: true.
+    # macOS runs the managed suite as a non-blocking signal: the test host crashes on
+    # ~25-50% of 3-core runs because CoreCLR's signal-based GC suspension (SIGUSR1) can land
+    # at an unsafe PC while a thread is inside a native mruby reverse-P/Invoke callback. This
+    # is a macOS CoreCLR host limitation (Linux uses SIGRTMIN and is stable); no library or
+    # GC config removes it, so the crash must not gate the build. Managed coverage is on
+    # Linux + Windows. Keep continue-on-error.
+    - name: Test .NET project (macOS, non-blocking signal)
+      if: contains(matrix.os, 'macos')
+      continue-on-error: true
+      run: |
+        cd mruby-wrapper
+        dotnet test --configuration=release --logger "console;verbosity=detailed"
+
 
     - name: Upload crash dumps (Linux)
       if: failure() && contains(matrix.os, 'ubuntu')
