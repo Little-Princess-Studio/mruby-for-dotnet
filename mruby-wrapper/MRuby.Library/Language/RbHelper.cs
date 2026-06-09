@@ -13,9 +13,10 @@ namespace MRuby.Library.Language
         [MarshalAs(UnmanagedType.LPStr)]
         public readonly string Name;
 
-        public readonly IntPtr FreeFunc;
+        [MarshalAs(UnmanagedType.FunctionPtr)]
+        public readonly NativeDataObjectFreeFunc FreeFunc;
 
-        public RbDataClassType(string name, IntPtr freeFunc)
+        public RbDataClassType(string name, NativeDataObjectFreeFunc freeFunc)
         {
             this.Name = name;
             this.FreeFunc = freeFunc;
@@ -99,15 +100,25 @@ namespace MRuby.Library.Language
 
         private static bool RbDataStructExist(string name) => RbDataClassMapping.ContainsKey(name);
 
-        // dfree is deliberately NULL: mruby's gc.c skips a NULL dfree
-        // (`if (d->type && d->type->dfree)`), so the C# object's GCHandle is never freed
-        // across the native boundary during mrb_close. The library owns GCHandle lifetime
-        // and frees it managed-side in Ruby.Close (RegisterDataObject / DrainStateDataObjects),
-        // keeping managed frames off the stack during native teardown.
-        private static void RbDataStructAdd(string name)
+        private static void RbDataStructAdd(string name, Action<RbState, object?>? releaseFn)
         {
             var typeStruct = Marshal.AllocHGlobal(Marshal.SizeOf<RbDataClassType>());
-            var type = new RbDataClassType(name, IntPtr.Zero);
+            RbDataClassType type;
+            if (releaseFn != null)
+            {
+                type = new RbDataClassType(name, (mrb, data) =>
+                {
+                    releaseFn(new RbState
+                    {
+                        NativeHandler = mrb
+                    }, GetObjectFromIntPtr(data));
+                    NativeDataObjectFreeFunc(mrb, data);
+                });
+            }
+            else
+            {
+                type = new RbDataClassType(name, NativeDataObjectFreeFunc);
+            }
             Marshal.StructureToPtr(type, typeStruct, false);
             RbDataClassMapping.Add(name, (type, typeStruct));
         }
@@ -140,7 +151,7 @@ namespace MRuby.Library.Language
 
         internal static bool IsFiber(RbValue obj) => mrb_check_type_fiber(obj.NativeValue);
 
-        internal static IntPtr GetOrCreateNewRbDataStructPtr(string name)
+        internal static IntPtr GetOrCreateNewRbDataStructPtr(string name, Action<RbState, object?>? releseFn = null)
         {
             lock (RbDataClassMappingLock)
             {
@@ -149,7 +160,7 @@ namespace MRuby.Library.Language
                     return RbDataClassMapping[name].Item2;
                 }
 
-                RbDataStructAdd(name);
+                RbDataStructAdd(name, releseFn);
                 return RbDataClassMapping[name].Item2;
             }
         }
@@ -230,65 +241,7 @@ namespace MRuby.Library.Language
             return state.RbNil.NativeValue;
         }
 
-        private static readonly Dictionary<IntPtr, List<(IntPtr GcHandle, Action<RbState, object?>? ReleaseFn)>> StateDataObjects
-            = new Dictionary<IntPtr, List<(IntPtr, Action<RbState, object?>?)>>();
-
-        private static readonly object StateDataObjectsLock = new object();
-
-        internal static void RegisterDataObject(IntPtr stateHandle, IntPtr gcHandlePtr, Action<RbState, object?>? releaseFn)
-        {
-            lock (StateDataObjectsLock)
-            {
-                if (!StateDataObjects.TryGetValue(stateHandle, out var list))
-                {
-                    list = new List<(IntPtr, Action<RbState, object?>?)>();
-                    StateDataObjects.Add(stateHandle, list);
-                }
-
-                list.Add((gcHandlePtr, releaseFn));
-            }
-        }
-
-        // Runs each data object's releaseFn and frees its GCHandle on the managed side,
-        // BEFORE Ruby.Close calls mrb_close. This is the core of the macOS fix: with dfree
-        // left NULL (RbDataStructAdd), no managed frame is on the stack inside mrb_close, so
-        // a signal-based GC suspension cannot land in a native->managed transition there.
-        // Every handle is freed exactly once even if a releaseFn throws; errors aggregate.
-        internal static void DrainStateDataObjects(RbState state)
-        {
-            List<(IntPtr GcHandle, Action<RbState, object?>? ReleaseFn)>? list;
-            lock (StateDataObjectsLock)
-            {
-                if (!StateDataObjects.TryGetValue(state.NativeHandler, out list))
-                {
-                    return;
-                }
-
-                StateDataObjects.Remove(state.NativeHandler);
-            }
-
-            List<Exception>? errors = null;
-            foreach (var (gcHandle, releaseFn) in list)
-            {
-                try
-                {
-                    releaseFn?.Invoke(state, GetObjectFromIntPtr(gcHandle));
-                }
-                catch (Exception e)
-                {
-                    (errors ??= new List<Exception>()).Add(e);
-                }
-                finally
-                {
-                    FreeIntPtrOfCSharpObject(gcHandle);
-                }
-            }
-
-            if (errors != null)
-            {
-                throw new AggregateException(errors);
-            }
-        }
+        private static void NativeDataObjectFreeFunc(IntPtr state, IntPtr data) => FreeIntPtrOfCSharpObject(data);
 
         internal static UInt64 GetInternSymbol(RbState state, string str) => mrb_intern_cstr(state.NativeHandler, str);
 
