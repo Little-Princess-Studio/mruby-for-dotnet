@@ -1,0 +1,125 @@
+name: Reverse-PInvoke GC-Suspension Crash Repro (mruby-free)
+
+# Observation-only experiment. Manually dispatched. Proves the macOS crash lives
+# in the CoreCLR reverse-P/Invoke + GC-suspension machinery, with ZERO mruby code.
+#
+# The PROOF is the cross-platform contrast in the final summary:
+#   macOS  -> crashes some % of attempts (SIGSEGV/SIGABRT, exit 134/139)
+#   Linux  -> rare / occasional
+#   Windows-> 0 crashes (different suspension mechanism: SuspendThread, no signal)
+
+on:
+  push:
+    branches: [ experiment/reverse-pinvoke-gc-crash ]
+  workflow_dispatch:
+    inputs:
+      attempts:
+        description: 'How many times to run the repro binary per OS/GC combo'
+        required: false
+        default: '30'
+        type: string
+      seconds:
+        description: 'Wall-clock seconds each attempt runs before draining to a clean exit'
+        required: false
+        default: '20'
+        type: string
+      threads:
+        description: 'Worker threads each looping through the native callback'
+        required: false
+        default: '4'
+        type: string
+
+jobs:
+  repro:
+    name: ${{ matrix.os }} / ${{ matrix.gcmode }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, ubuntu-24.04, windows-2022]
+        gcmode: [server, workstation]
+
+    env:
+      REPRO_ATTEMPTS: ${{ github.event.inputs.attempts || '30' }}
+      REPRO_SECONDS:  ${{ github.event.inputs.seconds  || '20' }}
+      REPRO_THREADS:  ${{ github.event.inputs.threads  || '4' }}
+      # Background/concurrent GC ON so a separate BGC thread does the suspending.
+      DOTNET_gcConcurrent: '1'
+      # Make crashes fast & clean to tally (no minidump, no diagnostics server).
+      DOTNET_DbgEnableMiniDump: '0'
+      DOTNET_EnableDiagnostics: '0'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # ---- Build the trivial native shim (no mruby, no deps) ----
+      - name: Build native shim (Unix)
+        if: runner.os != 'Windows'
+        working-directory: experiments/reverse-pinvoke-gc-crash
+        run: |
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            cc -O2 -dynamiclib -o libnativeshim.dylib nativeshim.c
+            file libnativeshim.dylib
+          else
+            cc -O2 -fPIC -shared -o libnativeshim.so nativeshim.c
+            file libnativeshim.so
+          fi
+
+      - name: Build native shim (Windows)
+        if: runner.os == 'Windows'
+        working-directory: experiments/reverse-pinvoke-gc-crash
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cl /O2 /LD nativeshim.c /Fe:nativeshim.dll
+
+      - name: Build repro (Release)
+        working-directory: experiments/reverse-pinvoke-gc-crash
+        run: dotnet build -c Release
+
+      - name: Run repro ${{ env.REPRO_ATTEMPTS }}x  [${{ matrix.os }} / ${{ matrix.gcmode }}]
+        working-directory: experiments/reverse-pinvoke-gc-crash
+        shell: bash
+        env:
+          DOTNET_gcServer: ${{ matrix.gcmode == 'server' && '1' || '0' }}
+        run: |
+          bin=$(find bin/Release -name 'ReproGcCrash.dll' | head -n1)
+          echo "binary: ${bin}"
+          attempts="${REPRO_ATTEMPTS}"
+          crashes=0
+          clean=0
+          first_crash=0
+          declare -a codes=()
+          for i in $(seq 1 "${attempts}"); do
+            echo "::group::attempt ${i}/${attempts}  (${{ matrix.os }} / ${{ matrix.gcmode }})"
+            set +e
+            dotnet "${bin}"
+            code=$?
+            set -e
+            echo "attempt ${i}: exit=${code}"
+            echo "::endgroup::"
+            if [ "${code}" -ne 0 ]; then
+              crashes=$((crashes + 1))
+              codes+=("${code}")
+              if [ "${first_crash}" -eq 0 ]; then first_crash=${i}; fi
+            else
+              clean=$((clean + 1))
+            fi
+          done
+          echo "==================== REPRO SUMMARY ===================="
+          echo "platform    : ${{ matrix.os }}"
+          echo "gc mode     : ${{ matrix.gcmode }}"
+          echo "attempts    : ${attempts}"
+          echo "clean exits : ${clean}"
+          echo "crashes     : ${crashes}"
+          echo "first crash : ${first_crash} (0 = never crashed)"
+          echo "exit codes  : ${codes[*]:-none}   (139=SIGSEGV 134=SIGABRT 135=SIGBUS)"
+          echo "======================================================"
+          # Observational only: never fail the job (continue-on-error also guards it).
+          exit 0
