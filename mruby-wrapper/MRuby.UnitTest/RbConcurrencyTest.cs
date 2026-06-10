@@ -120,7 +120,7 @@ public class RbConcurrencyTest
 
                         for (var i = 0; i < iterations; i++)
                         {
-                            var keeper = RbNativeObjectLiveKeeper<RbAutoRegisterKeeper, NativeMethodFunc>
+                            var keeper = RbKeyedObjectKeeper<RbAutoRegisterKeeper, NativeMethodFunc>
                                 .GetOrCreateKeeper(state);
 
                             NativeMethodFunc fn = (_, self) => self;
@@ -344,7 +344,7 @@ public class RbConcurrencyTest
         try
         {
             // Exercise StateMapper: create a keeper for this state and root a delegate.
-            var keeper = RbNativeObjectLiveKeeper<RbAutoRegisterKeeper, NativeMethodFunc>
+            var keeper = RbKeyedObjectKeeper<RbAutoRegisterKeeper, NativeMethodFunc>
                 .GetOrCreateKeeper(state);
 
             NativeMethodFunc fn = (_, self) => self;
@@ -352,7 +352,7 @@ public class RbConcurrencyTest
 
             // Re-fetching must return the SAME keeper for the SAME state (the mapping
             // is populated, not duplicated).
-            var keeperAgain = RbNativeObjectLiveKeeper<RbAutoRegisterKeeper, NativeMethodFunc>
+            var keeperAgain = RbKeyedObjectKeeper<RbAutoRegisterKeeper, NativeMethodFunc>
                 .GetOrCreateKeeper(state);
             Assert.Same(keeper, keeperAgain);
 

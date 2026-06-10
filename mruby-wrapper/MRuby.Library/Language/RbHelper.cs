@@ -282,7 +282,7 @@ namespace MRuby.Library.Language
         // callbacks too (they are simply released at Ruby.Close).
         internal static void RootNativeCallback(RbState state, NativeMethodFunc nativeFunc)
         {
-            var keeper = RbNativeObjectLiveKeeper<RbCallbackKeeper, NativeMethodFunc>.GetOrCreateKeeper(state);
+            var keeper = RbSetObjectKeeper<RbCallbackKeeper, NativeMethodFunc>.GetOrCreateKeeper(state);
             keeper.Keep(nativeFunc);
         }
 
@@ -316,7 +316,7 @@ namespace MRuby.Library.Language
                     {
                         if (kvp.Value.TryGetValue(typeof(RbDataObjectKeeper), out var keeper))
                         {
-                            ((RbNativeObjectLiveKeeper<RbDataObjectKeeper, RbDataObjectRegistration>)keeper)
+                            ((RbKeyedObjectKeeper<RbDataObjectKeeper, RbDataObjectRegistration>)keeper)
                                 .Release(dataHandle);
                         }
 

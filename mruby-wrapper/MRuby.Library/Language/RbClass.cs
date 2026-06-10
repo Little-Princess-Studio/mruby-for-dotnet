@@ -150,7 +150,7 @@ namespace MRuby.Library.Language
             // Register (dataPtr, mrbValue) in the per-state data-object registry so Ruby.Close
             // can pre-free and disarm this object before mrb_close (eliminating the close-time
             // dfree reverse-P/Invoke callback that can crash on macOS).
-            var dataRegistry = RbNativeObjectLiveKeeper<RbDataObjectKeeper, RbDataObjectRegistration>
+            var dataRegistry = RbKeyedObjectKeeper<RbDataObjectKeeper, RbDataObjectRegistration>
                 .GetOrCreateKeeper(this.State);
             dataRegistry.Keep(dataPtr, new RbDataObjectRegistration(dataPtr, obj, null));
             var ret = new RbValue(this.State, obj);
@@ -166,7 +166,7 @@ namespace MRuby.Library.Language
             // Register (dataPtr, mrbValue) in the per-state data-object registry so Ruby.Close
             // can pre-free and disarm this object before mrb_close (eliminating the close-time
             // dfree reverse-P/Invoke callback that can crash on macOS).
-            var dataRegistry = RbNativeObjectLiveKeeper<RbDataObjectKeeper, RbDataObjectRegistration>
+            var dataRegistry = RbKeyedObjectKeeper<RbDataObjectKeeper, RbDataObjectRegistration>
                 .GetOrCreateKeeper(this.State);
             dataRegistry.Keep(dataPtr, new RbDataObjectRegistration(dataPtr, obj, releaseFn));
             var ret = new RbValue(this.State, obj);
