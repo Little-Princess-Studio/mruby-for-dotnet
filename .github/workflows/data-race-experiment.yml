@@ -1,0 +1,158 @@
+name: Data-Race Root-Cause Experiment (real mruby)
+
+# Tests hypothesis H1: the original macOS CI hard-crash was caused by concurrent
+# corruption of two process-global dictionaries (StateMapper, RbDataClassMapping),
+# which the shipped fix guards with locks. This experiment REVERTS those locks at
+# runtime (env-gated, default-off so production is unchanged) and runs the two
+# 8-thread racing regression tests with REAL mruby, on macOS vs Windows.
+#
+# Read the result as a 2x4 matrix:
+#   - locks-on  : baseline. MUST pass on both OSes first, or the test is too aggressive
+#                 (the [WindowsOnlyFact] folklore claims macOS hard-exits even WITH the
+#                 fix -- this arm verifies or refutes that).
+#   - *-off     : the experimental revert. H1 predicts macOS hard-crash (exit 134/139)
+#                 and Windows clean test-failure (positive control that the gate works).
+
+on:
+  workflow_dispatch:
+    inputs:
+      repeats:
+        description: 'Fresh dotnet-test processes per matrix arm'
+        required: false
+        default: '10'
+        type: string
+  push:
+    branches: [ experiment/data-race-root-cause ]
+
+jobs:
+  experiment:
+    name: ${{ matrix.os }} / ${{ matrix.arm }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, windows-2022]
+        arm: [locks-on, statemapper-off, dataclass-off, both-off]
+
+    env:
+      REPEATS: ${{ github.event.inputs.repeats || '10' }}
+      # Un-skip the two racing tests on macOS so the experiment can run them there.
+      MRUBY_EXPERIMENT_UNSKIP: '1'
+      # Make native crashes fast & cleanly tallyable (no minidump churn).
+      DOTNET_DbgEnableMiniDump: '0'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: "2.9.6"
+
+      - name: Setup GCC (Linux only - n/a here, kept for parity)
+        if: contains(matrix.os, 'ubuntu')
+        run: sudo apt update && sudo apt install -y build-essential
+
+      - name: Compile mruby (macOS)
+        if: contains(matrix.os, 'macos')
+        run: rake
+
+      - name: Compile mruby (Windows)
+        if: contains(matrix.os, 'windows')
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          build-mruby-win.bat
+
+      - name: Build native shim with XMake (macOS)
+        if: contains(matrix.os, 'macos')
+        run: |
+          cd mruby-shared
+          xmake f -m release
+          xmake
+
+      - name: Build native shim with XMake (Windows)
+        if: contains(matrix.os, 'windows')
+        run: |
+          cd mruby-shared
+          xmake f -p windows -a x64 -m release --toolchain=msvc
+          xmake
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build wrapper (Release)
+        run: |
+          cd mruby-wrapper
+          dotnet restore
+          dotnet build --configuration=release
+
+      - name: Run racing tests ${{ env.REPEATS }}x  [${{ matrix.os }} / ${{ matrix.arm }}]
+        working-directory: mruby-wrapper
+        shell: bash
+        env:
+          # Per-arm lock toggles. locks-on sets neither (shipped behavior).
+          MRUBY_DISABLE_STATEMAPPER_LOCK: ${{ (matrix.arm == 'statemapper-off' || matrix.arm == 'both-off') && '1' || '0' }}
+          MRUBY_DISABLE_DATACLASS_LOCK:   ${{ (matrix.arm == 'dataclass-off'   || matrix.arm == 'both-off') && '1' || '0' }}
+        run: |
+          repeats="${REPEATS}"
+          pass=0
+          clean_fail=0
+          crash=0
+          first_bad=0
+          declare -a codes=()
+          filter='FullyQualifiedName~TestConcurrentKeeperMappingIsThreadSafe|FullyQualifiedName~TestConcurrentDataObjectRegistrationIsThreadSafe'
+          echo "arm=${{ matrix.arm }} STATEMAPPER_OFF=${MRUBY_DISABLE_STATEMAPPER_LOCK} DATACLASS_OFF=${MRUBY_DISABLE_DATACLASS_LOCK} UNSKIP=${MRUBY_EXPERIMENT_UNSKIP}"
+          for i in $(seq 1 "${repeats}"); do
+            echo "::group::repeat ${i}/${repeats}  (${{ matrix.os }} / ${{ matrix.arm }})"
+            set +e
+            # Fresh process each repeat: a hard crash poisons only this iteration.
+            dotnet test --configuration=release --no-build \
+              --filter "${filter}" \
+              --logger "console;verbosity=minimal"
+            code=$?
+            set -e
+            echo "repeat ${i}: exit=${code}"
+            echo "::endgroup::"
+            if [ "${code}" -eq 0 ]; then
+              pass=$((pass + 1))
+            elif [ "${code}" -eq 1 ]; then
+              # xUnit assertion failure / non-empty errors queue = clean managed failure.
+              clean_fail=$((clean_fail + 1))
+              if [ "${first_bad}" -eq 0 ]; then first_bad=${i}; fi
+            else
+              # 134=SIGABRT, 139=SIGSEGV, 135=SIGBUS, 137=SIGKILL: native hard crash.
+              crash=$((crash + 1))
+              codes+=("${code}")
+              if [ "${first_bad}" -eq 0 ]; then first_bad=${i}; fi
+            fi
+          done
+          echo "==================== EXPERIMENT SUMMARY ===================="
+          echo "platform     : ${{ matrix.os }}"
+          echo "arm          : ${{ matrix.arm }}"
+          echo "repeats      : ${repeats}"
+          echo "pass         : ${pass}"
+          echo "clean_fail   : ${clean_fail}  (exit 1 = managed xUnit failure)"
+          echo "hard_crash   : ${crash}  (exit 134/139/135/137 = native crash)"
+          echo "first_bad    : ${first_bad}  (0 = never bad)"
+          echo "crash_codes  : ${codes[*]:-none}"
+          echo "==========================================================="
+          # Observational only.
+          exit 0
+
+      - name: Upload crash dumps
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experiment-${{ matrix.os }}-${{ matrix.arm }}-${{ github.run_id }}
+          path: mruby-wrapper/MRuby.UnitTest/TestResults/**
+          if-no-files-found: ignore
