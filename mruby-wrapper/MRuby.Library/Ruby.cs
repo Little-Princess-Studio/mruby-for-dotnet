@@ -80,7 +80,7 @@ namespace MRuby.Library
                 IReadOnlyDictionary<IComparable, RbDataObjectRegistration>? entries = null;
                 if (nativeHandler != IntPtr.Zero)
                 {
-                    var registry = RbNativeObjectLiveKeeper<RbDataObjectKeeper, RbDataObjectRegistration>
+                    var registry = RbKeyedObjectKeeper<RbDataObjectKeeper, RbDataObjectRegistration>
                         .GetOrCreateKeeper(state);
                     entries = registry.Drain();
 
@@ -143,6 +143,9 @@ namespace MRuby.Library
 
             // Phase 4: invoke user release callbacks after native teardown. A callback may throw
             // or call Ruby.Close/Dispose again, but the VM handle is already closed and zeroed.
+            // CONTRACT: the RbState passed to a close-time releaseFn is already closed
+            // (NativeHandler == IntPtr.Zero); releaseFn must treat it as dead and must NOT call
+            // mruby through it. Use the captured C# object argument instead.
             foreach (var (releaseFn, obj) in releaseCallbacks)
             {
                 try
