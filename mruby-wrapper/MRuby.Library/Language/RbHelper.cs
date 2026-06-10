@@ -98,6 +98,49 @@ namespace MRuby.Library.Language
         // ArgumentException) and leak the Marshal.AllocHGlobal allocation.
         private static readonly object RbDataClassMappingLock = new object();
 
+        // Canonical per-state RbState cache. Instead of allocating a new RbState wrapper per
+        // callback invocation, the trampoline looks up the single canonical instance created at
+        // Ruby.Open() time. This eliminates 5+ allocations per callback invocation (RbState +
+        // 4 RbValue sentinels) that drive CLR gen0 GC frequency.
+        private static readonly Dictionary<long, RbState> CanonicalStateCache =
+            new Dictionary<long, RbState>();
+
+        internal static readonly object CanonicalStateCacheLock = new object();
+
+        internal static void RegisterCanonicalState(RbState state)
+        {
+            lock (CanonicalStateCacheLock)
+            {
+                CanonicalStateCache[state.NativeHandler.ToInt64()] = state;
+            }
+        }
+
+        internal static void UnregisterCanonicalState(RbState state)
+        {
+            lock (CanonicalStateCacheLock)
+            {
+                CanonicalStateCache.Remove(state.NativeHandler.ToInt64());
+            }
+        }
+
+        private static RbState GetOrCreateTransientState(IntPtr nativeHandle)
+        {
+            lock (CanonicalStateCacheLock)
+            {
+                if (CanonicalStateCache.TryGetValue(nativeHandle.ToInt64(), out var cached))
+                {
+                    return cached;
+                }
+            }
+
+            // Fallback for callbacks before Open() or after Close(): create a transient state.
+            // This should not happen in normal usage.
+            return new RbState
+            {
+                NativeHandler = nativeHandle
+            };
+        }
+
         private static bool RbDataStructExist(string name) => RbDataClassMapping.ContainsKey(name);
 
         private static void RbDataStructAdd(string name, Action<RbState, object?>? releaseFn)
@@ -108,11 +151,18 @@ namespace MRuby.Library.Language
             {
                 type = new RbDataClassType(name, (mrb, data) =>
                 {
+                    if (data == IntPtr.Zero)
+                    {
+                        return;
+                    }
+
+                    var obj = GetObjectFromIntPtr(data);
+                    RemoveFromDataRegistry(mrb, data);
+                    FreeIntPtrOfCSharpObject(data);
                     releaseFn(new RbState
                     {
                         NativeHandler = mrb
-                    }, GetObjectFromIntPtr(data));
-                    NativeDataObjectFreeFunc(mrb, data);
+                    }, obj);
                 });
             }
             else
@@ -172,21 +222,23 @@ namespace MRuby.Library.Language
             {
                 var argc = mrb_get_argc(state);
                 var argv = mrb_get_argv(state);
+                var csharpState = GetOrCreateTransientState(state);
 
-                var args = new RbValue[(int)argc];
-                for (int i = 0; i < argc; i++)
+                RbValue[] args;
+                if (argc == 0)
                 {
-                    var arg = *(((UInt64*)argv) + i);
-                    args[i] = new RbValue(new RbState
+                    args = Array.Empty<RbValue>();
+                }
+                else
+                {
+                    args = new RbValue[(int)argc];
+                    for (int i = 0; i < argc; i++)
                     {
-                        NativeHandler = state
-                    }, arg);
+                        var arg = *(((UInt64*)argv) + i);
+                        args[i] = new RbValue(csharpState, arg);
+                    }
                 }
 
-                var csharpState = new RbState
-                {
-                    NativeHandler = state
-                };
                 var csharpSelf = new RbValue(csharpState, self);
                 try
                 {
@@ -241,7 +293,38 @@ namespace MRuby.Library.Language
             return state.RbNil.NativeValue;
         }
 
-        private static void NativeDataObjectFreeFunc(IntPtr state, IntPtr data) => FreeIntPtrOfCSharpObject(data);
+        private static void NativeDataObjectFreeFunc(IntPtr state, IntPtr data)
+        {
+            if (data == IntPtr.Zero)
+            {
+                return;
+            }
+
+            RemoveFromDataRegistry(state, data);
+            FreeIntPtrOfCSharpObject(data);
+        }
+
+        private static void RemoveFromDataRegistry(IntPtr mrbHandle, IntPtr dataHandle)
+        {
+            // Look up the RbState by native handle to find its keeper.
+            // StateMapper is keyed by RbState objects; we need to find the one matching mrbHandle.
+            lock (RbNativeObjectLiveKeeper.StateMapperLock)
+            {
+                foreach (var kvp in RbNativeObjectLiveKeeper.StateMapper)
+                {
+                    if (kvp.Key.NativeHandler == mrbHandle)
+                    {
+                        if (kvp.Value.TryGetValue(typeof(RbDataObjectKeeper), out var keeper))
+                        {
+                            ((RbNativeObjectLiveKeeper<RbDataObjectKeeper, RbDataObjectRegistration>)keeper)
+                                .Release(dataHandle);
+                        }
+
+                        return;
+                    }
+                }
+            }
+        }
 
         internal static UInt64 GetInternSymbol(RbState state, string str) => mrb_intern_cstr(state.NativeHandler, str);
 
