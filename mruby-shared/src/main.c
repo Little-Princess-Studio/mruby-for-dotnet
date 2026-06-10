@@ -167,3 +167,11 @@ MRB_API void mrb_get_raw_bytes_from_string(mrb_value value, char **bytes,
 MRB_API mrb_bool mrb_open_failure_p(struct mrb_state *mrb) {
   return MRB_OPEN_FAILURE(mrb) ? TRUE : FALSE;
 }
+
+MRB_API void mrb_data_disarm(struct mrb_state *mrb, mrb_value obj) {
+  if (mrb_type(obj) == MRB_TT_CDATA) {
+    struct RData *d = (struct RData*)mrb_ptr(obj);
+    d->type = NULL;
+    d->data = NULL;
+  }
+}
