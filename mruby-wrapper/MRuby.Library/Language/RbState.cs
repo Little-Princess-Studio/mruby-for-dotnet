@@ -386,11 +386,7 @@ namespace MRuby.Library.Language
 
         public void Dispose()
         {
-            if (this.NativeHandler != IntPtr.Zero)
-            {
-                Ruby.Close(this);
-                this.NativeHandler = IntPtr.Zero;
-            }
+            Ruby.Close(this);
         }
     }
 }

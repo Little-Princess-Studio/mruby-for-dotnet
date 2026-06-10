@@ -88,7 +88,7 @@ namespace MRuby.Library.Mapper
                 cls = stat.DefineClass(clsName, parClass);
             }
 
-            var keeper = RbNativeObjectLiveKeeper<RbAutoRegisterKeeper, NativeMethodFunc>.GetOrCreateKeeper(stat);
+            var keeper = RbKeyedObjectKeeper<RbAutoRegisterKeeper, NativeMethodFunc>.GetOrCreateKeeper(stat);
             
             // scan methods attributed by RbClassMethodAttribute
             var methods = t.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
@@ -133,7 +133,7 @@ namespace MRuby.Library.Mapper
                 mod = stat.DefineModule(moduleName);
             }
 
-            var keeper = RbNativeObjectLiveKeeper<RbAutoRegisterKeeper, NativeMethodFunc>.GetOrCreateKeeper(stat);
+            var keeper = RbKeyedObjectKeeper<RbAutoRegisterKeeper, NativeMethodFunc>.GetOrCreateKeeper(stat);
             
             // scan methods attributed by RbClassMethodAttribute
             var methods = t.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);

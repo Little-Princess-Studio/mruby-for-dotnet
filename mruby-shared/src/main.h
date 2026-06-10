@@ -75,3 +75,5 @@ MRB_API void mrb_get_raw_bytes_from_string(mrb_value value, char **bytes,
                                            size_t *len);
 
 MRB_API mrb_bool mrb_open_failure_p(struct mrb_state *mrb);
+
+MRB_API void mrb_data_disarm(struct mrb_state *mrb, mrb_value obj);

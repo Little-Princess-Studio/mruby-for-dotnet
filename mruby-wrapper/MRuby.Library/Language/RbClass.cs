@@ -147,6 +147,12 @@ namespace MRuby.Library.Language
             var dataType = RbHelper.GetOrCreateNewRbDataStructPtr(dataName);
             var dataPtr = RbHelper.GetIntPtrOfCSharpObject(data);
             var obj = mrb_new_data_object(this.State.NativeHandler, this.NativeHandler, dataPtr, dataType);
+            // Register (dataPtr, mrbValue) in the per-state data-object registry so Ruby.Close
+            // can pre-free and disarm this object before mrb_close (eliminating the close-time
+            // dfree reverse-P/Invoke callback that can crash on macOS).
+            var dataRegistry = RbKeyedObjectKeeper<RbDataObjectKeeper, RbDataObjectRegistration>
+                .GetOrCreateKeeper(this.State);
+            dataRegistry.Keep(dataPtr, new RbDataObjectRegistration(dataPtr, obj, null));
             var ret = new RbValue(this.State, obj);
             ret.CallMethod("initialize", args);
             return ret;
@@ -157,6 +163,12 @@ namespace MRuby.Library.Language
             var dataType = RbHelper.GetOrCreateNewRbDataStructPtr(dataName, releaseFn);
             var dataPtr = RbHelper.GetIntPtrOfCSharpObject(data);
             var obj = mrb_new_data_object(this.State.NativeHandler, this.NativeHandler, dataPtr, dataType);
+            // Register (dataPtr, mrbValue) in the per-state data-object registry so Ruby.Close
+            // can pre-free and disarm this object before mrb_close (eliminating the close-time
+            // dfree reverse-P/Invoke callback that can crash on macOS).
+            var dataRegistry = RbKeyedObjectKeeper<RbDataObjectKeeper, RbDataObjectRegistration>
+                .GetOrCreateKeeper(this.State);
+            dataRegistry.Keep(dataPtr, new RbDataObjectRegistration(dataPtr, obj, releaseFn));
             var ret = new RbValue(this.State, obj);
             ret.CallMethod("initialize", args);
             return ret;

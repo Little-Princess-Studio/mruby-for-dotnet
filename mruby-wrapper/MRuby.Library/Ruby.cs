@@ -1,11 +1,12 @@
 namespace MRuby.Library
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using Language;
 
-    public static class Ruby
+    public static partial class Ruby
     {
         internal const string MrubyLib = "libmruby_x64";
 
@@ -44,6 +45,7 @@ namespace MRuby.Library
             {
                 NativeHandler = ptr,
             };
+            RbHelper.RegisterCanonicalState(state);
             return state;
         }
 
@@ -63,15 +65,103 @@ namespace MRuby.Library
 
         public static void Close(RbState state)
         {
-            lock (VmLifecycleLock)
+            var releaseCallbacks = new List<(Action<RbState, object?> ReleaseFn, object? Obj)>();
+            var exceptions = new List<Exception>();
+
+            try
             {
-                if (state.NativeHandler != IntPtr.Zero)
+                // Phase 1: drain data-object registry outside VmLifecycleLock. Managed
+                // GCHandles are freed before mrb_close; release callbacks are only collected
+                // here and run after native teardown so user code cannot reenter close or
+                // throw before the VM handle is closed and zeroed. Native RData is disarmed
+                // inside the lifecycle lock immediately before mrb_close so disarm+close are
+                // one native lifecycle-critical section.
+                var nativeHandler = state.NativeHandler;
+                IReadOnlyDictionary<IComparable, RbDataObjectRegistration>? entries = null;
+                if (nativeHandler != IntPtr.Zero)
                 {
-                    mrb_close(state.NativeHandler);
+                    var registry = RbKeyedObjectKeeper<RbDataObjectKeeper, RbDataObjectRegistration>
+                        .GetOrCreateKeeper(state);
+                    entries = registry.Drain();
+
+                    foreach (var kv in entries)
+                    {
+                        var entry = kv.Value;
+                        object? obj = null;
+                        if (entry.Handle != IntPtr.Zero)
+                        {
+                            try
+                            {
+                                obj = RbHelper.GetObjectFromIntPtr(entry.Handle);
+                                RbHelper.FreeIntPtrOfCSharpObject(entry.Handle);
+                            }
+                            catch (Exception ex)
+                            {
+                                exceptions.Add(ex);
+                            }
+                        }
+
+                        if (entry.ReleaseFn != null)
+                        {
+                            releaseCallbacks.Add((entry.ReleaseFn, obj));
+                        }
+                    }
+                }
+
+                // Phase 2: serialize native disarm + teardown and zero the handle as the idempotency gate.
+                lock (VmLifecycleLock)
+                {
+                    if (state.NativeHandler != IntPtr.Zero)
+                    {
+                        if (entries != null)
+                        {
+                            foreach (var kv in entries)
+                            {
+                                try
+                                {
+                                    // Disarm native RData so mrb_close's final sweep skips dfree entirely.
+                                    mrb_data_disarm(state.NativeHandler, kv.Value.MrbValue);
+                                }
+                                catch (Exception ex)
+                                {
+                                    exceptions.Add(ex);
+                                }
+                            }
+                        }
+
+                        RbHelper.UnregisterCanonicalState(state);
+                        mrb_close(state.NativeHandler);
+                        state.NativeHandler = IntPtr.Zero;
+                    }
+                }
+            }
+            finally
+            {
+                // Phase 3: release delegate roots and any remaining per-state keepers after close.
+                RbNativeObjectLiveKeeper.ReleaseKeeper(state);
+            }
+
+            // Phase 4: invoke user release callbacks after native teardown. A callback may throw
+            // or call Ruby.Close/Dispose again, but the VM handle is already closed and zeroed.
+            // CONTRACT: the RbState passed to a close-time releaseFn is already closed
+            // (NativeHandler == IntPtr.Zero); releaseFn must treat it as dead and must NOT call
+            // mruby through it. Use the captured C# object argument instead.
+            foreach (var (releaseFn, obj) in releaseCallbacks)
+            {
+                try
+                {
+                    releaseFn(state, obj);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
                 }
             }
 
-            RbNativeObjectLiveKeeper.ReleaseKeeper(state);
+            if (exceptions.Count > 0)
+            {
+                throw new AggregateException("One or more errors occurred while closing the mruby state.", exceptions);
+            }
         }
     }
 }
