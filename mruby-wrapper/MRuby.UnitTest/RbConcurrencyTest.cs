@@ -37,8 +37,9 @@ using Library.Mapper;
 //      signal-suspend it and hard-exit the macOS CoreCLR host (observed on CI partway
 //      through the loop on a fraction of runs; reproduced on both .NET 8 and .NET 10). It
 //      is stabilized by chunking the storm into K=100-cycle segments, each wrapped in a
-//      NoGCRegion so the CLR cannot attempt a suspending gen0 GC mid-chunk. Cycle count
-//      and NoGC suppression are env-driven (MRUBY_STORM_CYCLES / MRUBY_STORM_NOGC).
+//      NoGCRegion so the CLR cannot attempt a suspending gen0 GC mid-chunk. Normal suites
+//      run one cheap cycle by default; the separate CI amplifier raises the cycle count.
+//      Cycle count, NoGC suppression, and canary GC assertions are env-driven.
 //   3. A small all-platform smoke test (a handful of cycles) asserting the same mappings
 //      populate and clear correctly, with zero cross-thread stress - cheap enough that the
 //      macOS/Linux host carries it reliably, keeping cross-platform coverage of the path.
@@ -258,8 +259,8 @@ public class RbConcurrencyTest
     // thread in that native window often enough that an unrelated process GC (vstest IPC,
     // the finalizer) can signal-suspend it there and hard-exit the macOS CoreCLR host
     // (reproduced on both .NET 8 and .NET 10). A single scattered cycle does not. The
-    // HEAVY all-platform storm version lives in the [StabilizedStormFact] below, which
-    // chunks the churn into NoGCRegion segments so the runtime can host it reliably.
+    // all-platform storm version below defaults to one cheap cycle in the normal suite;
+    // the HEAVY 5000-cycle version only runs when CI sets MRUBY_STORM_CYCLES explicitly.
     // See StabilizedStormFactAttribute and TestStaticMappingsAreStableUnderHeavySequentialOpenCloseStorm.
     [Fact]
     public void TestStaticMappingsAreStableAcrossSequentialOpenClose()
@@ -273,17 +274,22 @@ public class RbConcurrencyTest
     // GcProbe.RunInNoGCRegion (64MB budget) so the CLR cannot attempt a gen0 GC suspension
     // mid-chunk - that suspension landing on the lone test thread while it is parked in
     // mrb_close's reverse-P/Invoke dfree callback was the macOS hard-exit trigger. Cycle
-    // count is driven by MRUBY_STORM_CYCLES (default 200); the CI amplifier raises it
+    // count is driven by MRUBY_STORM_CYCLES (default 1); the CI amplifier raises it
     // (e.g. 5000), and chunking keeps every NoGCRegion well under budget regardless of the
     // total. Setting MRUBY_STORM_NOGC=0 disables the suppression (plain loop) for A3
     // attribution: it proves the GCHandle-registry + mrb_data_disarm fix closes the crash
-    // window on its own, independent of GC suppression.
+    // window on its own, independent of GC suppression. Setting MRUBY_ASSERT_MIN_GC also
+    // forces gen0 collections between cycles, making the diagnostic canary a real GC-stress
+    // signal instead of a false green with zero collections.
     [StabilizedStormFact]
     public void TestStaticMappingsAreStableUnderHeavySequentialOpenCloseStorm()
     {
         var cycles = StabilizedStormFactAttribute.GetCycles();
         var noGcEnabled = StabilizedStormFactAttribute.GetNoGcEnabled();
+        var minimumGen0Collections = StabilizedStormFactAttribute.GetMinimumGen0Collections();
         const int chunkSize = 100;
+        var probe = new GcProbe();
+        probe.RecordBefore();
 
         for (var chunkStart = 0; chunkStart < cycles; chunkStart += chunkSize)
         {
@@ -297,6 +303,7 @@ public class RbConcurrencyTest
                     for (var j = start; j < end; j++)
                     {
                         RunSequentialOpenCloseCycle(j);
+                        ForceCanaryGcIfRequested(minimumGen0Collections);
                     }
                 }, 64 * 1024 * 1024L);
             }
@@ -305,9 +312,26 @@ public class RbConcurrencyTest
                 for (var j = start; j < end; j++)
                 {
                     RunSequentialOpenCloseCycle(j);
+                    ForceCanaryGcIfRequested(minimumGen0Collections);
                 }
             }
         }
+
+        if (minimumGen0Collections.HasValue)
+        {
+            var delta = probe.Delta();
+            GcProbe.MinGcCountAssertion(delta.gen0, minimumGen0Collections.Value, "storm canary gen0 collections");
+        }
+    }
+
+    private static void ForceCanaryGcIfRequested(int? minimumGen0Collections)
+    {
+        if (!minimumGen0Collections.HasValue)
+        {
+            return;
+        }
+
+        GC.Collect(0, GCCollectionMode.Forced, blocking: true);
     }
 
     // One Open -> exercise StateMapper + RbDataClassMapping -> Close cycle. Shared by the

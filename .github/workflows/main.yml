@@ -234,12 +234,12 @@ jobs:
     - name: Run canary (200 cycles, min-GC assertion)
       env:
         MRUBY_STORM_CYCLES: '200'
-        MRUBY_STORM_NOGC: '1'
+        MRUBY_STORM_NOGC: '0'
         MRUBY_ASSERT_MIN_GC: '1'
       run: |
         cd mruby-wrapper
         dotnet test --configuration=release --filter "FullyQualifiedName~Storm" --blame-crash --blame-hang-timeout 5m --logger "console;verbosity=detailed" -- RunConfiguration.DisableAppDomain=true
-      # No retry. A green run with ~0 GCs fails the min-GC assertion (false-green guard).
+      # No retry. NoGCRegion is disabled here so the min-GC assertion can detect false greens.
 
     - name: Upload canary artifacts
       if: always()
