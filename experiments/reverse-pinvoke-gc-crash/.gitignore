@@ -1,0 +1,12 @@
+# Build outputs
+bin/
+obj/
+
+# Native shim build artifacts (built fresh per-platform in CI / locally)
+*.dll
+*.dylib
+*.so
+*.obj
+*.lib
+*.exp
+*.pdb

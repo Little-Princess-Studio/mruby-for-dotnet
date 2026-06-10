@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>ReproGcCrash</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!--
+      Server GC + concurrent/background GC ON is the empirically-strongest
+      suspension driver (dotnet/runtime#127320 egonelbre repro). A background-GC
+      thread (separate from the allocating thread) is what sends the activation
+      signal to suspend a worker that is mid reverse-P/Invoke transition.
+      The CI workflow can override GC mode per-matrix via DOTNET_gcServer.
+    -->
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+
+    <!-- Keep the callback method shape stable for the whole run. -->
+    <TieredCompilation>false</TieredCompilation>
+    <TieredPGO>false</TieredPGO>
+  </PropertyGroup>
+
+  <!--
+    The native shim is built (cc / cl) BEFORE `dotnet build`, so exactly one of
+    these exists and gets copied next to the produced ReproGcCrash.dll where the
+    default DllImport resolver finds it.
+  -->
+  <ItemGroup>
+    <None Include="libnativeshim.so" Condition="Exists('libnativeshim.so')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="libnativeshim.dylib" Condition="Exists('libnativeshim.dylib')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="nativeshim.dll" Condition="Exists('nativeshim.dll')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
