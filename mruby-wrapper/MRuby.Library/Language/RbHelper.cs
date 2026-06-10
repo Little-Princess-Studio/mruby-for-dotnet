@@ -96,7 +96,20 @@ namespace MRuby.Library.Language
         // GetOrCreateNewRbDataStructPtr must be atomic: concurrent registration of the
         // same data-class name would otherwise double-call Dictionary.Add (throwing
         // ArgumentException) and leak the Marshal.AllocHGlobal allocation.
-        private static readonly object RbDataClassMappingLock = new object();
+        private static readonly object RbDataClassMappingLockReal = new object();
+
+        // EXPERIMENT-ONLY (RbExperimentFlags.DisableDataClassLock): see RbExperimentFlags.
+        // When the env flag is set, every `lock (RbDataClassMappingLock)` locks a
+        // thread-local dummy so concurrent threads stop mutually excluding, exposing the
+        // check-then-add race. Default (unset) returns the shared singleton, byte-identical
+        // to shipped behavior.
+        [ThreadStatic]
+        private static object? RbDataClassMappingLockDummy;
+
+        private static object RbDataClassMappingLock =>
+            RbExperimentFlags.DisableDataClassLock
+                ? (RbDataClassMappingLockDummy ??= new object())
+                : RbDataClassMappingLockReal;
 
         // Canonical per-state RbState cache. Instead of allocating a new RbState wrapper per
         // callback invocation, the trampoline looks up the single canonical instance created at

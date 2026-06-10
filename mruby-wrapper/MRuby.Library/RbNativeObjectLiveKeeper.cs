@@ -63,7 +63,22 @@ namespace MRuby.Library
         // atomic. An unsynchronized Dictionary corrupts under concurrent mutation, which
         // surfaces as a native test-host crash because this keeper roots delegates handed
         // to mruby.
-        internal static readonly object StateMapperLock = new object();
+        private static readonly object StateMapperLockReal = new object();
+
+        // EXPERIMENT-ONLY (RbExperimentFlags.DisableStateMapperLock): when the env flag is
+        // set, every `lock (StateMapperLock)` locks a thread-local dummy object instead of
+        // the shared singleton, so concurrent threads no longer mutually exclude - exposing
+        // the Dictionary data race the shipped fix prevents. Default (flag unset) returns the
+        // shared singleton, byte-identical to shipped behavior. A [ThreadStatic] dummy (not a
+        // fresh `new object()` per acquire) keeps lock/unlock paired without adding allocation
+        // pressure that would itself perturb the race under test. See RbExperimentFlags.
+        [ThreadStatic]
+        private static object? StateMapperLockDummy;
+
+        internal static object StateMapperLock =>
+            RbExperimentFlags.DisableStateMapperLock
+                ? (StateMapperLockDummy ??= new object())
+                : StateMapperLockReal;
 
         public static void ReleaseKeeper(RbState state)
         {
