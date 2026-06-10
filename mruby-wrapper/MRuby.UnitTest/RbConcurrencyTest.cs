@@ -92,7 +92,7 @@ public class RbConcurrencyTest
     // shared static StateMapper as distinct states are added/removed from many threads
     // at once - exactly the real CI scenario (distinct test classes = distinct states,
     // one shared static dictionary).
-    [WindowsOnlyFact]
+    [ConcurrencyExperimentFact]
     public void TestConcurrentKeeperMappingIsThreadSafe()
     {
         const int threadCount = 8;
@@ -166,7 +166,7 @@ public class RbConcurrencyTest
     // already-open states (a supported pattern) and shares only the global data-class
     // mapping - the dictionary actually under test. No mrb_open/mrb_close churn occurs
     // inside the hot loop.
-    [WindowsOnlyFact]
+    [ConcurrencyExperimentFact]
     public void TestConcurrentDataObjectRegistrationIsThreadSafe()
     {
         const int threadCount = 8;
