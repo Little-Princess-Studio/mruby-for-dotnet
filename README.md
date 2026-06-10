@@ -7,7 +7,7 @@ This is a mruby-wrapper for .NET, current for Windows/Linux/MacOS and will come 
 From nuget: https://www.nuget.org/packages/MRuby.Library/
 
 ```bash
-dotnet add package MRuby.Library --version 0.1.9
+dotnet add package MRuby.Library --version 0.1.10
 ```
 
 ## How to Use
@@ -49,29 +49,35 @@ safe to open and close states from multiple threads. If you store C# objects in 
 data objects, their release callback runs during `Ruby.Close`/GC on the thread performing
 that close.
 
-### macOS: best-effort under heavy lifecycle churn
+### macOS: residual reverse-P/Invoke suspension window (library-side mitigation)
 
 On **macOS**, the CoreCLR garbage collector suspends managed threads using POSIX signals.
-If the GC suspends a thread that is currently parked inside a native mruby callback (for
-example `Ruby.Close` driving `mrb_close`, which calls your data-object release callback
-back across the native boundary), the activation signal can land at a point the runtime
-cannot safely resume and it hard-exits the process. This is a CoreCLR/macOS limitation in
-how it suspends threads stopped in native frames, not a defect in this library.
+If a CLR GC suspension signal lands on a managed thread parked inside a native mruby reverse-
+P/Invoke callback (for example, a data-object `dfree` during `mrb_close`, or an `initialize`
+thunk during object construction), the runtime cannot safely resume it and hard-exits the process.
+This is a **residual suspension window** in the .NET 8 reverse-P/Invoke implementation, not
+the `dotnet/runtime#44498` stack-corruption race (which was fixed upstream ~.NET 6 and does
+not apply to `net8.0`).
 
-This only surfaces under *sustained, tight* churn - e.g. opening and closing many states
-in a fast loop while allocating managed data objects each iteration. Ordinary usage (a
-single state, or open/close scattered among real work) is unaffected. If you do heavy
-`Ruby.Open`/`Ruby.Close` cycling on macOS, prefer **reusing a single `RbState`** instead
-of rapidly recreating it. The standalone GC (`DOTNET_GCName=libclrgc.dylib`) with
-`DOTNET_gcConcurrent=0` reduces - but does not eliminate - the window.
+The crash probability is driven by two factors:
+
+1. **How often the CLR attempts GC suspensions**, minimized by reducing managed allocations in
+   the callback bridge and using `NoGCRegion` in the stress-test storm.
+2. **Whether a suspension signal lands on a reverse-P/Invoke boundary**, minimized by
+   pre-freeing data-object GCHandles and disarming native `RData` before `mrb_close`, so the
+   close-time `dfree` reverse-callback is eliminated entirely.
+
+This surfaces under *sustained, tight* Open/Close churn with managed data objects, e.g. a
+tight loop opening and closing many states each iteration. Ordinary usage (a single state, or
+open/close scattered among real work) is unaffected. The mruby 4.0 structural GC changes
+shifted timing/cadence, changing the **crash probability** vs. 3.3 (not the amount of work done
+in teardown). The library-side fix targets both probability factors; macOS CI re-enables the
+managed test suite with a statistical acceptance bar (20 consecutive green amplified runs).
 
 Note: this was verified to reproduce on both **.NET 8 and .NET 10** on macOS, so it is not
-tied to a specific runtime version. (It is distinct from dotnet/runtime#102887, which fixed
-a *different* macOS activation-signal case for libdispatch queue threads in .NET 9.) Because
-it is a macOS test-*host* limitation and not a library defect, CI runs the xUnit suite on
-**Linux and Windows** (Linux exercises the identical CoreCLR signal-based-GC + native
-reverse-callback design and is consistently green); the macOS CI job builds and packages the
-native universal `.dylib` but does not run the managed test host. See `RbConcurrencyTest`.
+tied to a specific runtime version. (It is distinct from `dotnet/runtime#102887`, which fixed
+a *different* macOS activation-signal case for libdispatch queue threads in .NET 9.) See
+`RbConcurrencyTest` and the `StabilizedStormFactAttribute` amplifier for the CI gate design.
 
 ## How to Build
 
