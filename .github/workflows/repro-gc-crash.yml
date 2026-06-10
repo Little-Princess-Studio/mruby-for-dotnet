@@ -31,7 +31,7 @@ on:
 
 jobs:
   repro:
-    name: ${{ matrix.os }} / ${{ matrix.gcmode }}
+    name: ${{ matrix.os }} / ${{ matrix.gcmode }} / ${{ matrix.mode }}
     runs-on: ${{ matrix.os }}
     continue-on-error: true
     strategy:
@@ -39,6 +39,7 @@ jobs:
       matrix:
         os: [macos-14, ubuntu-24.04, windows-2022]
         gcmode: [server, workstation]
+        mode: [loop, churn]
 
     env:
       REPRO_ATTEMPTS: ${{ github.event.inputs.attempts || '30' }}
@@ -83,11 +84,12 @@ jobs:
         working-directory: experiments/reverse-pinvoke-gc-crash
         run: dotnet build -c Release
 
-      - name: Run repro ${{ env.REPRO_ATTEMPTS }}x  [${{ matrix.os }} / ${{ matrix.gcmode }}]
+      - name: Run repro ${{ env.REPRO_ATTEMPTS }}x  [${{ matrix.os }} / ${{ matrix.gcmode }} / ${{ matrix.mode }}]
         working-directory: experiments/reverse-pinvoke-gc-crash
         shell: bash
         env:
           DOTNET_gcServer: ${{ matrix.gcmode == 'server' && '1' || '0' }}
+          REPRO_MODE: ${{ matrix.mode }}
         run: |
           bin=$(find bin/Release -name 'ReproGcCrash.dll' | head -n1)
           echo "binary: ${bin}"
@@ -97,7 +99,7 @@ jobs:
           first_crash=0
           declare -a codes=()
           for i in $(seq 1 "${attempts}"); do
-            echo "::group::attempt ${i}/${attempts}  (${{ matrix.os }} / ${{ matrix.gcmode }})"
+            echo "::group::attempt ${i}/${attempts}  (${{ matrix.os }} / ${{ matrix.gcmode }} / ${{ matrix.mode }})"
             set +e
             dotnet "${bin}"
             code=$?
@@ -115,6 +117,7 @@ jobs:
           echo "==================== REPRO SUMMARY ===================="
           echo "platform    : ${{ matrix.os }}"
           echo "gc mode     : ${{ matrix.gcmode }}"
+          echo "repro mode  : ${{ matrix.mode }}"
           echo "attempts    : ${attempts}"
           echo "clean exits : ${clean}"
           echo "crashes     : ${crashes}"
