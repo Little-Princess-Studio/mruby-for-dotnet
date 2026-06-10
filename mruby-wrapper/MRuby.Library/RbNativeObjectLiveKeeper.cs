@@ -13,10 +13,34 @@ namespace MRuby.Library
     {
     }
 
+    // Keeper category marker for per-object data GCHandle registrations.
+    // Stores (GCHandle IntPtr, mrb_value UInt64, optional release callback) entries, keyed by the GCHandle IntPtr.
+    // Used to pre-free and disarm data objects before mrb_close, preventing the
+    // close-time dfree reverse-P/Invoke callback that can crash on macOS.
+    [ExcludeFromCodeCoverage]
+    public sealed class RbDataObjectKeeper
+    {
+    }
+
+    [ExcludeFromCodeCoverage]
+    internal readonly struct RbDataObjectRegistration
+    {
+        public readonly IntPtr Handle;
+        public readonly UInt64 MrbValue;
+        public readonly Action<RbState, object?>? ReleaseFn;
+
+        public RbDataObjectRegistration(IntPtr handle, UInt64 mrbValue, Action<RbState, object?>? releaseFn)
+        {
+            this.Handle = handle;
+            this.MrbValue = mrbValue;
+            this.ReleaseFn = releaseFn;
+        }
+    }
+
     [ExcludeFromCodeCoverage]
     public abstract class RbNativeObjectLiveKeeper
     {
-        protected static readonly Dictionary<RbState, Dictionary<Type, RbNativeObjectLiveKeeper>> StateMapper =
+        internal static readonly Dictionary<RbState, Dictionary<Type, RbNativeObjectLiveKeeper>> StateMapper =
             new Dictionary<RbState, Dictionary<Type, RbNativeObjectLiveKeeper>>();
 
         // Guards every access to the process-wide StateMapper (and its nested per-state
@@ -26,7 +50,7 @@ namespace MRuby.Library
         // atomic. An unsynchronized Dictionary corrupts under concurrent mutation, which
         // surfaces as a native test-host crash because this keeper roots delegates handed
         // to mruby.
-        protected static readonly object StateMapperLock = new object();
+        internal static readonly object StateMapperLock = new object();
 
         public static void ReleaseKeeper(RbState state)
         {
@@ -78,6 +102,8 @@ namespace MRuby.Library
 
         public void Keep(IComparable key, TObjectType obj) => this.KeyedStorage[key] = obj;
 
+        public void Keep(IntPtr key, TObjectType obj) => this.Keep(key.ToInt64(), obj);
+
         public void Keep(TObjectType obj) => this.Storage.Add(obj);
         
         public bool Contains(IComparable key) => this.KeyedStorage.ContainsKey(key);
@@ -86,7 +112,16 @@ namespace MRuby.Library
         
         public TObjectType Get(IComparable key) => this.KeyedStorage[key];
 
+        public IReadOnlyDictionary<IComparable, TObjectType> Drain()
+        {
+            var snapshot = new Dictionary<IComparable, TObjectType>(this.KeyedStorage);
+            this.KeyedStorage.Clear();
+            return snapshot;
+        }
+
         public void Release(IComparable key) => this.KeyedStorage.Remove(key);
+
+        public void Release(IntPtr key) => this.Release(key.ToInt64());
 
         public void Release(TObjectType obj) => this.Storage.Remove(obj);
 
