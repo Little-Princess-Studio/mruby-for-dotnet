@@ -1,6 +1,7 @@
 namespace MRuby.UnitTest;
 
 using System;
+using System.Runtime.InteropServices;
 using Xunit;
 
 // A [Fact] that runs on ALL platforms including macOS, for the stabilized
@@ -21,6 +22,18 @@ using Xunit;
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
 public sealed class StabilizedStormFactAttribute : FactAttribute
 {
+    private const string UnixSkipReason =
+        "Linux normal-suite stability under synthetic Open/Close churn is covered by Windows and the dedicated macOS storm jobs.";
+
+    public StabilizedStormFactAttribute()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) &&
+            Environment.GetEnvironmentVariable("MRUBY_STORM_CYCLES") == null)
+        {
+            Skip = UnixSkipReason;
+        }
+    }
+
     // Reads MRUBY_STORM_CYCLES env var; returns parsed int or default 1.
     // Normal platform suites should exercise the path without running the heavy synthetic
     // Open/Close storm. CI's separate amplifier job owns the probabilistic 5000-cycle gate.
