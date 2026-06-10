@@ -70,30 +70,19 @@ namespace MRuby.Library
 
             try
             {
-                // Phase 1: drain data-object registry outside VmLifecycleLock. Native RData is
-                // disarmed and GCHandles are freed before mrb_close; release callbacks are only
-                // collected here and run after native teardown so user code cannot reenter close
-                // or throw before the VM handle is closed and zeroed.
+                // Phase 1: drain data-object registry outside VmLifecycleLock. Managed
+                // GCHandles are freed before mrb_close; release callbacks are only collected
+                // here and run after native teardown so user code cannot reenter close or
+                // throw before the VM handle is closed and zeroed. Native RData is disarmed
+                // inside the lifecycle lock immediately before mrb_close so disarm+close are
+                // one native lifecycle-critical section.
                 var nativeHandler = state.NativeHandler;
+                IReadOnlyDictionary<IComparable, RbDataObjectRegistration>? entries = null;
                 if (nativeHandler != IntPtr.Zero)
                 {
-                    RbHelper.UnregisterCanonicalState(state);
-
                     var registry = RbNativeObjectLiveKeeper<RbDataObjectKeeper, RbDataObjectRegistration>
                         .GetOrCreateKeeper(state);
-                    var entries = registry.Drain();
-                    foreach (var kv in entries)
-                    {
-                        try
-                        {
-                            // Disarm native RData so mrb_close's final sweep skips dfree entirely.
-                            mrb_data_disarm(nativeHandler, kv.Value.MrbValue);
-                        }
-                        catch (Exception ex)
-                        {
-                            exceptions.Add(ex);
-                        }
-                    }
+                    entries = registry.Drain();
 
                     foreach (var kv in entries)
                     {
@@ -118,19 +107,36 @@ namespace MRuby.Library
                         }
                     }
                 }
-            }
-            finally
-            {
-                // Phase 2: serialize native teardown and zero the handle as the idempotency gate.
+
+                // Phase 2: serialize native disarm + teardown and zero the handle as the idempotency gate.
                 lock (VmLifecycleLock)
                 {
                     if (state.NativeHandler != IntPtr.Zero)
                     {
+                        if (entries != null)
+                        {
+                            foreach (var kv in entries)
+                            {
+                                try
+                                {
+                                    // Disarm native RData so mrb_close's final sweep skips dfree entirely.
+                                    mrb_data_disarm(state.NativeHandler, kv.Value.MrbValue);
+                                }
+                                catch (Exception ex)
+                                {
+                                    exceptions.Add(ex);
+                                }
+                            }
+                        }
+
+                        RbHelper.UnregisterCanonicalState(state);
                         mrb_close(state.NativeHandler);
                         state.NativeHandler = IntPtr.Zero;
                     }
                 }
-
+            }
+            finally
+            {
                 // Phase 3: release delegate roots and any remaining per-state keepers after close.
                 RbNativeObjectLiveKeeper.ReleaseKeeper(state);
             }
