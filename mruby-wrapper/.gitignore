@@ -9,3 +9,13 @@ MRubyWrapper.Test/bin/
 MRubyWrapper.Test/obj/
 
 Properties/
+
+# Native libs are build artifacts produced by mruby-shared/xmake (its after_build
+# hook copies them next to the .NET projects). They must NOT be committed: a stale
+# binary here silently shadows the freshly built one and makes `dotnet test` run
+# against outdated native code. CI (main.yml / publish.yml) always rebuilds them
+# from source, so the working copy is regenerated on every build.
+libmruby_x64.dll
+libmruby_x64.so
+libmruby_x64.dylib
+libmruby_x64

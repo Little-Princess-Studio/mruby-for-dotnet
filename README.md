@@ -81,12 +81,30 @@ a *different* macOS activation-signal case for libdispatch queue threads in .NET
 
 ## How to Build
 
+The native `libmruby_x64` library is **not** committed to the repository — it is a
+build artifact. You must build it from source before the .NET tests can load it.
+
+### One-shot (recommended)
+
+From the repo root, run the script for your platform — each one builds mruby, the
+native glue (`mruby-shared` via xmake), then restores/builds/tests/packs the wrapper:
+
+- Windows: `.\build-win.ps1` (run from a *VS x64 Native Tools* prompt; the script
+  hardcodes the **Community** edition vcvars path — edit it if you use Pro/Enterprise)
+- Linux: `./build-linux.sh`
+- macOS: `./build-mac.sh`
+
+Add the `clean` argument (e.g. `./build-linux.sh clean`, `.\build-win.ps1 -clean`)
+to wipe the mruby + xmake build cache.
+
+### Manual stages
+
 1. `git submodule update --init --recursive`
-2. `./build-mruby-win.bat` (for Windows, run this command under `VS x64 Command Prommpt)` or `./build-mruby-linux.sh` 
-   for (*nix) or `./build-mruby-mac.sh` for macos 
-3. `cd ../mruby-shared`
-4. `xmake f -m releasedbg`
-5. `xmake`
+2. Build mruby: `./build-mruby-win.bat` (Windows, from a VS x64 Native Tools prompt)
+   or `./build-mruby-linux.sh` (Linux) or `./build-mruby-mac.sh` (macOS)
+3. `cd mruby-shared`
+4. `xmake f -m release`
+5. `xmake` (the `after_build` hook copies the native lib next to both .NET projects)
 6. `cd ../mruby-wrapper`
 7. `dotnet build --configuration Release`
 8. `dotnet test`

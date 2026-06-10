@@ -23,17 +23,17 @@
 
     <ItemGroup>
         <Using Include="Xunit" />
-        <Content Include="libmruby_x64.dll" Condition=" '$(OS)' == 'Windows_NT' ">
+        <Content Include="libmruby_x64.dll" Condition="Exists('libmruby_x64.dll')">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
             <pack>true</pack>
         </Content>
-        <Content Include="libmruby_x64.so" Condition=" '$(OS)' == 'Unix' ">
+        <Content Include="libmruby_x64.so" Condition="Exists('libmruby_x64.so')">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
             <pack>true</pack>
         </Content>
-        <Content Include="libmruby_x64.dylib" Condition=" '$(OS)' == 'MacOS' ">
+        <Content Include="libmruby_x64.dylib" Condition="Exists('libmruby_x64.dylib')">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
             <pack>true</pack>
