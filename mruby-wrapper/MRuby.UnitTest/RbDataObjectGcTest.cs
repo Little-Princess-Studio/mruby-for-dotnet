@@ -1,6 +1,7 @@
 namespace MRuby.UnitTest;
 
 using System;
+using System.Threading;
 using Library;
 using Library.Language;
 
@@ -30,6 +31,102 @@ public class RbDataObjectGcTest
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true);
             GC.WaitForPendingFinalizers();
         }
+    }
+
+    [Fact]
+    public void TestDoubleCloseIsSafeNoOp()
+    {
+        var state = Ruby.Open();
+
+        Ruby.Close(state);
+        Assert.Equal(IntPtr.Zero, state.NativeHandler);
+
+        Ruby.Close(state);
+        Assert.Equal(IntPtr.Zero, state.NativeHandler);
+    }
+
+    [WindowsOnlyFact]
+    public void TestCloseDisarmsLiveDataObjects()
+    {
+        var releasedCount = 0;
+
+        var state = Ruby.Open();
+        var cls = state.DefineClass("DisarmProbe", null);
+        cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE(), out _);
+
+        for (var i = 0; i < 5; i++)
+        {
+            cls.NewObjectWithCSharpDataObject(
+                "DisarmProbe",
+                new Payload(),
+                (_, _) => releasedCount++);
+        }
+
+        Ruby.Close(state);
+
+        Assert.Equal(5, releasedCount);
+        Assert.Equal(IntPtr.Zero, state.NativeHandler);
+    }
+
+    [WindowsOnlyFact]
+    public void TestMidProgramGcCallsReleaseFnExactlyOnce()
+    {
+        var releasedCount = 0;
+        var state = Ruby.Open();
+        var cls = state.DefineClass("MidGcProbe", null);
+        cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE(), out _);
+
+        cls.NewObjectWithCSharpDataObject("MidGcProbe", new Payload(), (_, _) => releasedCount++);
+
+        ForceFullGc();
+        using var compiler = state.NewCompiler();
+        compiler.LoadString("GC.start");
+
+        Ruby.Close(state);
+
+        Assert.Equal(1, releasedCount);
+    }
+
+    [WindowsOnlyFact]
+    public void TestReleaseFnCanOpenAndCloseAnotherStateWithoutDeadlock()
+    {
+        var state = Ruby.Open();
+        var cls = state.DefineClass("DeadlockProbe", null);
+        cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE(), out _);
+
+        cls.NewObjectWithCSharpDataObject(
+            "DeadlockProbe",
+            new Payload(),
+            (_, _) =>
+            {
+                var inner = Ruby.Open();
+                Ruby.Close(inner);
+            });
+
+        var completed = false;
+        Exception? closeError = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                Ruby.Close(state);
+                completed = true;
+            }
+            catch (Exception e)
+            {
+                closeError = e;
+            }
+        })
+        {
+            IsBackground = true,
+            Name = "release-fn-close-deadlock-probe",
+        };
+
+        thread.Start();
+        Assert.True(thread.Join(TimeSpan.FromSeconds(10)), "Ruby.Close deadlocked (releaseFn held VmLifecycleLock).");
+        Assert.Null(closeError);
+        Assert.True(completed, "Ruby.Close did not complete successfully.");
+        Assert.Equal(IntPtr.Zero, state.NativeHandler);
     }
 
     // The releaseFn (lambda) path: the free callback is a captured anonymous delegate

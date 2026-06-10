@@ -1,0 +1,37 @@
+namespace MRuby.UnitTest;
+
+using System;
+using Xunit;
+
+// A [Fact] that runs on ALL platforms including macOS, for the stabilized
+// Open/Close storm test (TestStaticMappingsAreStableUnderHeavySequentialOpenCloseStorm).
+//
+// Unlike [WindowsOnlyFact], this attribute does NOT skip on macOS or Linux.
+// It is "stabilized" by running the storm body inside chunked NoGCRegion segments
+// (implemented in T10), which suppresses the CLR gen0 churn that drives the crash
+// probability on macOS.
+//
+// Env var contract (CI amplifier sets these):
+//   MRUBY_STORM_CYCLES  - number of Open/Close cycles (default: 200)
+//   MRUBY_STORM_NOGC    - "1" enables chunked NoGCRegion (default: 1=on), "0" disables
+//     Setting MRUBY_STORM_NOGC=0 + fix ON is the A3 attribution config: proves the
+//     registry/disarm fix closes the crash window independent of GC suppression.
+[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+public sealed class StabilizedStormFactAttribute : FactAttribute
+{
+    // Reads MRUBY_STORM_CYCLES env var; returns parsed int or default 200.
+    public static int GetCycles()
+    {
+        var raw = Environment.GetEnvironmentVariable("MRUBY_STORM_CYCLES");
+        if (raw != null && int.TryParse(raw, out var n) && n > 0)
+            return n;
+        return 200;
+    }
+
+    // Reads MRUBY_STORM_NOGC env var; returns true unless explicitly "0".
+    public static bool GetNoGcEnabled()
+    {
+        var raw = Environment.GetEnvironmentVariable("MRUBY_STORM_NOGC");
+        return raw != "0";  // default on; only "0" disables
+    }
+}

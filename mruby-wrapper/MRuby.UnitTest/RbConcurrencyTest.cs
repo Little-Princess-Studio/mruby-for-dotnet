@@ -2,7 +2,9 @@ namespace MRuby.UnitTest;
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using Library;
 using Library.Language;
@@ -29,12 +31,14 @@ using Library.Mapper;
 //      host hard-exits under the synthetic GC/thread storm (a runtime stress limit, not a
 //      library defect - the real parallel xUnit suite is stable on all platforms once the
 //      dictionaries are locked). See WindowsOnlyFactAttribute for the full rationale.
-//   2. A heavy single-threaded 200-cycle Open/Close storm, also [WindowsOnlyFact]: even
-//      with zero cross-thread stress, sustained mrb_open/mrb_close churn keeps the lone
-//      test thread parked in mrb_close's reverse-P/Invoke dfree callback long enough that
-//      an unrelated process GC can signal-suspend it and hard-exit the macOS CoreCLR host
-//      (observed on CI ~iteration 139/200 on a fraction of runs; reproduced on both .NET 8
-//      and .NET 10, so it is not runtime-version-specific). Stable on Windows.
+//   2. A heavy single-threaded Open/Close storm, [StabilizedStormFact] so it runs on ALL
+//      platforms: sustained mrb_open/mrb_close churn keeps the lone test thread parked in
+//      mrb_close's reverse-P/Invoke dfree callback, where an unrelated process GC used to
+//      signal-suspend it and hard-exit the macOS CoreCLR host (observed on CI partway
+//      through the loop on a fraction of runs; reproduced on both .NET 8 and .NET 10). It
+//      is stabilized by chunking the storm into K=100-cycle segments, each wrapped in a
+//      NoGCRegion so the CLR cannot attempt a suspending gen0 GC mid-chunk. Cycle count
+//      and NoGC suppression are env-driven (MRUBY_STORM_CYCLES / MRUBY_STORM_NOGC).
 //   3. A small all-platform smoke test (a handful of cycles) asserting the same mappings
 //      populate and clear correctly, with zero cross-thread stress - cheap enough that the
 //      macOS/Linux host carries it reliably, keeping cross-platform coverage of the path.
@@ -45,9 +49,34 @@ using Library.Mapper;
 // by contract (see Ruby.Open/Close).
 public class RbConcurrencyTest
 {
+    private const int CallbackAllocationProbeIterations = 40000;
+
     private sealed class ConcPayload
     {
         public long Value { get; set; }
+    }
+
+    [Fact]
+    public void TestNoGCRegionFallbackForOversizeBudget()
+    {
+        var bodyRan = false;
+
+        var started = GcProbe.RunInNoGCRegion(() => { bodyRan = true; }, 0);
+
+        Assert.False(started);
+        Assert.True(bodyRan);
+    }
+
+    [WindowsOnlyFact]
+    public void TestCallbackBridgeCacheReducesGen0Collections()
+    {
+        var withoutCacheGen0 = MeasureCallbackBridgeGen0Delta(useCanonicalCache: false);
+        var withCacheGen0 = MeasureCallbackBridgeGen0Delta(useCanonicalCache: true);
+
+        GcProbe.MinGcCountAssertion(withoutCacheGen0, 1, "uncached callback bridge allocation canary");
+        Assert.True(
+            withCacheGen0 < withoutCacheGen0,
+            $"Expected canonical-state cache to reduce gen0 collections: cached={withCacheGen0}, uncached={withoutCacheGen0}.");
     }
 
     // Races RbNativeObjectLiveKeeper.StateMapper directly: GetOrCreateKeeper (add) and
@@ -229,37 +258,61 @@ public class RbConcurrencyTest
     // thread in that native window often enough that an unrelated process GC (vstest IPC,
     // the finalizer) can signal-suspend it there and hard-exit the macOS CoreCLR host
     // (reproduced on both .NET 8 and .NET 10). A single scattered cycle does not. The
-    // HEAVY 200-cycle storm version lives in the
-    // [WindowsOnlyFact] below, where the runtime can host that synthetic churn reliably.
-    // See WindowsOnlyFactAttribute and TestStaticMappingsAreStableUnderHeavySequentialOpenCloseStorm.
+    // HEAVY all-platform storm version lives in the [StabilizedStormFact] below, which
+    // chunks the churn into NoGCRegion segments so the runtime can host it reliably.
+    // See StabilizedStormFactAttribute and TestStaticMappingsAreStableUnderHeavySequentialOpenCloseStorm.
     [Fact]
     public void TestStaticMappingsAreStableAcrossSequentialOpenClose()
     {
         RunSequentialOpenCloseCycle(0);
     }
 
-    // Heavy single-threaded Open/Close GC storm (200 cycles). Windows-only for the same
-    // reason as the multithreaded storms above: the macOS/Linux .NET test host can
-    // hard-exit when a process GC suspends the test thread while it is inside mrb_close's
-    // reverse-P/Invoke dfree callback. Proven on the macOS CI runner: the serialized suite
-    // still aborted with signal 11 partway through this loop (~iteration 139/200) on a
-    // fraction of runs, while it is stable on Windows. The lighter all-platform smoke test
-    // above keeps cross-platform coverage of the same mappings; this asserts the mappings
-    // stay consistent under sustained lifecycle churn where the host can take it.
-    [WindowsOnlyFact]
+    // Heavy single-threaded Open/Close GC storm, now [StabilizedStormFact] so it runs on
+    // ALL platforms (including macOS/Linux), not just Windows. Stabilization: the storm
+    // body is split into chunks of K=100 cycles, and each chunk runs inside its own
+    // GcProbe.RunInNoGCRegion (64MB budget) so the CLR cannot attempt a gen0 GC suspension
+    // mid-chunk - that suspension landing on the lone test thread while it is parked in
+    // mrb_close's reverse-P/Invoke dfree callback was the macOS hard-exit trigger. Cycle
+    // count is driven by MRUBY_STORM_CYCLES (default 200); the CI amplifier raises it
+    // (e.g. 5000), and chunking keeps every NoGCRegion well under budget regardless of the
+    // total. Setting MRUBY_STORM_NOGC=0 disables the suppression (plain loop) for A3
+    // attribution: it proves the GCHandle-registry + mrb_data_disarm fix closes the crash
+    // window on its own, independent of GC suppression.
+    [StabilizedStormFact]
     public void TestStaticMappingsAreStableUnderHeavySequentialOpenCloseStorm()
     {
-        const int cycles = 200;
+        var cycles = StabilizedStormFactAttribute.GetCycles();
+        var noGcEnabled = StabilizedStormFactAttribute.GetNoGcEnabled();
+        const int chunkSize = 100;
 
-        for (var i = 0; i < cycles; i++)
+        for (var chunkStart = 0; chunkStart < cycles; chunkStart += chunkSize)
         {
-            RunSequentialOpenCloseCycle(i);
+            var start = chunkStart;
+            var end = Math.Min(chunkStart + chunkSize, cycles);
+
+            if (noGcEnabled)
+            {
+                GcProbe.RunInNoGCRegion(() =>
+                {
+                    for (var j = start; j < end; j++)
+                    {
+                        RunSequentialOpenCloseCycle(j);
+                    }
+                }, 64 * 1024 * 1024L);
+            }
+            else
+            {
+                for (var j = start; j < end; j++)
+                {
+                    RunSequentialOpenCloseCycle(j);
+                }
+            }
         }
     }
 
     // One Open -> exercise StateMapper + RbDataClassMapping -> Close cycle. Shared by the
-    // all-platform smoke test and the Windows-only heavy storm so both assert the exact
-    // same invariants, only differing in iteration count.
+    // all-platform smoke test and the all-platform stabilized heavy storm so both assert
+    // the exact same invariants, only differing in iteration count.
     private static void RunSequentialOpenCloseCycle(int i)
     {
         var state = Ruby.Open();
@@ -297,5 +350,81 @@ public class RbConcurrencyTest
             // ReleaseKeeper runs inside Ruby.Close; the next cycle must start clean.
             Ruby.Close(state);
         }
+    }
+
+    private static int MeasureCallbackBridgeGen0Delta(bool useCanonicalCache)
+    {
+        var state = Ruby.Open();
+        var cache = CanonicalStateCache();
+        var cacheLock = CanonicalStateCacheLock();
+        var cacheKey = state.NativeHandler.ToInt64();
+
+        try
+        {
+            var cls = state.DefineClass($"AllocProbe{Guid.NewGuid():N}", null);
+            cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE(), out _);
+            cls.DefineMethod("ping", (callbackState, self, _) =>
+            {
+                if (!ReferenceEquals(callbackState, state))
+                {
+                    AllocateGen0Canary();
+                }
+
+                return self;
+            }, RbHelper.MRB_ARGS_NONE(), out _);
+
+            if (!useCanonicalCache)
+            {
+                lock (cacheLock)
+                {
+                    cache.Remove(cacheKey);
+                }
+            }
+
+            var probe = new GcProbe();
+            probe.RecordBefore();
+            using (var compiler = state.NewCompiler())
+            {
+                compiler.LoadString(
+                    $"obj = {cls.GetClassName()}.new\n" +
+                    $"{CallbackAllocationProbeIterations}.times {{ obj.ping }}\n" +
+                    "nil");
+            }
+
+            var delta = probe.Delta();
+            return delta.gen0;
+        }
+        finally
+        {
+            lock (cacheLock)
+            {
+                cache[cacheKey] = state;
+            }
+
+            Ruby.Close(state);
+        }
+    }
+
+    private static Dictionary<long, RbState> CanonicalStateCache()
+    {
+        var field = typeof(RbHelper).GetField("CanonicalStateCache", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(field);
+        var cache = field!.GetValue(null) as Dictionary<long, RbState>;
+        Assert.NotNull(cache);
+        return cache!;
+    }
+
+    private static object CanonicalStateCacheLock()
+    {
+        var field = typeof(RbHelper).GetField("CanonicalStateCacheLock", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(field);
+        var cacheLock = field!.GetValue(null);
+        Assert.NotNull(cacheLock);
+        return cacheLock!;
+    }
+
+    private static void AllocateGen0Canary()
+    {
+        _ = new byte[4096];
     }
 }
