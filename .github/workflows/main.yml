@@ -12,6 +12,11 @@ on:
         required: false
         default: 'true'
         type: string
+      macos_probe_iterations:
+        description: 'How many back-to-back normal-suite runs the macOS stress probe does (observation only)'
+        required: false
+        default: '10'
+        type: string
 
 jobs:
   build-linux-macos:
@@ -246,6 +251,90 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: canary-results-${{ github.run_id }}
+        path: mruby-wrapper/MRuby.UnitTest/TestResults/**
+        if-no-files-found: warn
+
+  # Observation-only stress probe (NOT a gate): runs the FULL normal macOS suite
+  # back-to-back N times with the default environment (no amplifier, no NoGCRegion
+  # suppression, no retry) to measure how often the residual reverse-P/Invoke
+  # suspension-window crash actually fires on the required suite. It is
+  # continue-on-error so it never blocks a PR; the value is the per-run pass/fail
+  # tally it prints, not its own conclusion. Tune iteration count via the
+  # MACOS_PROBE_ITERATIONS workflow_dispatch input (default 10).
+  macos-normal-suite-probe:
+    runs-on: macos-14
+    continue-on-error: true
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.3'
+        bundler-cache: true
+
+    - uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: "2.9.6"
+
+    - name: Compile mruby for macos
+      run: rake
+
+    - name: Build with XMake
+      run: |
+        cd mruby-shared
+        xmake f -m release
+        xmake
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore & Build
+      run: |
+        cd mruby-wrapper
+        dotnet restore
+        dotnet build --configuration=release
+
+    - name: Stress the normal suite (no retry, tally crashes)
+      env:
+        MACOS_PROBE_ITERATIONS: ${{ github.event.inputs.macos_probe_iterations || '10' }}
+      run: |
+        cd mruby-wrapper
+        iterations="${MACOS_PROBE_ITERATIONS}"
+        pass=0
+        fail=0
+        first_fail=0
+        for i in $(seq 1 "${iterations}"); do
+          echo "::group::normal-suite iteration ${i}/${iterations}"
+          # Same command as the required macOS step: full suite, default env, no blame flags.
+          if dotnet test --configuration=release --logger "console;verbosity=detailed"; then
+            echo "iteration ${i}: PASS"
+            pass=$((pass + 1))
+          else
+            echo "iteration ${i}: FAIL (exit $?)"
+            fail=$((fail + 1))
+            if [ "${first_fail}" -eq 0 ]; then first_fail=${i}; fi
+          fi
+          echo "::endgroup::"
+        done
+        echo "==================== STRESS PROBE SUMMARY ===================="
+        echo "iterations : ${iterations}"
+        echo "passed     : ${pass}"
+        echo "failed     : ${fail}"
+        echo "first fail : ${first_fail} (0 = never failed)"
+        echo "============================================================="
+        # Do NOT fail the step on individual crashes — this job is observational.
+        # (continue-on-error also guards the overall job conclusion.)
+
+    - name: Upload probe crash dumps
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-normal-probe-${{ github.run_id }}
         path: mruby-wrapper/MRuby.UnitTest/TestResults/**
         if-no-files-found: warn
 
