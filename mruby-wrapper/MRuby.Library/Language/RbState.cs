@@ -358,8 +358,8 @@ namespace MRuby.Library.Language
 
         public RbProc NewProc(CSharpMethodFunc func, out NativeMethodFunc delegateFunc)
         {
-            delegateFunc = RbHelper.BuildAndRootNativeCallback(this, func);
-            var handler = mrb_proc_new_cfunc_with_env(this.NativeHandler, delegateFunc, 0, null);
+            var id = RbHelper.RegisterCallback(this, func, out delegateFunc);
+            var handler = mrbdotnet_proc_new_with_callback_id(this.NativeHandler, id);
 
             return new RbProc(this, handler);
         }

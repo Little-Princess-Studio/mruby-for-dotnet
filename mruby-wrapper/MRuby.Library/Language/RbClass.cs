@@ -50,8 +50,8 @@ namespace MRuby.Library.Language
         
         public void DefineMethod(UInt64 name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
         {
-            delegateFunc = RbHelper.BuildAndRootNativeCallback(this.State, callback);
-            mrb_define_method_id(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
+            var id = RbHelper.RegisterCallback(this.State, callback, out delegateFunc);
+            mrbdotnet_define_method_id(this.State.NativeHandler, this.NativeHandler, name, id, parameterAspect);
         }
 
         public void DefinePrivateMethod(string name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
@@ -62,8 +62,8 @@ namespace MRuby.Library.Language
 
         public void DefinePrivateMethod(UInt64 name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
         {
-            delegateFunc = RbHelper.BuildAndRootNativeCallback(this.State, callback);
-            mrb_define_private_method_id(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
+            var id = RbHelper.RegisterCallback(this.State, callback, out delegateFunc);
+            mrbdotnet_define_private_method_id(this.State.NativeHandler, this.NativeHandler, name, id, parameterAspect);
         }
 
         public void DefineClassMethod(string name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
@@ -74,8 +74,8 @@ namespace MRuby.Library.Language
         
         public void DefineClassMethod(UInt64 name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
         {
-            delegateFunc = RbHelper.BuildAndRootNativeCallback(this.State, callback);
-            mrb_define_class_method_id(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
+            var id = RbHelper.RegisterCallback(this.State, callback, out delegateFunc);
+            mrbdotnet_define_class_method_id(this.State.NativeHandler, this.NativeHandler, name, id, parameterAspect);
         }
 
         public void DefineModuleMethod(string name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
@@ -86,8 +86,8 @@ namespace MRuby.Library.Language
         
         public void DefineModuleMethod(UInt64 name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
         {
-            delegateFunc = RbHelper.BuildAndRootNativeCallback(this.State, callback);
-            mrb_define_module_function_id(this.State.NativeHandler, this.NativeHandler, name, delegateFunc, parameterAspect);
+            var id = RbHelper.RegisterCallback(this.State, callback, out delegateFunc);
+            mrbdotnet_define_module_function_id(this.State.NativeHandler, this.NativeHandler, name, id, parameterAspect);
         }
 
         public void DefineConstant(string name, RbValue value)

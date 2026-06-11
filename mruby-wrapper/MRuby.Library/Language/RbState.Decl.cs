@@ -229,6 +229,10 @@ namespace MRuby.Library.Language
         private static extern IntPtr mrb_proc_new_cfunc_with_env(
             IntPtr mrb, [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc func, int argc, UInt64[]? argv);
 
+        // Trampoline: MRB_API struct RProc *mrbdotnet_proc_new_with_callback_id(mrb_state*, int64_t callback_id);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        private static extern IntPtr mrbdotnet_proc_new_with_callback_id(IntPtr mrb, Int64 callbackId);
+
         // mrb_value mrb_get_block(struct mrb_state *mrb) {
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern UInt64 mrb_get_block(IntPtr mrb);

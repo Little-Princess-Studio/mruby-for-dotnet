@@ -41,6 +41,25 @@ namespace MRuby.Library.Language
             [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc nativeMethod,
             uint parameterAspect);
 
+        // Trampoline define-helpers (mruby-shared/src/main.c): register the managed callback
+        // as a proc-backed cfunc carrying callbackId in env, with the single static native
+        // trampoline as the cfunc. mruby never holds a managed delegate pointer.
+        // MRB_API void mrbdotnet_define_method_id(mrb_state*, struct RClass*, mrb_sym, int64_t callback_id, mrb_aspec);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        private static extern void mrbdotnet_define_method_id(IntPtr mrb, IntPtr @class, UInt64 mid, Int64 callbackId, uint aspec);
+
+        // MRB_API void mrbdotnet_define_private_method_id(...);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        private static extern void mrbdotnet_define_private_method_id(IntPtr mrb, IntPtr @class, UInt64 mid, Int64 callbackId, uint aspec);
+
+        // MRB_API void mrbdotnet_define_class_method_id(...);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        private static extern void mrbdotnet_define_class_method_id(IntPtr mrb, IntPtr @class, UInt64 mid, Int64 callbackId, uint aspec);
+
+        // MRB_API void mrbdotnet_define_module_function_id(...);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        private static extern void mrbdotnet_define_module_function_id(IntPtr mrb, IntPtr @class, UInt64 mid, Int64 callbackId, uint aspec);
+
         // MRB_API void mrb_define_const_id(mrb_state* mrb, struct RClass* cla, mrb_sym name, mrb_value val);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
         private static extern void mrb_define_const_id(
