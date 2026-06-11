@@ -196,7 +196,9 @@ static mrb_value mrbdotnet_dispatch_and_maybe_raise(
     mrb_state *mrb, mrb_value self, int64_t callback_id,
     int64_t argc, const mrb_value *argv) {
   if (g_mrbdotnet_dispatch == NULL) {
-    mrb_raise(mrb, E_RUNTIME_ERROR, "mruby-for-dotnet dispatcher not registered");
+    struct RClass *re = mrb_exc_get_id(mrb, mrb_intern_cstr(mrb, "RuntimeError"));
+    mrb_value m = mrb_str_new_cstr(mrb, "mruby-for-dotnet dispatcher not registered");
+    mrb_exc_raise(mrb, mrb_exc_new_str(mrb, re, m));
   }
 
   mrb_bool should_raise = FALSE;
@@ -210,9 +212,18 @@ static mrb_value mrbdotnet_dispatch_and_maybe_raise(
   if (should_raise) {
     // The managed dispatcher has fully returned; its frame is gone. Build the
     // exception and longjmp from native code below the managed frame.
+    //
+    // Resolve RuntimeError via RUNTIME symbol intern, NOT the E_RUNTIME_ERROR macro:
+    // E_RUNTIME_ERROR expands to MRB_ERROR_SYM(RuntimeError), a COMPILE-TIME presym id.
+    // On the macOS universal build this glue is compiled against build/host/include while
+    // the per-arch slices link build/<arch>/lib; if the generated presym ids differ, the
+    // compile-time id resolves the wrong constant and mrb_exc_get_id raises mruby's own
+    // "exception corrupted" sentinel (the arm64-only failure observed). Interning the name
+    // at runtime is presym-table-agnostic and correct on every slice.
     msg_buf[sizeof(msg_buf) - 1] = '\0';
+    struct RClass *runtime_error = mrb_exc_get_id(mrb, mrb_intern_cstr(mrb, "RuntimeError"));
     mrb_value m = mrb_str_new_cstr(mrb, msg_buf);
-    mrb_value exc = mrb_exc_new_str(mrb, E_RUNTIME_ERROR, m);
+    mrb_value exc = mrb_exc_new_str(mrb, runtime_error, m);
     mrb_exc_raise(mrb, exc);
   }
 
