@@ -35,6 +35,14 @@ internal static class V5Churn
 {
     internal static bool Enabled => Environment.GetEnvironmentVariable("MRUBY_V5") == "1";
 
+    // A background thread hammering compacting gen2 GCs as fast as possible. This is the
+    // release-runtime-compatible amplifier (DOTNET_GCStress=0x4 is dead code on the release
+    // CoreCLR that setup-dotnet installs - it needs HAVE_GCCOVER/_DEBUG; only 0x1/0x2/0x3
+    // work on release). A compacting blocking gen2 forces object relocation + a full STW
+    // suspension, maximizing the chance of suspending a thread parked in a native mruby
+    // callback. Gated on MRUBY_V5_HAMMER so it can be toggled per CI arm.
+    internal static bool HammerEnabled => Environment.GetEnvironmentVariable("MRUBY_V5_HAMMER") == "1";
+
     // One worker = a tight Open -> define real callback -> call it (reverse-P/Invoke) ->
     // make a data object (mrb_close will run CDATA teardown) -> Close loop. Spawns a few
     // raw threads so even within one collection there is cross-thread lifecycle skew; the
@@ -44,6 +52,28 @@ internal static class V5Churn
         if (!Enabled)
         {
             return; // skipped unless the v5 experiment is selected
+        }
+
+        // ENGAGEMENT SELF-CHECK: record GC counts before/after so the harness can PROVE the
+        // GC amplifier actually fired. v5 round 1 was a false negative - DOTNET_GCStress=0x4
+        // was silently ignored on the release runtime and we nearly reported "clean". Never
+        // again: if the gen2 delta is ~0, the amplifier did not engage and any "no crash"
+        // result is meaningless.
+        var gen0Before = GC.CollectionCount(0);
+        var gen2Before = GC.CollectionCount(2);
+
+        using var hammerCts = new CancellationTokenSource();
+        Thread? hammer = null;
+        if (HammerEnabled)
+        {
+            hammer = new Thread(() =>
+            {
+                while (!hammerCts.IsCancellationRequested)
+                {
+                    GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+                }
+            }) { IsBackground = true, Name = $"v5-hammer-{tag}" };
+            hammer.Start();
         }
 
         var errors = new ConcurrentQueue<Exception>();
@@ -95,6 +125,23 @@ internal static class V5Churn
         foreach (var w in workers)
         {
             Assert.True(w.Join(TimeSpan.FromMinutes(4)), $"v5 worker {tag} did not finish in time.");
+        }
+
+        hammerCts.Cancel();
+        hammer?.Join(TimeSpan.FromSeconds(10));
+
+        var gen0Delta = GC.CollectionCount(0) - gen0Before;
+        var gen2Delta = GC.CollectionCount(2) - gen2Before;
+        Console.WriteLine($"[v5-engagement] tag={tag} gen0Delta={gen0Delta} gen2Delta={gen2Delta} hammer={HammerEnabled}");
+
+        // Proof-of-engagement gate: when the hammer is on, gen2 GCs MUST have fired in bulk.
+        // If they didn't, the amplifier was a no-op and a "no crash" outcome is a false
+        // negative - fail loudly instead of reporting a misleading green.
+        if (HammerEnabled)
+        {
+            Assert.True(
+                gen2Delta > 50,
+                $"GC amplifier did not engage (gen2Delta={gen2Delta}); 'no crash' would be a false negative.");
         }
 
         Assert.Empty(errors);
