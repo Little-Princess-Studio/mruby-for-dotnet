@@ -6,32 +6,52 @@
 // silently untracked and the fix would never ship. An assembly attribute compiles
 // identically regardless of which file it sits in.
 //
-// WHY THIS EXISTS (macOS-only CI test-host crash, signal 11 / SIGSEGV):
+// WHY THIS EXISTS (macOS CI test-host crash, native abort):
 // xUnit v2 runs distinct test classes as separate collections IN PARALLEL by default
 // (one worker thread per logical core). Every test here drives native mruby through
 // reverse-P/Invoke callbacks (Ruby.Open/Close, DefineMethod thunks, data-object dfree
-// during mrb_close). On macOS, CoreCLR suspends managed threads for a GC using POSIX
-// signals (PAL_InjectActivation -> pthread_kill SIGUSR1). When the GC tries to suspend
-// a thread that is parked INSIDE such a native callback, the activation signal can land
-// at a non-interruptible point and PROCAbort()s the whole test host. mruby 4.0 widened
-// this window (MRB_TT_CDATA teardown does more native work during mrb_close) which is
-// why mruby 3.3 never tripped it. It is a macOS CoreCLR limitation in suspending threads
-// stopped in native frames (related issues: dotnet/runtime#44498, #58111; xamarin-
-// macios#13962) - NOT a defect in this library's managed code. NOTE: this was empirically
-// verified to STILL reproduce on .NET 10, so it is not tied to a runtime version;
-// dotnet/runtime#102887 (.NET 9) fixed a DIFFERENT macOS case (libdispatch queue threads).
+// during mrb_close), and some exercise deeper native control flow (mruby exception
+// longjmp in RbExceptionTest, fiber swapcontext in RbProcTest, the parser in
+// RbCompilerTest). The crash is a NATIVE test-host abort (caught by `dotnet test
+// --blame-crash` as "Test host process crashed", surfacing as exit 1 - NOT a managed
+// xUnit assertion failure).
 //
-// THE FIX: the crash needs TWO coincident conditions - a GC in flight AND a thread
-// parked in a native mruby callback. xUnit's default per-class parallelism put several
-// threads in native callbacks at once and multiplied that coincidence into a ~50% CI
-// flake. Running collections strictly sequentially removes the multiplier we control.
-// Verified on a macOS arm64 host under DOTNET_GCStress=0x4 (GC at every transition, the
-// worst case): PARALLEL crashed the host on the very FIRST test (0 completed) while
-// SERIAL survived 7-65x longer; and under normal GC the serialized suite is consistently
-// green (8/8). DisableTestParallelization=true alone is sufficient - it routes execution
-// through TestAssemblyRunner's sequential foreach, bypassing the parallel
-// semaphore/SyncContext entirely (confirmed against xunit v2-2.9.x source). The
-// MaxParallelThreads=1 is belt-and-suspenders defense-in-depth.
+// LEADING HYPOTHESIS (consistent with the data; NOT yet crash-dump-confirmed):
+// on macOS CoreCLR suspends managed threads for a GC using POSIX signals
+// (PAL_InjectActivation -> pthread_kill). When a GC on one thread tries to suspend
+// another thread that is parked INSIDE a native mruby callback / mrb_close teardown,
+// the activation signal can land at a point the runtime cannot safely resume, and the
+// host aborts. mruby 4.0 shifted GC timing/teardown work vs 3.3, changing crash
+// probability. Confirming the exact mechanism requires analysing the crash-dump thread
+// stacks (the GC/suspender thread + the victim thread's native frames); that has not
+// been done here, so treat the mechanism as the best-supported explanation, not proof.
+//
+// THE FIX (empirically measured, this repo): the driver is xUnit test-COLLECTION
+// PARALLELISM, not GC intensity. A 2x2 control on macos-14 (full real suite, Server GC
+// pressure, --blame-crash, 20 repeats/arm, crashes counted by the host-crash signature):
+//
+//     arm                         host crashes / 20
+//     serial   + coverlet off            0 / 20   (shipped config: clean)
+//     serial   + coverlet on             2 / 20
+//     parallel + coverlet on             6 / 20
+//     parallel + coverlet off            7 / 20
+//
+// serial(0/20) vs parallel(7/20) is a robust signal (Fisher two-sided p~=0.008);
+// coverage collection (coverlet) is a minor secondary pressure, NOT the driver
+// (parallel crashes ~equally with or without it). So DisableTestParallelization=true is
+// a LOAD-BEARING mitigation that substantially reduces (does not provably eliminate -
+// 0/20 is "0 observed", not "0% risk") the crash. It routes execution through
+// TestAssemblyRunner's sequential foreach, bypassing the parallel semaphore/SyncContext
+// (confirmed against xunit v2-2.9.x source); MaxParallelThreads=1 is belt-and-suspenders.
+//
+// CAVEAT ON A PRIOR NOTE: an earlier version of this comment cited DOTNET_GCStress=0x4
+// as evidence ("PARALLEL crashed on the first test"). That citation is technically
+// invalid on the RELEASE CoreCLR that setup-dotnet installs: GCStress modes 0x4/0x8 are
+// compiled out of retail builds (they need _DEBUG / HAVE_GCCOVER; see dotnet/coreclr
+// #25445). Only 0x1/0x2/0x3 function on release. The empirical conclusion above
+// (serialization reduces the parallel-suite crash) stands on the 2x2 data, independent
+// of GCStress. Related (adjacent, not exact) runtime issues: dotnet/runtime#44498
+// (macOS activation race, fixed ~.NET 6), #102887 (.NET 9 libdispatch case).
 //
 // COST: the suite is tiny and finishes in well under a second; losing parallelism is
 // negligible and far cheaper than a flaky native crash that aborts the whole run.
