@@ -36,7 +36,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-14]
-        arm: [A-serial-gcstress, B-parallel-gcstress, C-parallel-normalgc]
+        arm: [A-serial-hammer, B-parallel-hammer, C-parallel-nohammer]
 
     env:
       REPEATS: ${{ github.event.inputs.repeats || '12' }}
@@ -78,7 +78,7 @@ jobs:
         id: variant
         run: |
           cd mruby-wrapper
-          if [ "${{ matrix.arm }}" = "A-serial-gcstress" ]; then
+          if [ "${{ matrix.arm }}" = "A-serial-hammer" ]; then
             echo "defines=" >> "$GITHUB_OUTPUT"
             echo "serial build (shipped attribute kept)"
           else
@@ -105,11 +105,17 @@ jobs:
         working-directory: mruby-wrapper
         shell: bash
         env:
-          # GCStress at every transition for the *-gcstress arms; normal GC for C.
-          DOTNET_GCStress: ${{ matrix.arm == 'C-parallel-normalgc' && '' || '0x4' }}
+          # Release-runtime-compatible GC amplifier (DOTNET_GCStress=0x4 is DEAD CODE on the
+          # release CoreCLR that setup-dotnet installs - needs _DEBUG/HAVE_GCCOVER; only
+          # 0x1/0x2/0x3 work). 0x3 = alloc + every cooperative->preemptive transition (every
+          # P/Invoke). Plus a tiny gen0 budget for frequent gen0 STW, plus the in-test hammer
+          # thread (MRUBY_V5_HAMMER) doing compacting blocking gen2. C is the no-amplifier control.
+          DOTNET_GCStress: ${{ matrix.arm == 'C-parallel-nohammer' && '' || '0x3' }}
+          DOTNET_GCgen0size: ${{ matrix.arm == 'C-parallel-nohammer' && '' || '0x20000' }}
+          MRUBY_V5_HAMMER: ${{ matrix.arm == 'C-parallel-nohammer' && '0' || '1' }}
         run: |
           repeats="${REPEATS}"
-          echo "arm=${{ matrix.arm }} GCStress='${DOTNET_GCStress}' MRUBY_V5=${MRUBY_V5}"
+          echo "arm=${{ matrix.arm }} GCStress='${DOTNET_GCStress}' gen0size='${DOTNET_GCgen0size}' HAMMER=${MRUBY_V5_HAMMER} MRUBY_V5=${MRUBY_V5}"
           pass=0; clean_fail=0; crash=0; first_bad=0
           declare -a codes=()
           for i in $(seq 1 "${repeats}"); do
