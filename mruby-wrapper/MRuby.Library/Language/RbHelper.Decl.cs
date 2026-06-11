@@ -24,34 +24,12 @@ namespace MRuby.Library.Language
             UInt64[] argv,
             UInt64 block);
 
-        // longjmp firewall (mruby-shared/src/main.c): protected variants catch any mruby
-        // raise in NATIVE code (their own setjmp) instead of letting the longjmp cross the
-        // managed callback frame above them (the macOS GC-suspension crash). `raised` is set
-        // to TRUE when the call raised; the returned mrb_value is then the exception object.
-        // MRB_API mrb_value mrbdotnet_funcall_argv_protected(mrb_state*, mrb_value, mrb_sym, mrb_int, const mrb_value*, mrb_bool*);
-        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
-        private static extern UInt64 mrbdotnet_funcall_argv_protected(
-            IntPtr state,
-            UInt64 val,
-            UInt64 sym,
-            Int64 argc,
-            UInt64[] argv,
-            [MarshalAs(UnmanagedType.U1)] ref Boolean raised);
-
-        // MRB_API mrb_value mrbdotnet_funcall_with_block_protected(mrb_state*, mrb_value, mrb_sym, mrb_int, const mrb_value*, mrb_value, mrb_bool*);
-        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
-        private static extern UInt64 mrbdotnet_funcall_with_block_protected(
-            IntPtr state,
-            UInt64 val,
-            UInt64 sym,
-            Int64 argc,
-            UInt64[] argv,
-            UInt64 block,
-            [MarshalAs(UnmanagedType.U1)] ref Boolean raised);
-
+        // longjmp firewall (mruby-shared/src/main.c). Sets mrb->exc WITHOUT longjmp so the
+        // managed callback bridge can return normally and let the native VM epilogue
+        // propagate the exception, instead of calling mrb_raise FROM INSIDE the managed
+        // callback (which would longjmp out of the managed frame -> macOS GC-suspension
+        // crash, the same class as dotnet/runtime#1445).
         // MRB_API void mrbdotnet_set_pending_exception(mrb_state*, mrb_value);
-        // Sets mrb->exc WITHOUT longjmp so a managed callback can return normally and let
-        // the native VM epilogue propagate the exception (below the managed frame).
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
         private static extern void mrbdotnet_set_pending_exception(IntPtr mrb, UInt64 exc);
         
