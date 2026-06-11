@@ -1,0 +1,143 @@
+name: Firewall Fix Verification (parallel crash rate)
+
+# Verifies the longjmp firewall fix (PR #14) actually reduces the macOS native
+# test-host crash rate under restored xUnit parallelism. Pre-fix baseline (measured on
+# main): parallel = 7/20 native host crashes; serial = 0/20. With the firewall in place
+# the parallel rate should drop toward 0. DOTNET_EnableCrashReport=1 captures a
+# ~200KB .crashreport.json (native + managed stacks) for any residual crash, to confirm
+# the mechanism and whether it still involves an mruby longjmp over a managed frame.
+#
+# Crashes are counted by the "Test host process crashed" signature, NOT exit code
+# (dotnet test --blame-crash returns exit 1 for both a host crash and a managed [FAIL]).
+
+on:
+  workflow_dispatch:
+    inputs:
+      repeats:
+        description: 'Full-suite runs per arm'
+        required: false
+        default: '20'
+        type: string
+  push:
+    branches: [ fix/macos-longjmp-firewall ]
+
+jobs:
+  verify:
+    name: macos-14 / ${{ matrix.arm }}
+    runs-on: macos-14
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        # serial = shipped (control, expect 0); parallel = the stress that crashed 7/20
+        # pre-fix. With the fix, parallel should be ~0.
+        arm: [serial, parallel]
+
+    env:
+      REPEATS: ${{ github.event.inputs.repeats || '20' }}
+      DOTNET_DbgEnableMiniDump: '1'
+      DOTNET_DbgMiniDumpType: '4'
+      DOTNET_EnableCrashReport: '1'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: "2.9.6"
+
+      - name: Compile mruby (macOS)
+        run: rake
+
+      - name: Build native shim with XMake
+        run: |
+          cd mruby-shared
+          xmake f -m release
+          xmake
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # parallel arm: compile the serialization attribute OUT + parallel runner json,
+      # exactly as the pre-fix 2x2 repro did, so the comparison is apples-to-apples.
+      - name: Configure variant
+        id: variant
+        run: |
+          cd mruby-wrapper
+          if [ "${{ matrix.arm }}" = "serial" ]; then
+            echo "defines=" >> "$GITHUB_OUTPUT"
+          else
+            echo "defines=MRUBY_EXPERIMENT_PARALLEL" >> "$GITHUB_OUTPUT"
+            cat > MRuby.UnitTest/xunit.runner.json <<'JSON'
+          {
+            "$schema": "https://xunit.net/schema/current/xunit.runner.schema.json",
+            "parallelizeAssembly": false,
+            "parallelizeTestCollections": true,
+            "maxParallelThreads": 0
+          }
+          JSON
+          fi
+
+      - name: Build wrapper
+        run: |
+          cd mruby-wrapper
+          dotnet restore
+          dotnet build --configuration=release -p:DefineConstants="${{ steps.variant.outputs.defines }}"
+
+      - name: Run full suite ${{ env.REPEATS }}x and tally host crashes
+        working-directory: mruby-wrapper
+        shell: bash
+        env:
+          DOTNET_gcServer: '1'
+          DOTNET_gcConcurrent: '1'
+          DOTNET_GCgen0size: '0x40000'
+        run: |
+          repeats="${REPEATS}"
+          echo "arm=${{ matrix.arm }} (firewall fix in place) repeats=${repeats}"
+          pass=0; managed_fail=0; host_crash=0; first_crash=0
+          for i in $(seq 1 "${repeats}"); do
+            echo "::group::repeat ${i}/${repeats} (${{ matrix.arm }})"
+            set +e
+            out=$(dotnet test --configuration=release --no-build --blame-crash --logger "console;verbosity=minimal" 2>&1)
+            code=$?
+            set -e
+            echo "$out" | tail -n 30
+            if echo "$out" | grep -q "Test host process crashed\|host process exited unexpectedly"; then
+              host_crash=$((host_crash+1)); [ "${first_crash}" -eq 0 ] && first_crash=${i}
+              echo "repeat ${i}: HOST CRASH"
+            elif [ "${code}" -eq 0 ]; then
+              pass=$((pass+1)); echo "repeat ${i}: pass"
+            else
+              managed_fail=$((managed_fail+1)); echo "repeat ${i}: managed fail (exit ${code})"
+            fi
+            echo "::endgroup::"
+          done
+          echo "==================== FIX VERIFICATION SUMMARY ===================="
+          echo "arm           : ${{ matrix.arm }}"
+          echo "repeats       : ${repeats}"
+          echo "pass          : ${pass}"
+          echo "managed_fail  : ${managed_fail}  (real xUnit [FAIL] - should be 0)"
+          echo "host_crash    : ${host_crash}  (pre-fix parallel baseline was 7/20)"
+          echo "first_crash   : ${first_crash}"
+          echo "EXPECT: parallel host_crash drops from ~7/20 toward 0 with the fix"
+          echo "================================================================="
+          exit 0
+
+      - name: Upload crash reports (small JSON + dumps)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixverify-${{ matrix.arm }}-${{ github.run_id }}
+          path: |
+            mruby-wrapper/MRuby.UnitTest/TestResults/**
+            ~/*.crashreport.json
+            **/*.crashreport.json
+          if-no-files-found: ignore
