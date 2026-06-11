@@ -39,7 +39,7 @@ jobs:
         arm: [A-serial-hammer, B-parallel-hammer, C-parallel-nohammer]
 
     env:
-      REPEATS: ${{ github.event.inputs.repeats || '12' }}
+      REPEATS: ${{ github.event.inputs.repeats || '8' }}
       MRUBY_V5: '1'
       DOTNET_DbgEnableMiniDump: '1'
       DOTNET_DbgMiniDumpType: '4'

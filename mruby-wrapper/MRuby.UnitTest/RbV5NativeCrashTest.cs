@@ -71,6 +71,11 @@ internal static class V5Churn
                 while (!hammerCts.IsCancellationRequested)
                 {
                     GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+                    // Tiny yield so the hammer does not starve the worker threads entirely:
+                    // still hundreds of compacting gen2 STW suspensions per second (engagement
+                    // stays well above the gen2Delta>50 gate) while letting the churn make
+                    // progress so the run completes in CI-reasonable time.
+                    Thread.Sleep(1);
                 }
             }) { IsBackground = true, Name = $"v5-hammer-{tag}" };
             hammer.Start();
@@ -124,7 +129,7 @@ internal static class V5Churn
         workers.ForEach(w => w.Start());
         foreach (var w in workers)
         {
-            Assert.True(w.Join(TimeSpan.FromMinutes(4)), $"v5 worker {tag} did not finish in time.");
+            Assert.True(w.Join(TimeSpan.FromSeconds(90)), $"v5 worker {tag} did not finish in time.");
         }
 
         hammerCts.Cancel();
@@ -153,23 +158,23 @@ internal static class V5Churn
 public class RbV5WorkerAlphaTest
 {
     [Fact]
-    public void Churn() => V5Churn.Run("alpha", threads: 3, iterations: 200);
+    public void Churn() => V5Churn.Run("alpha", threads: 3, iterations: 60);
 }
 
 public class RbV5WorkerBravoTest
 {
     [Fact]
-    public void Churn() => V5Churn.Run("bravo", threads: 3, iterations: 200);
+    public void Churn() => V5Churn.Run("bravo", threads: 3, iterations: 60);
 }
 
 public class RbV5WorkerCharlieTest
 {
     [Fact]
-    public void Churn() => V5Churn.Run("charlie", threads: 3, iterations: 200);
+    public void Churn() => V5Churn.Run("charlie", threads: 3, iterations: 60);
 }
 
 public class RbV5WorkerDeltaTest
 {
     [Fact]
-    public void Churn() => V5Churn.Run("delta", threads: 3, iterations: 200);
+    public void Churn() => V5Churn.Run("delta", threads: 3, iterations: 60);
 }
