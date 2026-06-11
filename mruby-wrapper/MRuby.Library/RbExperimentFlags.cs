@@ -20,9 +20,13 @@ namespace MRuby.Library
     //
     //   MRUBY_DISABLE_STATEMAPPER_LOCK   = "1" -> StateMapperLock becomes a no-op
     //   MRUBY_DISABLE_DATACLASS_LOCK     = "1" -> RbDataClassMappingLock becomes a no-op
+    //   MRUBY_DISABLE_VMLIFECYCLE_LOCK   = "1" -> VmLifecycleLock becomes a no-op
     //
-    // VmLifecycleLock is deliberately NOT toggleable here: disabling it would test a
-    // different hypothesis (native open/close global races), confounding H1.
+    // VmLifecycleLock guards a DIFFERENT (native) race than the two managed-map locks:
+    // mruby's own mrb_open()/mrb_close() global init/teardown is not thread-safe. It is
+    // gated ONLY for the v4 attribution experiment (does the original macOS HARD crash
+    // come from the native lifecycle race A, or the managed delegate-drop race B?). The
+    // arms must disable A and B INDEPENDENTLY - a both-off crash is not attributable.
     [ExcludeFromCodeCoverage]
     internal static class RbExperimentFlags
     {
@@ -32,8 +36,12 @@ namespace MRuby.Library
         internal static readonly bool DisableDataClassLock =
             Environment.GetEnvironmentVariable("MRUBY_DISABLE_DATACLASS_LOCK") == "1";
 
+        internal static readonly bool DisableVmLifecycleLock =
+            Environment.GetEnvironmentVariable("MRUBY_DISABLE_VMLIFECYCLE_LOCK") == "1";
+
         // True if any experimental lock bypass is active. Used only for diagnostic banner
         // printing in the test harness; never gates production behavior.
-        internal static bool AnyLockDisabled => DisableStateMapperLock || DisableDataClassLock;
+        internal static bool AnyLockDisabled =>
+            DisableStateMapperLock || DisableDataClassLock || DisableVmLifecycleLock;
     }
 }

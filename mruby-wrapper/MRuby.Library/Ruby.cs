@@ -20,7 +20,20 @@ namespace MRuby.Library
         // runs test classes in parallel) races those global/teardown paths and can hard
         // -crash the host process. Lifecycle is therefore serialized; concurrent *use*
         // of two already-open, independent states on their own threads is still allowed.
-        private static readonly object VmLifecycleLock = new object();
+        private static readonly object VmLifecycleLockReal = new object();
+
+        // EXPERIMENT-ONLY (RbExperimentFlags.DisableVmLifecycleLock): when set, every
+        // `lock (VmLifecycleLock)` locks a [ThreadStatic] dummy so concurrent mrb_open/
+        // mrb_close stop serializing - exposing the NATIVE lifecycle race (hypothesis A
+        // in the v4 attribution experiment). Default (unset) returns the shared singleton,
+        // byte-identical to shipped behavior. See RbExperimentFlags.
+        [ThreadStatic]
+        private static object? VmLifecycleLockDummy;
+
+        private static object VmLifecycleLock =>
+            RbExperimentFlags.DisableVmLifecycleLock
+                ? (VmLifecycleLockDummy ??= new object())
+                : VmLifecycleLockReal;
 
         [DllImport(MrubyLib, CharSet = CharSet.Ansi)]
         private static extern IntPtr mrb_open();
