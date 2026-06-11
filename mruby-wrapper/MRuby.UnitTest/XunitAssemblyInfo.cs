@@ -35,4 +35,13 @@
 //
 // COST: the suite is tiny and finishes in well under a second; losing parallelism is
 // negligible and far cheaper than a flaky native crash that aborts the whole run.
+//
+// EXPERIMENT GATE (v5): this attribute is the LOAD-BEARING native-crash mitigation, so it
+// cannot be toggled at runtime (assembly attributes are compile-time). The v5 experiment
+// builds with -p:DefineConstants=MRUBY_EXPERIMENT_PARALLEL to compile it OUT and restore
+// xUnit's default per-class parallelism, recreating the pre-fix condition that (per the
+// mechanism above, amplified by DOTNET_GCStress=0x4) reproduces the macOS native crash.
+// The DEFAULT build (no constant) keeps the shipped serial behavior byte-identical.
+#if !MRUBY_EXPERIMENT_PARALLEL
 [assembly: CollectionBehavior(DisableTestParallelization = true, MaxParallelThreads = 1)]
+#endif
