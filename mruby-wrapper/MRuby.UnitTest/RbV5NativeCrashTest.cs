@@ -71,11 +71,12 @@ internal static class V5Churn
                 while (!hammerCts.IsCancellationRequested)
                 {
                     GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
-                    // Tiny yield so the hammer does not starve the worker threads entirely:
-                    // still hundreds of compacting gen2 STW suspensions per second (engagement
-                    // stays well above the gen2Delta>50 gate) while letting the churn make
-                    // progress so the run completes in CI-reasonable time.
-                    Thread.Sleep(1);
+                    // No sleep: a blocking compacting gen2 on the small test heap is
+                    // microseconds, so this yields hundreds-to-thousands of STW suspensions
+                    // per second WITHOUT DOTNET_GCStress (which instrumented every process
+                    // allocation and made the run non-completing). This is the bounded,
+                    // targeted amplifier; the gen2Delta>50 self-check confirms it engaged.
+                    Thread.Yield();
                 }
             }) { IsBackground = true, Name = $"v5-hammer-{tag}" };
             hammer.Start();
@@ -158,23 +159,23 @@ internal static class V5Churn
 public class RbV5WorkerAlphaTest
 {
     [Fact]
-    public void Churn() => V5Churn.Run("alpha", threads: 3, iterations: 60);
+    public void Churn() => V5Churn.Run("alpha", threads: 3, iterations: 120);
 }
 
 public class RbV5WorkerBravoTest
 {
     [Fact]
-    public void Churn() => V5Churn.Run("bravo", threads: 3, iterations: 60);
+    public void Churn() => V5Churn.Run("bravo", threads: 3, iterations: 120);
 }
 
 public class RbV5WorkerCharlieTest
 {
     [Fact]
-    public void Churn() => V5Churn.Run("charlie", threads: 3, iterations: 60);
+    public void Churn() => V5Churn.Run("charlie", threads: 3, iterations: 120);
 }
 
 public class RbV5WorkerDeltaTest
 {
     [Fact]
-    public void Churn() => V5Churn.Run("delta", threads: 3, iterations: 60);
+    public void Churn() => V5Churn.Run("delta", threads: 3, iterations: 120);
 }
