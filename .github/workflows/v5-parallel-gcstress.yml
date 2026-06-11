@@ -1,0 +1,151 @@
+name: v5 Native-Crash Reproduction (parallel + GCStress)
+
+# The faithful recreation prior experiments lacked. Per MRuby.UnitTest/XunitAssemblyInfo.cs
+# the original macOS crash is the reverse-P/Invoke GC-suspension window: GC suspends a
+# managed thread (POSIX signal) parked inside a native mruby callback / mrb_close teardown.
+# v1-v4 never reproduced it because they lacked: real mruby callback parking, cross-thread
+# lifecycle skew, and GC frequency. v5 supplies all three:
+#   - parallel build: assembly attribute compiled out (-p:DefineConstants=MRUBY_EXPERIMENT_PARALLEL)
+#     + parallel xunit.runner.json  => xUnit runs the V5 worker collections concurrently
+#   - DOTNET_GCStress=0x4 => GC at (nearly) every transition: the missing amplifier
+#   - MRUBY_V5=1 => activates the tight Open/callback/close churn vehicle
+#
+# Decisive cells (all locks ON, coverlet ON), per Oracle:
+#   A serial   + GCStress=0x4  -> control; expect survives
+#   B parallel + GCStress=0x4  -> if THIS hard-crashes & A doesn't => serialization is
+#                                 LOAD-BEARING and the reverse-P/Invoke window is the cause
+#   C parallel + normal GC     -> ties the amplified repro back to the original CI condition
+
+on:
+  workflow_dispatch:
+    inputs:
+      repeats:
+        description: 'Fresh dotnet-test processes per arm'
+        required: false
+        default: '12'
+        type: string
+  push:
+    branches: [ experiment/v5-parallel-gcstress ]
+
+jobs:
+  v5:
+    name: ${{ matrix.os }} / ${{ matrix.arm }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14]
+        arm: [A-serial-gcstress, B-parallel-gcstress, C-parallel-normalgc]
+
+    env:
+      REPEATS: ${{ github.event.inputs.repeats || '12' }}
+      MRUBY_V5: '1'
+      DOTNET_DbgEnableMiniDump: '1'
+      DOTNET_DbgMiniDumpType: '4'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: "2.9.6"
+
+      - name: Compile mruby (macOS)
+        run: rake
+
+      - name: Build native shim with XMake
+        run: |
+          cd mruby-shared
+          xmake f -m release
+          xmake
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # Parallel arms: compile the serialization attribute OUT and install a parallel
+      # xunit.runner.json. Serial arm: shipped build untouched.
+      - name: Configure build variant
+        id: variant
+        run: |
+          cd mruby-wrapper
+          if [ "${{ matrix.arm }}" = "A-serial-gcstress" ]; then
+            echo "defines=" >> "$GITHUB_OUTPUT"
+            echo "serial build (shipped attribute kept)"
+          else
+            echo "defines=MRUBY_EXPERIMENT_PARALLEL" >> "$GITHUB_OUTPUT"
+            cat > MRuby.UnitTest/xunit.runner.json <<'JSON'
+          {
+            "$schema": "https://xunit.net/schema/current/xunit.runner.schema.json",
+            "parallelizeAssembly": false,
+            "parallelizeTestCollections": true,
+            "maxParallelThreads": 0
+          }
+          JSON
+            echo "parallel build (attribute compiled out + parallel json)"
+            cat MRuby.UnitTest/xunit.runner.json
+          fi
+
+      - name: Build wrapper (Release)
+        run: |
+          cd mruby-wrapper
+          dotnet restore
+          dotnet build --configuration=release -p:DefineConstants="${{ steps.variant.outputs.defines }}"
+
+      - name: Run v5 arm ${{ env.REPEATS }}x  [${{ matrix.arm }}]
+        working-directory: mruby-wrapper
+        shell: bash
+        env:
+          # GCStress at every transition for the *-gcstress arms; normal GC for C.
+          DOTNET_GCStress: ${{ matrix.arm == 'C-parallel-normalgc' && '' || '0x4' }}
+        run: |
+          repeats="${REPEATS}"
+          echo "arm=${{ matrix.arm }} GCStress='${DOTNET_GCStress}' MRUBY_V5=${MRUBY_V5}"
+          pass=0; clean_fail=0; crash=0; first_bad=0
+          declare -a codes=()
+          for i in $(seq 1 "${repeats}"); do
+            echo "::group::repeat ${i}/${repeats}  (${{ matrix.arm }})"
+            set +e
+            dotnet test --configuration=release --no-build \
+              --filter "FullyQualifiedName~RbV5Worker" \
+              --blame-crash \
+              --logger "console;verbosity=minimal"
+            code=$?
+            set -e
+            echo "repeat ${i}: exit=${code}"
+            echo "::endgroup::"
+            if [ "${code}" -eq 0 ]; then pass=$((pass+1));
+            elif [ "${code}" -eq 1 ]; then clean_fail=$((clean_fail+1)); [ "${first_bad}" -eq 0 ] && first_bad=${i};
+            else crash=$((crash+1)); codes+=("${code}"); [ "${first_bad}" -eq 0 ] && first_bad=${i}; fi
+          done
+          echo "==================== V5 ARM SUMMARY ===================="
+          echo "arm          : ${{ matrix.arm }}"
+          echo "repeats      : ${repeats}"
+          echo "pass         : ${pass}"
+          echo "clean_fail   : ${clean_fail}  (exit 1 = managed)"
+          echo "hard_crash   : ${crash}  (134/139/135/137 = NATIVE crash)"
+          echo "first_bad    : ${first_bad}"
+          echo "crash_codes  : ${codes[*]:-none}"
+          echo "======================================================="
+          exit 0
+
+      - name: Upload crash dumps & blame
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v5-${{ matrix.os }}-${{ matrix.arm }}-${{ github.run_id }}
+          path: |
+            mruby-wrapper/MRuby.UnitTest/TestResults/**
+            ~/*.dmp
+            **/*.dmp
+            **/core.*
+          if-no-files-found: ignore
