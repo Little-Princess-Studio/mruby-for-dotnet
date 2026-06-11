@@ -141,6 +141,11 @@ namespace MRuby.Library.Language
             };
         }
 
+        // Internal accessor so the native callback dispatcher (RbCallbackDispatch) can reuse
+        // the canonical per-state cache (avoids allocating a new RbState per callback).
+        internal static RbState GetOrCreateTransientStatePublic(IntPtr nativeHandle)
+            => GetOrCreateTransientState(nativeHandle);
+
         private static bool RbDataStructExist(string name) => RbDataClassMapping.ContainsKey(name);
 
         private static void RbDataStructAdd(string name, Action<RbState, object?>? releaseFn)
@@ -275,6 +280,20 @@ namespace MRuby.Library.Language
             var nativeFunc = BuildCSharpCallbackToNativeCallbackBridgeMethod(callback);
             RootNativeCallback(state, nativeFunc);
             return nativeFunc;
+        }
+
+        // Trampoline path: register `callback` for `state`, returning its callbackId. The
+        // native define-helpers store this id in the method/proc env; mruby only ever holds
+        // the static native trampoline pointer (never a managed delegate), so a raise from
+        // the callback longjmps below the managed frame (no macOS crash) and the delegate
+        // can never be collected out from under mruby. Also returns a compat `out`
+        // NativeMethodFunc so the public API shape is unchanged - it is a harmless stub that
+        // is NOT handed to mruby; callers keeping it (or `out _`) are unaffected.
+        internal static long RegisterCallback(RbState state, CSharpMethodFunc callback, out NativeMethodFunc compatDelegate)
+        {
+            var id = RbCallbackDispatch.Register(state, callback);
+            compatDelegate = (_, self) => self; // unused stub for API back-compat
+            return id;
         }
 
         // Roots an already-built native callback delegate to the RbState lifetime so
