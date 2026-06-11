@@ -1,0 +1,168 @@
+name: v4 Native-Crash Attribution Experiment (real mruby)
+
+# Tests whether the original macOS CI *native hard crash* (SIGSEGV/SIGABRT) reproduces,
+# and WHICH lock prevents it. Prior experiments: v1/v2 falsified the generic
+# reverse-P/Invoke window (mruby-free, 360/360 clean); H1 proved the managed map
+# dictionaries are thread-unsafe but only produced CLEAN managed exceptions, never a
+# native crash. v4 isolates the two candidate native-crash mechanisms so a crash is
+# ATTRIBUTABLE (an all-locks-off crash is NOT):
+#
+#   ARM A (vmlifecycle): disable ONLY VmLifecycleLock -> concurrent mrb_open/mrb_close
+#                        races mruby's native lifecycle. Map locks stay ON.
+#   ARM B (statemapper): VmLifecycleLock ON (no concurrent open/close); disable ONLY
+#                        StateMapperLock -> dropped keeper -> GC frees delegate ->
+#                        native calls freed pointer. DataClassLock stays ON.
+#   ARM AB (interaction): both off. Crash here is NOT attributable alone - interaction only.
+#   ARM baseline: all locks ON - must stay clean.
+#
+# Read the crash stacks: ARM A wants mrb_open/mrb_close/teardown frames; ARM B wants
+# mruby method-dispatch -> managed delegate thunk frames.
+
+on:
+  workflow_dispatch:
+    inputs:
+      repeats:
+        description: 'Fresh dotnet-test processes per arm'
+        required: false
+        default: '15'
+        type: string
+  push:
+    branches: [ experiment/v4-native-crash ]
+
+jobs:
+  v4:
+    name: ${{ matrix.os }} / ${{ matrix.arm }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, windows-2022]
+        arm: [baseline, vmlifecycle, statemapper, interaction]
+
+    env:
+      REPEATS: ${{ github.event.inputs.repeats || '15' }}
+      # Keep crash dumps ON for v4 so the native stack can attribute A vs B.
+      DOTNET_DbgEnableMiniDump: '1'
+      DOTNET_DbgMiniDumpType: '2'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: "2.9.6"
+
+      - name: Compile mruby (macOS)
+        if: contains(matrix.os, 'macos')
+        run: rake
+
+      - name: Compile mruby (Windows)
+        if: contains(matrix.os, 'windows')
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          build-mruby-win.bat
+
+      - name: Build native shim with XMake (macOS)
+        if: contains(matrix.os, 'macos')
+        run: |
+          cd mruby-shared
+          xmake f -m release
+          xmake
+
+      - name: Build native shim with XMake (Windows)
+        if: contains(matrix.os, 'windows')
+        run: |
+          cd mruby-shared
+          xmake f -p windows -a x64 -m release --toolchain=msvc
+          xmake
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build wrapper (Release)
+        run: |
+          cd mruby-wrapper
+          dotnet restore
+          dotnet build --configuration=release
+
+      - name: Run v4 arm ${{ env.REPEATS }}x  [${{ matrix.os }} / ${{ matrix.arm }}]
+        working-directory: mruby-wrapper
+        shell: bash
+        env:
+          # Per-arm: which lock(s) are disabled, and which v4 test arm runs.
+          MRUBY_DISABLE_VMLIFECYCLE_LOCK: ${{ (matrix.arm == 'vmlifecycle' || matrix.arm == 'interaction') && '1' || '0' }}
+          MRUBY_DISABLE_STATEMAPPER_LOCK: ${{ (matrix.arm == 'statemapper' || matrix.arm == 'interaction') && '1' || '0' }}
+          # DataClassLock stays ON in all arms (avoids a second delegate-rooting confound).
+          MRUBY_DISABLE_DATACLASS_LOCK: '0'
+          # Select which test method runs. baseline+vmlifecycle+interaction use ArmA's
+          # concurrent open/close workload; statemapper uses ArmB's delegate-drop workload.
+          MRUBY_V4_ARM: ${{ (matrix.arm == 'statemapper') && 'statemapper' || 'vmlifecycle' }}
+        run: |
+          repeats="${REPEATS}"
+          if [ "${{ matrix.arm }}" = "statemapper" ]; then
+            testfilter='FullyQualifiedName~ArmB_StateMapperDelegateDropUnderGc'
+          else
+            testfilter='FullyQualifiedName~ArmA_ConcurrentOpenCloseRacesNativeLifecycle'
+          fi
+          echo "arm=${{ matrix.arm }} VMLOCK_OFF=${MRUBY_DISABLE_VMLIFECYCLE_LOCK} STATEMAPPER_OFF=${MRUBY_DISABLE_STATEMAPPER_LOCK} V4_ARM=${MRUBY_V4_ARM} filter=${testfilter}"
+          pass=0
+          clean_fail=0
+          crash=0
+          first_bad=0
+          declare -a codes=()
+          for i in $(seq 1 "${repeats}"); do
+            echo "::group::repeat ${i}/${repeats}  (${{ matrix.os }} / ${{ matrix.arm }})"
+            set +e
+            dotnet test --configuration=release --no-build \
+              --filter "${testfilter}" \
+              --logger "console;verbosity=minimal"
+            code=$?
+            set -e
+            echo "repeat ${i}: exit=${code}"
+            echo "::endgroup::"
+            if [ "${code}" -eq 0 ]; then
+              pass=$((pass + 1))
+            elif [ "${code}" -eq 1 ]; then
+              clean_fail=$((clean_fail + 1))
+              if [ "${first_bad}" -eq 0 ]; then first_bad=${i}; fi
+            else
+              crash=$((crash + 1))
+              codes+=("${code}")
+              if [ "${first_bad}" -eq 0 ]; then first_bad=${i}; fi
+            fi
+          done
+          echo "==================== V4 ARM SUMMARY ===================="
+          echo "platform     : ${{ matrix.os }}"
+          echo "arm          : ${{ matrix.arm }}"
+          echo "repeats      : ${repeats}"
+          echo "pass         : ${pass}"
+          echo "clean_fail   : ${clean_fail}  (exit 1 = managed exception)"
+          echo "hard_crash   : ${crash}  (exit 134/139/135/137 = NATIVE crash)"
+          echo "first_bad    : ${first_bad}"
+          echo "crash_codes  : ${codes[*]:-none}"
+          echo "======================================================="
+          exit 0
+
+      - name: Upload crash dumps & stacks
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v4-${{ matrix.os }}-${{ matrix.arm }}-${{ github.run_id }}
+          path: |
+            mruby-wrapper/MRuby.UnitTest/TestResults/**
+            /Users/runner/.dotnet/**/*.dmp
+            ~/*.dmp
+            **/*.dmp
+            **/core.*
+          if-no-files-found: ignore
