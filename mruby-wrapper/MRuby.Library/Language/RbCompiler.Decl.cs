@@ -53,6 +53,21 @@ namespace MRuby.Library.Language
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
         internal static extern UInt64 mrb_top_run(IntPtr mrb, IntPtr proc, UInt64 self, Int64 stackKeep);
 
+        // longjmp firewall (mruby-shared/src/main.c): protected variants catch a runtime
+        // raise during load/run in NATIVE code instead of letting it longjmp across a
+        // managed callback frame above us (the macOS GC-suspension crash).
+        // MRB_API mrb_value mrbdotnet_load_string_protected(mrb_state*, const char*, mrb_bool*);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        internal static extern UInt64 mrbdotnet_load_string_protected(IntPtr mrb, [MarshalAs(UnmanagedType.LPUTF8Str)] string code, [MarshalAs(UnmanagedType.U1)] ref Boolean raised);
+
+        // MRB_API mrb_value mrbdotnet_load_string_cxt_protected(mrb_state*, const char*, mrbc_context*, mrb_bool*);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        internal static extern UInt64 mrbdotnet_load_string_cxt_protected(IntPtr mrb, [MarshalAs(UnmanagedType.LPUTF8Str)] string code, IntPtr ccontext, [MarshalAs(UnmanagedType.U1)] ref Boolean raised);
+
+        // MRB_API mrb_value mrbdotnet_top_run_protected(mrb_state*, const struct RProc*, mrb_value, mrb_int, mrb_bool*);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        internal static extern UInt64 mrbdotnet_top_run_protected(IntPtr mrb, IntPtr proc, UInt64 self, Int64 stackKeep, [MarshalAs(UnmanagedType.U1)] ref Boolean raised);
+
         // MRB_API mrb_ccontext* mrb_ccontext_new(mrb_state *mrb);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
         internal static extern IntPtr mrb_ccontext_new(IntPtr mrb);

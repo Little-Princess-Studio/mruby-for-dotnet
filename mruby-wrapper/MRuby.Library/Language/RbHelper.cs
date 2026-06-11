@@ -286,10 +286,22 @@ namespace MRuby.Library.Language
             keeper.Keep(nativeFunc);
         }
 
+        // Set mrb->exc without longjmp. Used by the firewall to preserve VM-level error
+        // semantics after a protected call reports a raise, without crossing a managed frame.
+        internal static void SetPendingException(RbState state, UInt64 exc)
+            => mrbdotnet_set_pending_exception(state.NativeHandler, exc);
+
         [ExcludeFromCodeCoverage]
         private static UInt64 RaiseNativeCallbackException(RbState state, RbValue exc)
         {
-            state.Raise(exc);
+            // CRITICAL (macOS crash fix): do NOT call mrb_raise/mrb_exc_raise here. This runs
+            // INSIDE the managed callback bridge (Lambda); mrb_raise would longjmp straight
+            // out of this managed frame to the VM's jump target below it, leaving CoreCLR's
+            // explicit-frame chain dangling -> GC-suspension hard crash on macOS (the same
+            // class as dotnet/runtime#1445). Instead set the pending exception WITHOUT
+            // longjmp and return nil; the native VM epilogue observes mrb->exc after this C
+            // function returns and propagates it from native VM code, below the managed frame.
+            mrbdotnet_set_pending_exception(state.NativeHandler, exc.NativeValue);
             return state.RbNil.NativeValue;
         }
 
@@ -332,15 +344,27 @@ namespace MRuby.Library.Language
         {
             int length = args.Length;
 
-            UInt64 resVal;
             var sym = mrb_intern_cstr(state.NativeHandler, name);
 
-            resVal = mrb_funcall_argv(
+            // Route through the native longjmp firewall: a raise inside the call is caught
+            // in native code (its own setjmp), never crossing a managed callback frame that
+            // may be above us on the stack. On raise the wrapper returns the exception
+            // object; re-set it as the pending exception so VM-level error semantics are
+            // preserved exactly as the previous direct mrb_funcall path (which left
+            // mrb->exc set) did.
+            bool raised = false;
+            var resVal = mrbdotnet_funcall_argv_protected(
                 state.NativeHandler,
                 value.NativeValue,
                 sym,
                 length,
-                length == 0 ? null! : args.Select(v => v.NativeValue).ToArray());
+                length == 0 ? null! : args.Select(v => v.NativeValue).ToArray(),
+                ref raised);
+
+            if (raised)
+            {
+                mrbdotnet_set_pending_exception(state.NativeHandler, resVal);
+            }
 
             return new RbValue(state, resVal);
         }
@@ -349,16 +373,22 @@ namespace MRuby.Library.Language
         {
             int length = args.Length;
 
-            UInt64 resVal;
             var sym = mrb_intern_cstr(state.NativeHandler, name);
 
-            resVal = mrb_funcall_with_block(
+            bool raised = false;
+            var resVal = mrbdotnet_funcall_with_block_protected(
                 state.NativeHandler,
                 value.NativeValue,
                 sym,
                 length,
                 length == 0 ? null! : args.Select(v => v.NativeValue).ToArray(),
-                block.NativeValue);
+                block.NativeValue,
+                ref raised);
+
+            if (raised)
+            {
+                mrbdotnet_set_pending_exception(state.NativeHandler, resVal);
+            }
 
             return new RbValue(state, resVal);
         }

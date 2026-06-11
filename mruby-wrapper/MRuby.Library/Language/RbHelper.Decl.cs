@@ -23,6 +23,37 @@ namespace MRuby.Library.Language
             Int64 argc,
             UInt64[] argv,
             UInt64 block);
+
+        // longjmp firewall (mruby-shared/src/main.c): protected variants catch any mruby
+        // raise in NATIVE code (their own setjmp) instead of letting the longjmp cross the
+        // managed callback frame above them (the macOS GC-suspension crash). `raised` is set
+        // to TRUE when the call raised; the returned mrb_value is then the exception object.
+        // MRB_API mrb_value mrbdotnet_funcall_argv_protected(mrb_state*, mrb_value, mrb_sym, mrb_int, const mrb_value*, mrb_bool*);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        private static extern UInt64 mrbdotnet_funcall_argv_protected(
+            IntPtr state,
+            UInt64 val,
+            UInt64 sym,
+            Int64 argc,
+            UInt64[] argv,
+            [MarshalAs(UnmanagedType.U1)] ref Boolean raised);
+
+        // MRB_API mrb_value mrbdotnet_funcall_with_block_protected(mrb_state*, mrb_value, mrb_sym, mrb_int, const mrb_value*, mrb_value, mrb_bool*);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        private static extern UInt64 mrbdotnet_funcall_with_block_protected(
+            IntPtr state,
+            UInt64 val,
+            UInt64 sym,
+            Int64 argc,
+            UInt64[] argv,
+            UInt64 block,
+            [MarshalAs(UnmanagedType.U1)] ref Boolean raised);
+
+        // MRB_API void mrbdotnet_set_pending_exception(mrb_state*, mrb_value);
+        // Sets mrb->exc WITHOUT longjmp so a managed callback can return normally and let
+        // the native VM epilogue propagate the exception (below the managed frame).
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        private static extern void mrbdotnet_set_pending_exception(IntPtr mrb, UInt64 exc);
         
         // MRB_API mrb_sym mrb_intern_cstr(mrb_state *mrb, const char* str);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]

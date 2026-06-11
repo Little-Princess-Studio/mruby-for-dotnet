@@ -109,19 +109,36 @@ namespace MRuby.Library.Language
 
         public RbValue LoadString(string code)
         {
-            var nativeVal = mrb_load_string(this.State.NativeHandler, code);
+            // longjmp firewall: catch a runtime raise in native code (its own setjmp) rather
+            // than letting it longjmp across a managed callback frame on the stack above us.
+            bool raised = false;
+            var nativeVal = mrbdotnet_load_string_protected(this.State.NativeHandler, code, ref raised);
+            if (raised)
+            {
+                RbHelper.SetPendingException(this.State, nativeVal);
+            }
             return new RbValue(this.State, nativeVal);
         }
 
         public RbValue LoadString(string code, RbContext ccontext)
         {
-            var nativeVal = mrb_load_string_cxt(this.State.NativeHandler, code, ccontext.NativeHandler);
+            bool raised = false;
+            var nativeVal = mrbdotnet_load_string_cxt_protected(this.State.NativeHandler, code, ccontext.NativeHandler, ref raised);
+            if (raised)
+            {
+                RbHelper.SetPendingException(this.State, nativeVal);
+            }
             return new RbValue(this.State, nativeVal);
         }
 
         public RbValue TopRun(RbProc proc, RbValue self, Int64 stackKeep)
         {
-            var nativeVal = mrb_top_run(this.State.NativeHandler, proc.NativeHandler, self.NativeValue, stackKeep);
+            bool raised = false;
+            var nativeVal = mrbdotnet_top_run_protected(this.State.NativeHandler, proc.NativeHandler, self.NativeValue, stackKeep, ref raised);
+            if (raised)
+            {
+                RbHelper.SetPendingException(this.State, nativeVal);
+            }
             return new RbValue(this.State, nativeVal);
         }
 
