@@ -326,5 +326,5 @@ MRB_API mrb_value mrbdotnet_rescue_exceptions(mrb_state *mrb, int64_t body_id, m
   struct mrbdotnet_body_ctx bctx; bctx.id = body_id; bctx.user_data = b_data;
   struct mrbdotnet_body_ctx rctx; rctx.id = rescue_id; rctx.user_data = r_data;
   return mrb_rescue_exceptions(mrb, mrbdotnet_ctx_body, mrb_cptr_value(mrb, &bctx),
-                               mrbdotnet_ctx_body, mrb_cptr_value(mrb, &rctx), classes, len);
+                               mrbdotnet_ctx_body, mrb_cptr_value(mrb, &rctx), len, classes);
 }
