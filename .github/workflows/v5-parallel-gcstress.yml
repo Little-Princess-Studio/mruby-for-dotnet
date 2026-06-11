@@ -36,10 +36,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-14]
-        arm: [A-serial-hammer, B-parallel-hammer, C-parallel-nohammer]
+        arm: [full-serial, full-parallel]
 
     env:
-      REPEATS: ${{ github.event.inputs.repeats || '8' }}
+      REPEATS: ${{ github.event.inputs.repeats || '20' }}
       MRUBY_V5: '1'
       DOTNET_DbgEnableMiniDump: '1'
       DOTNET_DbgMiniDumpType: '4'
@@ -78,7 +78,7 @@ jobs:
         id: variant
         run: |
           cd mruby-wrapper
-          if [ "${{ matrix.arm }}" = "A-serial-hammer" ]; then
+          if [ "${{ matrix.arm }}" = "full-serial" ]; then
             echo "defines=" >> "$GITHUB_OUTPUT"
             echo "serial build (shipped attribute kept)"
           else
@@ -105,25 +105,27 @@ jobs:
         working-directory: mruby-wrapper
         shell: bash
         env:
-          # GC amplifier = the in-test hammer thread (MRUBY_V5_HAMMER) doing compacting
-          # blocking gen2 STW from a SEPARATE thread, which is exactly what can suspend a
-          # worker parked in a native mruby callback - the targeted mechanism, and bounded.
-          # NOTE: DOTNET_GCStress is deliberately NOT used: 0x4/0x8 are dead code on the
-          # release runtime, and 0x1/0x2/0x3 (while functional) instrument EVERY allocation
-          # process-wide, which multiplied mruby's churn into a >45min non-completing run.
-          # A tiny gen0 budget adds frequent gen0 STW cheaply. C is the no-amplifier control.
-          DOTNET_GCgen0size: ${{ matrix.arm == 'C-parallel-nohammer' && '' || '0x20000' }}
-          MRUBY_V5_HAMMER: ${{ matrix.arm == 'C-parallel-nohammer' && '0' || '1' }}
+          # FAITHFUL RUN (Oracle-recommended): the REAL full existing test suite (not the
+          # synthetic V5 vehicle, which engaged GC but never crashed - and may no longer hit
+          # the original close-time dfree path since the lib now disarms data objects before
+          # mrb_close). Fidelity > intensity: full-suite object shapes + coverlet
+          # instrumentation/allocations + xUnit scheduling are the original failure surface.
+          # GC pressure via Server GC (per-core background GC threads that suspend workers)
+          # + small gen0 budget. No DOTNET_GCStress (0x4 dead on release; 0x1-3 too slow).
+          DOTNET_gcServer: '1'
+          DOTNET_gcConcurrent: '1'
+          DOTNET_GCgen0size: '0x40000'
         run: |
           repeats="${REPEATS}"
-          echo "arm=${{ matrix.arm }} gen0size='${DOTNET_GCgen0size}' HAMMER=${MRUBY_V5_HAMMER} MRUBY_V5=${MRUBY_V5}"
+          echo "arm=${{ matrix.arm }} (FULL SUITE + coverlet) gcServer=1 gen0size=0x40000"
           pass=0; clean_fail=0; crash=0; first_bad=0
           declare -a codes=()
           for i in $(seq 1 "${repeats}"); do
             echo "::group::repeat ${i}/${repeats}  (${{ matrix.arm }})"
             set +e
+            # Full suite (no --filter), coverlet ON (XPlat Code Coverage) - the original CI shape.
             dotnet test --configuration=release --no-build \
-              --filter "FullyQualifiedName~RbV5Worker" \
+              --collect:"XPlat Code Coverage" \
               --blame-crash \
               --logger "console;verbosity=minimal"
             code=$?
@@ -142,6 +144,7 @@ jobs:
           echo "hard_crash   : ${crash}  (134/139/135/137 = NATIVE crash)"
           echo "first_bad    : ${first_bad}"
           echo "crash_codes  : ${codes[*]:-none}"
+          echo "STOP CONDITION: hard_crash>0 on full-parallel & 0 on full-serial => serialization load-bearing"
           echo "======================================================="
           exit 0
 
