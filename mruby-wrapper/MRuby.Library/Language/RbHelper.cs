@@ -289,14 +289,7 @@ namespace MRuby.Library.Language
         [ExcludeFromCodeCoverage]
         private static UInt64 RaiseNativeCallbackException(RbState state, RbValue exc)
         {
-            // CRITICAL (macOS crash fix): do NOT call mrb_raise/mrb_exc_raise here. This runs
-            // INSIDE the managed callback bridge (Lambda); mrb_raise would longjmp straight
-            // out of this managed frame to the VM's jump target below it, leaving CoreCLR's
-            // explicit-frame chain dangling -> GC-suspension hard crash on macOS (the same
-            // class as dotnet/runtime#1445). Instead set the pending exception WITHOUT
-            // longjmp and return nil; the native VM epilogue observes mrb->exc after this C
-            // function returns and propagates it from native VM code, below the managed frame.
-            mrbdotnet_set_pending_exception(state.NativeHandler, exc.NativeValue);
+            state.Raise(exc);
             return state.RbNil.NativeValue;
         }
 

@@ -175,33 +175,3 @@ MRB_API void mrb_data_disarm(struct mrb_state *mrb, mrb_value obj) {
     d->data = NULL;
   }
 }
-
-// ---------------------------------------------------------------------------
-// longjmp firewall (macOS native test-host crash fix)
-//
-// mruby signals errors with setjmp/longjmp (mrb->jmp). .NET does NOT support a
-// longjmp crossing a managed frame: it leaves CoreCLR's per-thread explicit-frame
-// chain (Thread::m_pFrame) pointing at a dead InlinedCallFrame, and a later GC
-// stack-walk dereferences the dangling frame and crashes the process (the same class
-// as dotnet/runtime#1445, NLua's lua_error->longjmp).
-//
-// The guaranteed-bug case is the managed callback bridge raising a Ruby exception by
-// calling mrb_raise/mrb_exc_raise FROM INSIDE the managed callback: that throw longjmps
-// straight out of the managed frame. The fix is to set the pending exception WITHOUT
-// throwing, so the managed callback returns normally and the native VM epilogue observes
-// mrb->exc and propagates it from native VM code (below the managed frame).
-// ---------------------------------------------------------------------------
-
-// Set the pending exception without longjmp. The managed callback bridge calls this
-// instead of mrb_raise/mrb_exc_raise so it can return mrb_nil normally; the VM checks
-// mrb->exc after the C function returns and propagates from native code.
-//
-// mrb_exc_set is a real (non-static) symbol in the statically-linked mruby, but it is
-// not declared in any public header, so forward-declare it. It normalizes nil (clears
-// mrb->exc) and sets the exception object pointer with the proper write barrier - more
-// correct than assigning mrb->exc directly.
-void mrb_exc_set(struct mrb_state *mrb, mrb_value exc);
-
-MRB_API void mrbdotnet_set_pending_exception(struct mrb_state *mrb, mrb_value exc) {
-  mrb_exc_set(mrb, exc);
-}

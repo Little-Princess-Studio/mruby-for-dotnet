@@ -23,15 +23,6 @@ namespace MRuby.Library.Language
             Int64 argc,
             UInt64[] argv,
             UInt64 block);
-
-        // longjmp firewall (mruby-shared/src/main.c). Sets mrb->exc WITHOUT longjmp so the
-        // managed callback bridge can return normally and let the native VM epilogue
-        // propagate the exception, instead of calling mrb_raise FROM INSIDE the managed
-        // callback (which would longjmp out of the managed frame -> macOS GC-suspension
-        // crash, the same class as dotnet/runtime#1445).
-        // MRB_API void mrbdotnet_set_pending_exception(mrb_state*, mrb_value);
-        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
-        private static extern void mrbdotnet_set_pending_exception(IntPtr mrb, UInt64 exc);
         
         // MRB_API mrb_sym mrb_intern_cstr(mrb_state *mrb, const char* str);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]

@@ -348,4 +348,3 @@ EXPORTS
 	mrb_ary_dup
 	mrb_method_cache_clear
 	mrb_data_disarm
-	mrbdotnet_set_pending_exception

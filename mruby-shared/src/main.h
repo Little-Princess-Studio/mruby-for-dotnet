@@ -77,8 +77,3 @@ MRB_API void mrb_get_raw_bytes_from_string(mrb_value value, char **bytes,
 MRB_API mrb_bool mrb_open_failure_p(struct mrb_state *mrb);
 
 MRB_API void mrb_data_disarm(struct mrb_state *mrb, mrb_value obj);
-
-// longjmp firewall (see main.c). Set the pending exception WITHOUT longjmp so the
-// managed callback bridge can return normally instead of calling mrb_raise from inside
-// a managed frame (which would longjmp across it -> macOS GC-suspension crash).
-MRB_API void mrbdotnet_set_pending_exception(struct mrb_state *mrb, mrb_value exc);
