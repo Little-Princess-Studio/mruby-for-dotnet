@@ -29,7 +29,7 @@ on:
 
 jobs:
   v5:
-    name: ${{ matrix.os }} / ${{ matrix.arm }}
+    name: ${{ matrix.os }} / ${{ matrix.arm }} / cov-${{ matrix.coverlet }}
     runs-on: ${{ matrix.os }}
     continue-on-error: true
     strategy:
@@ -37,6 +37,7 @@ jobs:
       matrix:
         os: [macos-14]
         arm: [full-serial, full-parallel]
+        coverlet: [on, off]
 
     env:
       REPEATS: ${{ github.event.inputs.repeats || '20' }}
@@ -101,51 +102,59 @@ jobs:
           dotnet restore
           dotnet build --configuration=release -p:DefineConstants="${{ steps.variant.outputs.defines }}"
 
-      - name: Run v5 arm ${{ env.REPEATS }}x  [${{ matrix.arm }}]
+      - name: Run v5 arm ${{ env.REPEATS }}x  [${{ matrix.arm }} / cov-${{ matrix.coverlet }}]
         working-directory: mruby-wrapper
         shell: bash
         env:
-          # FAITHFUL RUN (Oracle-recommended): the REAL full existing test suite (not the
-          # synthetic V5 vehicle, which engaged GC but never crashed - and may no longer hit
-          # the original close-time dfree path since the lib now disarms data objects before
-          # mrb_close). Fidelity > intensity: full-suite object shapes + coverlet
-          # instrumentation/allocations + xUnit scheduling are the original failure surface.
-          # GC pressure via Server GC (per-core background GC threads that suspend workers)
-          # + small gen0 budget. No DOTNET_GCStress (0x4 dead on release; 0x1-3 too slow).
+          # CONTROL MATRIX (Oracle-recommended): 2x2 {serial,parallel} x {coverlet on,off}.
+          # The reproducing run changed TWO things vs the 4 non-reproducing experiments
+          # (added coverlet AND --blame-crash), so this isolates coverlet as the amplifier
+          # while keeping --blame-crash in BOTH coverlet arms (removes the blame collector
+          # as a confound). GC pressure via Server GC + small gen0; no DOTNET_GCStress
+          # (0x4 dead on release; 0x1-3 too slow). MRUBY_V5 unset => synthetic vehicle no-ops.
           DOTNET_gcServer: '1'
           DOTNET_gcConcurrent: '1'
           DOTNET_GCgen0size: '0x40000'
         run: |
           repeats="${REPEATS}"
-          echo "arm=${{ matrix.arm }} (FULL SUITE + coverlet) gcServer=1 gen0size=0x40000"
-          pass=0; clean_fail=0; crash=0; first_bad=0
-          declare -a codes=()
+          if [ "${{ matrix.coverlet }}" = "on" ]; then
+            collect_arg='--collect:XPlat Code Coverage'
+          else
+            collect_arg=''
+          fi
+          echo "arm=${{ matrix.arm }} coverlet=${{ matrix.coverlet }} collect='${collect_arg}' gcServer=1 gen0size=0x40000"
+          pass=0; managed_fail=0; host_crash=0; first_crash=0
           for i in $(seq 1 "${repeats}"); do
-            echo "::group::repeat ${i}/${repeats}  (${{ matrix.arm }})"
+            echo "::group::repeat ${i}/${repeats}  (${{ matrix.arm }}/cov-${{ matrix.coverlet }})"
             set +e
-            # Full suite (no --filter), coverlet ON (XPlat Code Coverage) - the original CI shape.
-            dotnet test --configuration=release --no-build \
-              --collect:"XPlat Code Coverage" \
-              --blame-crash \
-              --logger "console;verbosity=minimal"
+            # Classify by the ACTUAL crash signature, not the exit code: dotnet test
+            # --blame-crash returns exit 1 for BOTH a host crash AND a managed [FAIL], so
+            # exit code alone conflates them (the misclassification that hid earlier crashes).
+            out=$(dotnet test --configuration=release --no-build ${collect_arg:+"$collect_arg"} \
+              --blame-crash --logger "console;verbosity=minimal" 2>&1)
             code=$?
             set -e
-            echo "repeat ${i}: exit=${code}"
+            echo "$out" | tail -n 40
+            if echo "$out" | grep -q "Test host process crashed\|host process exited unexpectedly"; then
+              host_crash=$((host_crash+1)); [ "${first_crash}" -eq 0 ] && first_crash=${i}
+              echo "repeat ${i}: HOST CRASH (exit ${code})"
+            elif [ "${code}" -eq 0 ]; then
+              pass=$((pass+1)); echo "repeat ${i}: pass"
+            else
+              managed_fail=$((managed_fail+1)); echo "repeat ${i}: managed fail (exit ${code})"
+            fi
             echo "::endgroup::"
-            if [ "${code}" -eq 0 ]; then pass=$((pass+1));
-            elif [ "${code}" -eq 1 ]; then clean_fail=$((clean_fail+1)); [ "${first_bad}" -eq 0 ] && first_bad=${i};
-            else crash=$((crash+1)); codes+=("${code}"); [ "${first_bad}" -eq 0 ] && first_bad=${i}; fi
           done
-          echo "==================== V5 ARM SUMMARY ===================="
+          echo "==================== V5 CONTROL SUMMARY ===================="
           echo "arm          : ${{ matrix.arm }}"
+          echo "coverlet     : ${{ matrix.coverlet }}"
           echo "repeats      : ${repeats}"
           echo "pass         : ${pass}"
-          echo "clean_fail   : ${clean_fail}  (exit 1 = managed)"
-          echo "hard_crash   : ${crash}  (134/139/135/137 = NATIVE crash)"
-          echo "first_bad    : ${first_bad}"
-          echo "crash_codes  : ${codes[*]:-none}"
-          echo "STOP CONDITION: hard_crash>0 on full-parallel & 0 on full-serial => serialization load-bearing"
-          echo "======================================================="
+          echo "managed_fail : ${managed_fail}  (real xUnit [FAIL])"
+          echo "host_crash   : ${host_crash}  (native test-host crash, blame-caught)"
+          echo "first_crash  : ${first_crash}"
+          echo "STOP: if coverlet-off is 0 host_crash while coverlet-on crashes => coverlet is the amplifier"
+          echo "==========================================================="
           exit 0
 
       - name: Upload crash dumps & blame
