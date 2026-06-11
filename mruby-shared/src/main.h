@@ -6,6 +6,9 @@
 #include "mruby/hash.h"
 #include "mruby/string.h"
 #include "mruby/internal.h"
+#include "mruby/error.h"
+#include "mruby/compile.h"
+#include "mruby/proc.h"
 
 MRB_API mrb_value mrb_float_value_boxing(struct mrb_state *mrb, mrb_float f);
 
@@ -77,3 +80,29 @@ MRB_API void mrb_get_raw_bytes_from_string(mrb_value value, char **bytes,
 MRB_API mrb_bool mrb_open_failure_p(struct mrb_state *mrb);
 
 MRB_API void mrb_data_disarm(struct mrb_state *mrb, mrb_value obj);
+
+// longjmp firewall (see main.c). Keep every mruby longjmp on the native side of the
+// managed/native boundary so it never crosses a CoreCLR managed frame.
+MRB_API void mrbdotnet_set_pending_exception(struct mrb_state *mrb, mrb_value exc);
+
+MRB_API mrb_value mrbdotnet_funcall_argv_protected(
+    struct mrb_state *mrb, mrb_value self, mrb_sym name, mrb_int argc,
+    const mrb_value *argv, mrb_bool *raised);
+
+MRB_API mrb_value mrbdotnet_funcall_with_block_protected(
+    struct mrb_state *mrb, mrb_value self, mrb_sym name, mrb_int argc,
+    const mrb_value *argv, mrb_value block, mrb_bool *raised);
+
+MRB_API mrb_value mrbdotnet_load_string_protected(
+    struct mrb_state *mrb, const char *code, mrb_bool *raised);
+
+MRB_API mrb_value mrbdotnet_load_string_cxt_protected(
+    struct mrb_state *mrb, const char *code, mrbc_context *cxt, mrb_bool *raised);
+
+MRB_API mrb_value mrbdotnet_top_run_protected(
+    struct mrb_state *mrb, const struct RProc *proc, mrb_value self,
+    mrb_int stack_keep, mrb_bool *raised);
+
+MRB_API mrb_value mrbdotnet_fiber_resume_protected(
+    struct mrb_state *mrb, mrb_value fib, mrb_int argc, const mrb_value *argv,
+    mrb_bool *raised);

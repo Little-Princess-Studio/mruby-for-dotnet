@@ -348,3 +348,10 @@ EXPORTS
 	mrb_ary_dup
 	mrb_method_cache_clear
 	mrb_data_disarm
+	mrbdotnet_set_pending_exception
+	mrbdotnet_funcall_argv_protected
+	mrbdotnet_funcall_with_block_protected
+	mrbdotnet_load_string_protected
+	mrbdotnet_load_string_cxt_protected
+	mrbdotnet_top_run_protected
+	mrbdotnet_fiber_resume_protected
