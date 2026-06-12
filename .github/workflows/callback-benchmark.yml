@@ -1,0 +1,77 @@
+name: Callback Benchmark (trampoline per-call cost)
+
+# PART A of the trampoline perf investigation: measures ns/call + gen0 for an mruby->C#
+# method callback through the native-trampoline + managed-dispatcher path. Run once on
+# the current trampoline (baseline), then again after the hot-path optimizations, to get a
+# comparable before/after. Observational - never gates.
+
+on:
+  workflow_dispatch:
+    inputs:
+      iters:
+        description: 'callback invocations to time'
+        required: false
+        default: '2000000'
+        type: string
+  push:
+    branches: [ fix/macos-longjmp-native-trampoline ]
+
+jobs:
+  bench:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, ubuntu-24.04]
+
+    env:
+      MRUBY_BENCH: '1'
+      MRUBY_BENCH_ITERS: ${{ github.event.inputs.iters || '2000000' }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: "2.9.6"
+      - name: Compile mruby (macOS)
+        if: contains(matrix.os, 'macos')
+        run: rake
+      - name: Setup GCC (Linux)
+        if: contains(matrix.os, 'ubuntu')
+        run: sudo apt update && sudo apt install -y build-essential
+      - name: Compile mruby (Linux)
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+          cd mruby
+          rake MRUBY_CONFIG=../costumized-build-conf-linux.rb all
+      - name: Build native shim
+        run: |
+          cd mruby-shared
+          xmake f -m release
+          xmake
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build wrapper (Release)
+        run: |
+          cd mruby-wrapper
+          dotnet restore
+          dotnet build --configuration=release
+      - name: Run callback benchmark x3 (Release config = optimized JIT)
+        working-directory: mruby-wrapper
+        run: |
+          for run in 1 2 3; do
+            echo "::group::benchmark run ${run}/3 (${{ matrix.os }})"
+            dotnet test --configuration=release --no-build \
+              --filter "FullyQualifiedName~RbCallbackBenchmark" \
+              --logger "console;verbosity=detailed" | grep -A6 "CALLBACK BENCHMARK" || true
+            echo "::endgroup::"
+          done
