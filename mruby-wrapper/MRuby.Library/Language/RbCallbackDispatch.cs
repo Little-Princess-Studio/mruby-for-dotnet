@@ -1,7 +1,7 @@
 namespace MRuby.Library.Language
 {
     using System;
-    using System.Collections.Generic;
+    using System.Collections.Concurrent;
     using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
     using System.Runtime.InteropServices;
@@ -59,18 +59,21 @@ namespace MRuby.Library.Language
         // Per-state registry: callbackId -> user CSharpMethodFunc. Keyed by the native
         // mrb_state handle so it can be found from the dispatcher (which only has IntPtr mrb)
         // and drained at Ruby.Close. A per-state monotonically increasing id is allocated by
-        // Register. Guarded by its own lock (mutated on define-paths from the owning thread,
-        // read by the dispatcher on the same thread, but distinct states may be set up
-        // concurrently - same contract as the other process-global maps).
-        private static readonly Dictionary<long, StateCallbacks> StateCallbacksMap =
-            new Dictionary<long, StateCallbacks>();
-
-        private static readonly object MapLock = new object();
+        // Register. Uses ConcurrentDictionary at BOTH levels so the per-callback hot-path
+        // Lookup is lock-free: distinct RbStates are set up/used/torn down concurrently
+        // (parallel xUnit), and a plain Dictionary mutated across threads corrupts its
+        // buckets (the StateMapper/RbDataClassMapping data-race class this repo already
+        // fixed). ConcurrentDictionary makes concurrent reads + distinct-key writes + removes
+        // safe; the id is allocated with Interlocked. (Same-state concurrent use remains
+        // outside the thread-affinity contract and is not made safe by this.)
+        private static readonly ConcurrentDictionary<long, StateCallbacks> StateCallbacksMap =
+            new ConcurrentDictionary<long, StateCallbacks>();
 
         private sealed class StateCallbacks
         {
             public long NextId;
-            public readonly Dictionary<long, CSharpMethodFunc> ById = new Dictionary<long, CSharpMethodFunc>();
+            public readonly ConcurrentDictionary<long, CSharpMethodFunc> ById =
+                new ConcurrentDictionary<long, CSharpMethodFunc>();
         }
 
         // Ensure the native side knows our dispatcher (idempotent, once per process).
@@ -91,18 +94,10 @@ namespace MRuby.Library.Language
         {
             EnsureDispatcherRegistered();
             var key = state.NativeHandler.ToInt64();
-            lock (MapLock)
-            {
-                if (!StateCallbacksMap.TryGetValue(key, out var sc))
-                {
-                    sc = new StateCallbacks();
-                    StateCallbacksMap.Add(key, sc);
-                }
-
-                var id = sc.NextId++;
-                sc.ById[id] = callback;
-                return id;
-            }
+            var sc = StateCallbacksMap.GetOrAdd(key, _ => new StateCallbacks());
+            var id = Interlocked.Increment(ref sc.NextId) - 1; // 0-based, unique per state
+            sc.ById[id] = callback;
+            return id;
         }
 
         // Drop all callbacks for a state (called from Ruby.Close teardown).
@@ -115,23 +110,16 @@ namespace MRuby.Library.Language
         // RbState.NativeHandler has been zeroed (the handle is captured before mrb_close).
         internal static void ReleaseState(IntPtr nativeHandle)
         {
-            var key = nativeHandle.ToInt64();
-            lock (MapLock)
-            {
-                StateCallbacksMap.Remove(key);
-            }
+            StateCallbacksMap.TryRemove(nativeHandle.ToInt64(), out _);
         }
 
         private static CSharpMethodFunc? Lookup(IntPtr mrb, long callbackId)
         {
             var key = mrb.ToInt64();
-            lock (MapLock)
+            if (StateCallbacksMap.TryGetValue(key, out var sc) &&
+                sc.ById.TryGetValue(callbackId, out var cb))
             {
-                if (StateCallbacksMap.TryGetValue(key, out var sc) &&
-                    sc.ById.TryGetValue(callbackId, out var cb))
-                {
-                    return cb;
-                }
+                return cb;
             }
 
             return null;
