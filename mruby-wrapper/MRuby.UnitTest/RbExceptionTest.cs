@@ -1,4 +1,4 @@
-﻿namespace MRuby.UnitTest;
+namespace MRuby.UnitTest;
 
 using Library;
 using Library.Language;
@@ -33,7 +33,7 @@ public class RbExceptionTest
             var excObj = stat.GenerateExceptionWithNewStr(excClass, errorMsg);
             stat.Raise(excObj);
             return stat.RbNil;
-        }, ref err, out _);
+        }, ref err);
         Assert.True(err);
         Assert.Equal("Exception", errObj.GetClassName());
 
@@ -42,7 +42,7 @@ public class RbExceptionTest
         {
             self.SetInstanceVariable("@a", stat.BoxString(""));
             return self;
-        }, RbHelper.MRB_ARGS_NONE(), out _);
+        }, RbHelper.MRB_ARGS_NONE());
         var obj = @class.NewObject();
 
         state.Protect((stat, userdata, _) =>
@@ -50,7 +50,7 @@ public class RbExceptionTest
             Assert.Equal("TestClass", userdata.GetClassName());
             userdata.SetInstanceVariable("@a", stat.BoxString(errorMsg));
             return stat.RbNil;
-        }, obj, ref err, out _);
+        }, obj, ref err);
         Assert.False(err);
 
         var str = state.UnboxString(obj.GetInstanceVariable("@a"));
@@ -100,14 +100,14 @@ public class RbExceptionTest
             Assert.True(userdata == stat.RbNil);
             rescueFlag1 = true;
             return stat.RbNil;
-        }, state.RbNil, out _, out _);
+        }, state.RbNil);
 
         state.RescueExceptions(funcThrowExc2, state.RbNil, (stat, userdata, _) =>
         {
             Assert.True(userdata == stat.RbNil);
             rescueFlag2 = true;
             return stat.RbNil;
-        }, state.RbNil, new[] { clsExc1 }, out _, out _);
+        }, state.RbNil, new[] { clsExc1 });
 
         Assert.True(excFlag1);
         Assert.True(excFlag2);
@@ -123,13 +123,12 @@ public class RbExceptionTest
         var state = Ruby.Open();
 
         bool err = false;
-        var errObj = state.Protect((stat, self, args) => throw new InvalidOperationException("generic callback failure"), ref err, out var boomFunc);
+        var errObj = state.Protect((stat, self, args) => throw new InvalidOperationException("generic callback failure"), ref err);
         var message = state.UnboxString(errObj.CallMethod("message"));
 
         Assert.True(err);
         Assert.Contains("Native Exception Message: generic callback failure", message);
 
-        GC.KeepAlive(boomFunc);
         Ruby.Close(state);
     }
 
@@ -139,13 +138,12 @@ public class RbExceptionTest
         var state = Ruby.Open();
 
         bool err = false;
-        var errObj = state.Protect((stat, self, args) => throw new TargetInvocationException(new InvalidOperationException("target invocation callback failure")), ref err, out var boomFunc);
+        var errObj = state.Protect((stat, self, args) => throw new TargetInvocationException(new InvalidOperationException("target invocation callback failure")), ref err);
         var message = state.UnboxString(errObj.CallMethod("message"));
 
         Assert.True(err);
         Assert.Contains("Native Exception Message: target invocation callback failure", message);
 
-        GC.KeepAlive(boomFunc);
         Ruby.Close(state);
     }
 
@@ -209,7 +207,7 @@ public class RbExceptionTest
             state.RbNil,
             excClsArray,
             funcEnsure,
-            state.RbNil, out _, out _, out _);
+            state.RbNil);
 
         Assert.True(mainFlag);
         Assert.True(rescueFlag);

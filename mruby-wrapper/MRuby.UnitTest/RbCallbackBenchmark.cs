@@ -36,9 +36,9 @@ public class RbCallbackBenchmark
 
         using var state = Ruby.Open();
         var cls = state.DefineClass("BenchTarget", null);
-        cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE(), out _);
+        cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE());
         // Trivial no-arg callback: returns self. Isolates the dispatch overhead, not user work.
-        cls.DefineMethod("cb", (_, self, _) => self, RbHelper.MRB_ARGS_NONE(), out _);
+        cls.DefineMethod("cb", (_, self, _) => self, RbHelper.MRB_ARGS_NONE());
 
         int iters = Iterations;
 

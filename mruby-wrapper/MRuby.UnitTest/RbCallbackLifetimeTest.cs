@@ -4,29 +4,22 @@ using System;
 using Library;
 using Library.Language;
 
-// Reproduction + regression guard for the dangling native-callback bug.
+// Regression guard for native-callback lifetime across GC.
 //
-// DefineMethod (and friends) build a NativeMethodFunc delegate, hand its function
-// pointer to mruby via mrb_define_method_id, and return the delegate through an
-// `out` parameter. If the library does NOT root that delegate, a caller that
-// discards it (the idiomatic `out _`) leaves nothing keeping it alive. The next GC
-// collects the delegate while mruby still holds its raw function pointer; invoking
-// the Ruby method then jumps through a freed pointer and hard-crashes the process
-// (a native test-host abort, not a managed exception). This was the real macOS CI
-// crash: under xUnit's parallel collections, GC pressure from other tests collected
-// the discarded delegates at the wrong time.
+// DefineMethod (and friends) register the C# callback under an integer callbackId; mruby
+// is handed only a STATIC native trampoline pointer (carrying the id in its proc env),
+// never a managed delegate. The callback itself lives in the per-state callbackId ->
+// CSharpMethodFunc map (RbCallbackDispatch), rooted for the RbState lifetime. So a GC
+// between definition and invocation cannot collect anything mruby depends on - the old
+// "discarded delegate gets collected, mruby calls a freed pointer, host crashes" bug is
+// structurally impossible now (mruby holds a static function pointer, not a delegate).
 //
-// The fix roots every callback delegate to the RbState lifetime inside the library
-// (RbHelper.BuildAndRootNativeCallback -> RbCallbackKeeper), so `out _` is safe.
-//
-// These tests force aggressive GC between definition and call to deterministically
-// expose the bug. They are [WindowsOnlyFact]: a forced GC.Collect from a test thread
-// while OTHER test classes are executing inside native mruby callbacks makes the
-// macOS/Linux signal-based GC thread-suspension hard-exit the test host (a runtime
-// stress limit, not a library defect). On Windows they are stable AND detective -
-// verified to crash 0/20 against the unrooted library and pass after the fix. The
-// real (non-GC-storm) suite proves the fix on all platforms by running green in
-// parallel on macOS. See WindowsOnlyFactAttribute for the full rationale.
+// These tests force aggressive GC between definition and call to confirm the callback
+// still resolves and runs correctly afterwards. They are [WindowsOnlyFact]: a forced
+// GC.Collect from a test thread while OTHER test classes execute inside native mruby
+// callbacks can hard-exit the macOS/Linux test host (a runtime stress limit, not a library
+// defect). The real (non-GC-storm) suite proves correctness on all platforms by running
+// green in parallel on macOS. See WindowsOnlyFactAttribute for the full rationale.
 public class RbCallbackLifetimeTest
 {
     private static void ForceFullGc()
@@ -47,7 +40,7 @@ public class RbCallbackLifetimeTest
         var cls = state.DefineClass("GcInstanceProbe", null);
 
         // Discard the delegate (idiomatic usage). The library must root it.
-        cls.DefineMethod("answer", (stat, self, args) => stat.BoxInt(42), RbHelper.MRB_ARGS_NONE(), out _);
+        cls.DefineMethod("answer", (stat, self, args) => stat.BoxInt(42), RbHelper.MRB_ARGS_NONE());
 
         // Drop every managed reference we control, then force GC. If the delegate is
         // not rooted by the library, mruby now holds a dangling function pointer.
@@ -64,7 +57,7 @@ public class RbCallbackLifetimeTest
         using var compiler = state.NewCompiler();
 
         var cls = state.DefineClass("GcClassProbe", null);
-        cls.DefineClassMethod("ping", (stat, self, args) => stat.BoxInt(7), RbHelper.MRB_ARGS_NONE(), out _);
+        cls.DefineClassMethod("ping", (stat, self, args) => stat.BoxInt(7), RbHelper.MRB_ARGS_NONE());
 
         ForceFullGc();
 
@@ -85,7 +78,7 @@ public class RbCallbackLifetimeTest
         for (var i = 0; i < 50; i++)
         {
             var captured = i;
-            cls.DefineMethod($"m{i}", (stat, self, args) => stat.BoxInt(captured), RbHelper.MRB_ARGS_NONE(), out _);
+            cls.DefineMethod($"m{i}", (stat, self, args) => stat.BoxInt(captured), RbHelper.MRB_ARGS_NONE());
         }
 
         ForceFullGc();

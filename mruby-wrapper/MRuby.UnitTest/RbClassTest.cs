@@ -25,7 +25,7 @@ public class RbClassTest
         {
             setVal = true;
             return state.RbNil;
-        }, RbHelper.MRB_ARGS_NONE(), out _);
+        }, RbHelper.MRB_ARGS_NONE());
 
         rbClass.DefineMethod("plus", (state, self, args) =>
         {
@@ -34,7 +34,7 @@ public class RbClassTest
             var sum = a + b;
             var boxed = state.BoxInt(sum);
             return boxed;
-        }, RbHelper.MRB_ARGS_REQ(2), out _);
+        }, RbHelper.MRB_ARGS_REQ(2));
 
         var obj = rbClass.NewObject();
         var res = obj.CallMethod("test");
@@ -60,7 +60,7 @@ public class RbClassTest
             self.SetInstanceVariable("@a", args[0]);
             self.SetInstanceVariable("@b", args[1]);
             return self;
-        }, RbHelper.MRB_ARGS_REQ(2), out _);
+        }, RbHelper.MRB_ARGS_REQ(2));
 
         rbClass2.DefineMethod("plus_new", (stat, self, args) =>
         {
@@ -70,7 +70,7 @@ public class RbClassTest
             var sum = stat.UnboxInt(a) + stat.UnboxInt(b);
             var boxedRes = stat.BoxInt(sum);
             return boxedRes;
-        }, RbHelper.MRB_ARGS_NONE(), out _);
+        }, RbHelper.MRB_ARGS_NONE());
 
         var obj2 = rbClass2.NewObject(state.BoxInt(3), state.BoxInt(4));
         var res3 = obj2.CallMethod("plus", state.BoxInt(1), state.BoxInt(2));
@@ -128,7 +128,7 @@ public class RbClassTest
             var res = arg0 - arg1;
             var boxedRes = stat.BoxFloat(res);
             return boxedRes;
-        }, RbHelper.MRB_ARGS_REQ(2), out _);
+        }, RbHelper.MRB_ARGS_REQ(2));
 
         class2.DefineClassMethod("class_mul", (stat, self, argv) =>
         {
@@ -138,7 +138,7 @@ public class RbClassTest
             var res = arg0 * arg1 * arg2;
             var boxedRes = stat.BoxFloat(res);
             return boxedRes;
-        }, RbHelper.MRB_ARGS_REQ(3), out _);
+        }, RbHelper.MRB_ARGS_REQ(3));
 
         class2["@@cls_var"] = state.BoxInt(123);
 
@@ -197,7 +197,7 @@ public class RbClassTest
 
             var boxed = stat.BoxString($"{str1} - {str2} - {str3}");
             return boxed;
-        }, RbHelper.MRB_ARGS_REQ(2), out _);
+        }, RbHelper.MRB_ARGS_REQ(2));
 
         module["@@mod_var"] = state.BoxString(string3);
 
@@ -229,7 +229,7 @@ public class RbClassTest
             var res = arg0 + arg1;
             var boxedRes = stat.BoxInt(res);
             return boxedRes;
-        }, RbHelper.MRB_ARGS_REQ(2), out _);
+        }, RbHelper.MRB_ARGS_REQ(2));
 
         var res = obj.CallMethod("test", state.BoxInt(1), state.BoxInt(2));
         var unboxedRes = state.UnboxInt(res);
@@ -245,7 +245,7 @@ public class RbClassTest
         var state = Ruby.Open();
 
         var @class = state.DefineClass("PrivateMethodTest", null);
-        @class.DefinePrivateMethod("secret", (stat, self, args) => stat.BoxInt(42), RbHelper.MRB_ARGS_NONE(), out var secretFunc);
+        @class.DefinePrivateMethod("secret", (stat, self, args) => stat.BoxInt(42), RbHelper.MRB_ARGS_NONE());
         using var compiler = state.NewCompiler();
         compiler.LoadString(@"
             class PrivateMethodTest
@@ -259,7 +259,6 @@ public class RbClassTest
         var res = obj.CallMethod("reveal");
         Assert.Equal(42, state.UnboxInt(res));
 
-        GC.KeepAlive(secretFunc);
         Ruby.Close(state);
     }
 
@@ -283,7 +282,7 @@ public class RbClassTest
         var state = Ruby.Open();
 
         var @class = state.DefineClass("MethodCacheTest", null);
-        @class.DefineMethod("value", (stat, self, args) => stat.BoxInt(7), RbHelper.MRB_ARGS_NONE(), out var valueFunc);
+        @class.DefineMethod("value", (stat, self, args) => stat.BoxInt(7), RbHelper.MRB_ARGS_NONE());
         var obj = @class.NewObject();
 
         state.ClearMethodCache();
@@ -291,7 +290,6 @@ public class RbClassTest
         var res = obj.CallMethod("value");
         Assert.Equal(7, state.UnboxInt(res));
 
-        GC.KeepAlive(valueFunc);
         Ruby.Close(state);
     }
 
@@ -308,7 +306,7 @@ public class RbClassTest
             var res = arg0 + arg1;
             var boxedRes = stat.BoxInt(res);
             return boxedRes;
-        }, RbHelper.MRB_ARGS_REQ(2), out _);
+        }, RbHelper.MRB_ARGS_REQ(2));
 
         var res = module.CallMethod("test", state.BoxInt(1), state.BoxInt(2));
         var unboxedRes = state.UnboxInt(res);
@@ -344,7 +342,7 @@ public class RbClassTest
             var res = stat.UnboxInt(const1) + stat.UnboxInt(const2);
             var boxedRes = stat.BoxInt(res);
             return boxedRes;
-        }, RbHelper.MRB_ARGS_NONE(), out _);
+        }, RbHelper.MRB_ARGS_NONE());
 
         var res = @class.CallMethod("test");
         var unboxedRes = state.UnboxInt(res);
@@ -383,7 +381,7 @@ public class RbClassTest
             var obj = self.GetDataObject<MyData>(typeName)!;
             obj.Data.Add(value);
             return self;
-        }, RbHelper.MRB_ARGS_REQ(1), out _);
+        }, RbHelper.MRB_ARGS_REQ(1));
 
         @class.DefineMethod("get_value", (stat, self, args) =>
         {
@@ -391,7 +389,7 @@ public class RbClassTest
             var obj = self.GetDataObject<MyData>(typeName)!;
             var boxed = stat.BoxInt(obj.Data[0]);
             return boxed;
-        }, RbHelper.MRB_ARGS_NONE(), out _);
+        }, RbHelper.MRB_ARGS_NONE());
 
         var myData = new MyData();
         var dataObj = @class.NewObjectWithCSharpDataObject("MyData", myData, state.BoxInt(12345));
@@ -437,13 +435,13 @@ public class RbClassTest
         {
             val = 1;
             return stat.RbNil;
-        }, RbHelper.MRB_ARGS_NONE(), out _);
+        }, RbHelper.MRB_ARGS_NONE());
 
         cls.DefineMethod("test_to_override", (stat, self, args) =>
         {
             val = 2;
             return stat.RbTrue;
-        }, RbHelper.MRB_ARGS_NONE(), out _);
+        }, RbHelper.MRB_ARGS_NONE());
 
         cls.PrependModule(mod);
 
@@ -500,7 +498,7 @@ public class RbClassTest
         {
             ++val;
             return stat.RbNil;
-        }, RbHelper.MRB_ARGS_NONE(), out _);
+        }, RbHelper.MRB_ARGS_NONE());
 
         @class.DefineAlias("alias_method0", "test_method");
         @class.DefineAliasId(state.GetInternSymbol("alias_method1"), state.GetInternSymbol("test_method"));
