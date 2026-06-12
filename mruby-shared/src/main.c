@@ -239,7 +239,12 @@ static mrb_value mrbdotnet_method_trampoline(mrb_state *mrb, mrb_value self) {
   int64_t callback_id = (int64_t)mrb_integer(idv);
   mrb_int argc = 0;
   const mrb_value *argv = NULL;
-  mrb_get_args(mrb, "*", &argv, &argc);
+  // "*!" gets the rest args WITHOUT copying the stack args into a fresh Ruby array
+  // (plain "*" copies + folds unclaimed keywords into a trailing hash). "*!" is the
+  // zero-copy form and matches the positional-forwarding semantics we need; the managed
+  // dispatcher receives the same (argc, argv) the old direct bridge read via
+  // mrb_get_argc/mrb_get_argv, minus the per-call array allocation.
+  mrb_get_args(mrb, "*!", &argv, &argc);
   return mrbdotnet_dispatch_and_maybe_raise(mrb, self, callback_id, (int64_t)argc, argv);
 }
 
