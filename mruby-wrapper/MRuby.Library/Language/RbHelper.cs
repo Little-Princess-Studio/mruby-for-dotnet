@@ -286,14 +286,10 @@ namespace MRuby.Library.Language
         // native define-helpers store this id in the method/proc env; mruby only ever holds
         // the static native trampoline pointer (never a managed delegate), so a raise from
         // the callback longjmps below the managed frame (no macOS crash) and the delegate
-        // can never be collected out from under mruby. Also returns a compat `out`
-        // NativeMethodFunc so the public API shape is unchanged - it is a harmless stub that
-        // is NOT handed to mruby; callers keeping it (or `out _`) are unaffected.
-        internal static long RegisterCallback(RbState state, CSharpMethodFunc callback, out NativeMethodFunc compatDelegate)
+        // can never be collected out from under mruby.
+        internal static long RegisterCallback(RbState state, CSharpMethodFunc callback)
         {
-            var id = RbCallbackDispatch.Register(state, callback);
-            compatDelegate = (_, self) => self; // unused stub for API back-compat
-            return id;
+            return RbCallbackDispatch.Register(state, callback);
         }
 
         // Roots an already-built native callback delegate to the RbState lifetime so

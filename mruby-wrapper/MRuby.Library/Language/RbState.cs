@@ -356,9 +356,9 @@ namespace MRuby.Library.Language
 
         public Int64 GetArgs(string format, ref RbValue[] args) => RbHelper.GetArgs(this, format, ref args);
 
-        public RbProc NewProc(CSharpMethodFunc func, out NativeMethodFunc delegateFunc)
+        public RbProc NewProc(CSharpMethodFunc func)
         {
-            var id = RbHelper.RegisterCallback(this, func, out delegateFunc);
+            var id = RbHelper.RegisterCallback(this, func);
             var handler = mrbdotnet_proc_new_with_callback_id(this.NativeHandler, id);
 
             return new RbProc(this, handler);

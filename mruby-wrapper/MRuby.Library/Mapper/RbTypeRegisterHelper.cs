@@ -88,29 +88,21 @@ namespace MRuby.Library.Mapper
                 cls = stat.DefineClass(clsName, parClass);
             }
 
-            var keeper = RbKeyedObjectKeeper<RbAutoRegisterKeeper, NativeMethodFunc>.GetOrCreateKeeper(stat);
-            
-            // scan methods attributed by RbClassMethodAttribute
+            // scan methods attributed by RbClassMethodAttribute. Callbacks are rooted
+            // internally by the native-trampoline dispatcher (per-state callbackId map), so
+            // no per-delegate keeper is needed here anymore.
             var methods = t.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             methods.Where(m => m.GetCustomAttribute<RbClassMethodAttribute>() != null)
                 .ToList().ForEach(
                     m => DefineMethod<RbClassMethodAttribute>(
-                        (name, fn, aspect) =>
-                        {
-                            cls.DefineClassMethod(name, fn, aspect, out var delegateFn);
-                            keeper.Keep($"{t.FullName}#{m.Name}", delegateFn);
-                        },
+                        (name, fn, aspect) => cls.DefineClassMethod(name, fn, aspect),
                         m));
 
             // scan methods attributed by RbInstanceMethodAttribute
             methods.Where(m => m.GetCustomAttribute<RbInstanceMethodAttribute>() != null)
                 .ToList().ForEach(
                     m => DefineMethod<RbInstanceMethodAttribute>(
-                        (name, fn, aspect) =>
-                        {
-                            cls.DefineMethod(name, fn, aspect, out var delegateFunc);
-                            keeper.Keep($"{t.FullName}#{m.Name}", delegateFunc);
-                        },
+                        (name, fn, aspect) => cls.DefineMethod(name, fn, aspect),
                         m));
 
             return cls;
@@ -133,38 +125,24 @@ namespace MRuby.Library.Mapper
                 mod = stat.DefineModule(moduleName);
             }
 
-            var keeper = RbKeyedObjectKeeper<RbAutoRegisterKeeper, NativeMethodFunc>.GetOrCreateKeeper(stat);
-            
             // scan methods attributed by RbClassMethodAttribute
             var methods = t.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             methods.Where(m => m.GetCustomAttribute<RbClassMethodAttribute>() != null)
                 .ToList().ForEach(
                     m => DefineMethod<RbClassMethodAttribute>(
-                        (name, fn, aspect) =>
-                        {
-                            mod.DefineClassMethod(name, fn, aspect, out var delegateFunc);
-                            keeper.Keep($"{t.FullName}#{m.Name}", delegateFunc);
-                        },
+                        (name, fn, aspect) => mod.DefineClassMethod(name, fn, aspect),
                         m));
 
             methods.Where(m => m.GetCustomAttribute<RbModuleMethodAttribute>() != null)
                 .ToList().ForEach(
                     m => DefineMethod<RbModuleMethodAttribute>(
-                        (name, fn, aspect) =>
-                        {
-                            mod.DefineModuleMethod(name, fn, aspect, out var delegateFunc);
-                            keeper.Keep($"{t.FullName}#{m.Name}", delegateFunc);
-                        },
+                        (name, fn, aspect) => mod.DefineModuleMethod(name, fn, aspect),
                         m));
 
             methods.Where(m => m.GetCustomAttribute<RbInstanceMethodAttribute>() != null)
                 .ToList().ForEach(
                     m => DefineMethod<RbInstanceMethodAttribute>(
-                        (name, fn, aspect) =>
-                        {
-                            mod.DefineMethod(name, fn, aspect, out var delegateFunc);
-                            keeper.Keep($"{t.FullName}#{m.Name}", delegateFunc);
-                        },
+                        (name, fn, aspect) => mod.DefineMethod(name, fn, aspect),
                         m));
 
             return mod;
