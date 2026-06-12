@@ -298,11 +298,12 @@ namespace MRuby.Library.Language
             return Marshal.PtrToStructure<RbDataClassType>(ptr);
         }
 
-        public void DefineSingletonMethod(string name, CSharpMethodFunc callback, uint parameterAspect, out NativeMethodFunc delegateFunc)
+        public void DefineSingletonMethod(string name, CSharpMethodFunc callback, uint parameterAspect)
         {
-            delegateFunc = RbHelper.BuildAndRootNativeCallback(this.State, callback);
+            var id = RbHelper.RegisterCallback(this.State, callback);
             var objPtr = RbHelper.GetRbObjectPtrFromValue(this);
-            mrb_define_singleton_method(this.State.NativeHandler, objPtr, name, delegateFunc, parameterAspect);
+            var sym = this.State.GetInternSymbol(name);
+            mrbdotnet_define_singleton_method_id(this.State.NativeHandler, objPtr, sym, id, parameterAspect);
         }
 
         public RbValue this[string name]

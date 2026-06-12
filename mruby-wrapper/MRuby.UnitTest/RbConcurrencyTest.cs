@@ -207,7 +207,7 @@ public class RbConcurrencyTest
                             var name = roundNames[r];
 
                             var cls = state.DefineClass($"Holder{threadId}_{name}", null);
-                            cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE(), out _);
+                            cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE());
 
                             var payload = new ConcPayload { Value = r };
                             var obj = cls.NewObjectWithCSharpDataObject(name, payload);
@@ -360,7 +360,7 @@ public class RbConcurrencyTest
             // a C# payload through an mruby data object.
             var name = $"SeqData{i}";
             var cls = state.DefineClass($"SeqHolder{i}", null);
-            cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE(), out _);
+            cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE());
 
             var payload = new ConcPayload { Value = i };
             var obj = cls.NewObjectWithCSharpDataObject(name, payload);
@@ -386,7 +386,7 @@ public class RbConcurrencyTest
         try
         {
             var cls = state.DefineClass($"AllocProbe{Guid.NewGuid():N}", null);
-            cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE(), out _);
+            cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE());
             cls.DefineMethod("ping", (callbackState, self, _) =>
             {
                 if (!ReferenceEquals(callbackState, state))
@@ -395,7 +395,7 @@ public class RbConcurrencyTest
                 }
 
                 return self;
-            }, RbHelper.MRB_ARGS_NONE(), out _);
+            }, RbHelper.MRB_ARGS_NONE());
 
             if (!useCanonicalCache)
             {

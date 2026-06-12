@@ -87,5 +87,24 @@
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
         private static extern UInt64 mrb_rescue_exceptions(IntPtr mrb, [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc body, UInt64 b_data, [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc rescue, UInt64 r_data, int len,
             IntPtr[] classes);
+
+        // Trampoline protect/ensure/rescue wrappers (mruby-shared/src/main.c): take callbackId(s)
+        // instead of managed delegates, so a raise from the body originates in native code below
+        // the managed frame.
+        // MRB_API mrb_value mrbdotnet_protect(mrb_state*, int64_t body_id, mrb_value data, mrb_bool *error);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        private static extern UInt64 mrbdotnet_protect(IntPtr mrb, Int64 bodyId, UInt64 data, [MarshalAs(UnmanagedType.U1)] ref Boolean error);
+
+        // MRB_API mrb_value mrbdotnet_ensure(mrb_state*, int64_t body_id, mrb_value b_data, int64_t ensure_id, mrb_value e_data);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        private static extern UInt64 mrbdotnet_ensure(IntPtr mrb, Int64 bodyId, UInt64 bData, Int64 ensureId, UInt64 eData);
+
+        // MRB_API mrb_value mrbdotnet_rescue(mrb_state*, int64_t body_id, mrb_value b_data, int64_t rescue_id, mrb_value r_data);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        private static extern UInt64 mrbdotnet_rescue(IntPtr mrb, Int64 bodyId, UInt64 bData, Int64 rescueId, UInt64 rData);
+
+        // MRB_API mrb_value mrbdotnet_rescue_exceptions(mrb_state*, int64_t body_id, mrb_value b_data, int64_t rescue_id, mrb_value r_data, struct RClass **classes, mrb_int len);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        private static extern UInt64 mrbdotnet_rescue_exceptions(IntPtr mrb, Int64 bodyId, UInt64 bData, Int64 rescueId, UInt64 rData, IntPtr[] classes, Int64 len);
     }
 }

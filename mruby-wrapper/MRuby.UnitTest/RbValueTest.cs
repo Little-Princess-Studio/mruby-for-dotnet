@@ -1,4 +1,4 @@
-﻿namespace MRuby.UnitTest;
+namespace MRuby.UnitTest;
 
 using System.Text;
 using Library;
@@ -30,7 +30,7 @@ public class RbValueTest
         {
             self["@a"] = stat.BoxInt(1);
             return self;
-        }, RbHelper.MRB_ARGS_NONE(), out _);
+        }, RbHelper.MRB_ARGS_NONE());
 
         @class.DefineMethod("eql?", (stat, self, args) =>
         {
@@ -38,7 +38,7 @@ public class RbValueTest
             var a = self["@a"];
             var b = other["@a"];
             return a == b ? stat.RbTrue : stat.RbFalse;
-        }, RbHelper.MRB_ARGS_REQ(1), out _);
+        }, RbHelper.MRB_ARGS_REQ(1));
 
         var obj1 = @class.NewObject();
         var obj2 = @class.NewObject();
@@ -73,7 +73,7 @@ public class RbValueTest
         {
             self["@a"] = args[0];
             return self;
-        }, RbHelper.MRB_ARGS_REQ(1), out _);
+        }, RbHelper.MRB_ARGS_REQ(1));
 
         @class.DefineMethod("eql?", (stat, self, args) =>
         {
@@ -81,7 +81,7 @@ public class RbValueTest
             var a = self["@a"];
             var b = other["@a"];
             return a == b ? stat.RbTrue : stat.RbFalse;
-        }, RbHelper.MRB_ARGS_REQ(1), out _);
+        }, RbHelper.MRB_ARGS_REQ(1));
 
         var obj1 = @class.NewObject(state.BoxInt(123));
         var obj2 = obj1.Duplicate();
@@ -172,7 +172,7 @@ public class RbValueTest
         {
             a = true;
             return stat.RbNil;
-        }, RbHelper.MRB_ARGS_NONE(), out _);
+        }, RbHelper.MRB_ARGS_NONE());
 
         top0.CallMethod("test");
 
@@ -197,7 +197,7 @@ public class RbValueTest
             self["@b"] = stat.BoxInt(2);
             self["@c"] =  stat.BoxInt(3);
             return self;
-        }, RbHelper.MRB_ARGS_NONE(), out _);
+        }, RbHelper.MRB_ARGS_NONE());
 
         var obj = cls.NewObject();
 
@@ -261,7 +261,7 @@ public class RbValueTest
         {
             a = true;
             return stat.RbNil;
-        }, RbHelper.MRB_ARGS_NONE(), out _);
+        }, RbHelper.MRB_ARGS_NONE());
         
         obj.CallMethod("test");
         

@@ -52,7 +52,7 @@ public class RbDataObjectGcTest
 
         var state = Ruby.Open();
         var cls = state.DefineClass("DisarmProbe", null);
-        cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE(), out _);
+        cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE());
 
         for (var i = 0; i < 5; i++)
         {
@@ -74,7 +74,7 @@ public class RbDataObjectGcTest
         var releasedCount = 0;
         var state = Ruby.Open();
         var cls = state.DefineClass("MidGcProbe", null);
-        cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE(), out _);
+        cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE());
 
         cls.NewObjectWithCSharpDataObject("MidGcProbe", new Payload(), (_, _) => releasedCount++);
 
@@ -92,7 +92,7 @@ public class RbDataObjectGcTest
     {
         var state = Ruby.Open();
         var cls = state.DefineClass("DeadlockProbe", null);
-        cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE(), out _);
+        cls.DefineMethod("initialize", (_, self, _) => self, RbHelper.MRB_ARGS_NONE());
 
         cls.NewObjectWithCSharpDataObject(
             "DeadlockProbe",
@@ -145,7 +145,7 @@ public class RbDataObjectGcTest
             var typeName = self.GetDataObjectType().Name;
             self.GetDataObject<Payload>(typeName)!.Value = v;
             return self;
-        }, RbHelper.MRB_ARGS_REQ(1), out _);
+        }, RbHelper.MRB_ARGS_REQ(1));
 
         var payload = new Payload();
         cls.NewObjectWithCSharpDataObject(
@@ -178,7 +178,7 @@ public class RbDataObjectGcTest
             var typeName = self.GetDataObjectType().Name;
             self.GetDataObject<Payload>(typeName)!.Value = stat.UnboxInt(args[0]);
             return self;
-        }, RbHelper.MRB_ARGS_REQ(1), out _);
+        }, RbHelper.MRB_ARGS_REQ(1));
 
         for (var i = 0; i < 100; i++)
         {

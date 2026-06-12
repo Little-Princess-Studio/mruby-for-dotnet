@@ -67,6 +67,9 @@ namespace MRuby.Library
         {
             var releaseCallbacks = new List<(Action<RbState, object?> ReleaseFn, object? Obj)>();
             var exceptions = new List<Exception>();
+            // Captured before mrb_close zeroes state.NativeHandler, so Phase 3 cleanup keyed
+            // by the raw handle (e.g. the native-callback registry) still works.
+            var nativeHandler = state.NativeHandler;
 
             try
             {
@@ -76,7 +79,6 @@ namespace MRuby.Library
                 // throw before the VM handle is closed and zeroed. Native RData is disarmed
                 // inside the lifecycle lock immediately before mrb_close so disarm+close are
                 // one native lifecycle-critical section.
-                var nativeHandler = state.NativeHandler;
                 IReadOnlyDictionary<IComparable, RbDataObjectRegistration>? entries = null;
                 if (nativeHandler != IntPtr.Zero)
                 {
@@ -139,6 +141,10 @@ namespace MRuby.Library
             {
                 // Phase 3: release delegate roots and any remaining per-state keepers after close.
                 RbNativeObjectLiveKeeper.ReleaseKeeper(state);
+                // Drop the per-state native-callback registry (callbackId -> CSharpMethodFunc).
+                // Keyed by the handle captured before mrb_close, since state.NativeHandler is
+                // now zeroed.
+                RbCallbackDispatch.ReleaseState(nativeHandler);
             }
 
             // Phase 4: invoke user release callbacks after native teardown. A callback may throw

@@ -1,4 +1,4 @@
-﻿namespace MRuby.UnitTest;
+namespace MRuby.UnitTest;
 
 using Library;
 using Library.Language;
@@ -122,7 +122,7 @@ public class RbMapperTest
         var cls = state.GetClass("TestClass");
         var obj = cls.NewObject();
 
-        var block = state.NewProc((stat, self, args) => stat.BoxInt(42), out var blk);
+        var block = state.NewProc((stat, self, args) => stat.BoxInt(42));
 
         var res = obj.CallMethodWithBlock("test_instance_method0", block);
         Assert.Equal(42, state.UnboxInt(res));
@@ -148,7 +148,6 @@ public class RbMapperTest
         res = cls.CallMethod("test_class_method3", state.BoxInt(42), state.BoxInt(24));
         Assert.Equal(state.BoxInt(66), res);
         
-        GC.KeepAlive(blk);
     }
 
     [Fact]
@@ -159,7 +158,7 @@ public class RbMapperTest
         Assert.True(TestModule.Initialized);
 
         var cls = state.GetModule("TestModule");
-        var block = state.NewProc((stat, self, args) => stat.BoxInt(42), out _);
+        var block = state.NewProc((stat, self, args) => stat.BoxInt(42));
 
         var res = cls.CallMethodWithBlock("test_module_method0", block);
         Assert.Equal(42, state.UnboxInt(res));

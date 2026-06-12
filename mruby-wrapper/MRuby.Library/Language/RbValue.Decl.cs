@@ -106,6 +106,10 @@ namespace MRuby.Library.Language
             [MarshalAs(UnmanagedType.LPStr)] string name,
             [MarshalAs(UnmanagedType.FunctionPtr)] NativeMethodFunc nativeMethod,
             uint parameterAspect);
+
+        // Trampoline define-helper: MRB_API void mrbdotnet_define_singleton_method_id(mrb_state*, struct RObject*, mrb_sym, int64_t callback_id, mrb_aspec);
+        [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi)]
+        private static extern void mrbdotnet_define_singleton_method_id(IntPtr mrb, IntPtr obj, UInt64 mid, Int64 callbackId, uint aspec);
         
         // MRB_API struct RClass *mrb_singleton_class_ptr(mrb_state *mrb, mrb_value val);
         [DllImport(Ruby.MrubyLib, CharSet = CharSet.Ansi, SetLastError = true)]
